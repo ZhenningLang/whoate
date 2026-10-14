@@ -276,13 +276,13 @@ If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息�
 
 [U-SPK-8|c1d7] Chromium 按进程类型拆分可行、按标签页不可行。已验证 2026-10-14：本机 Chrome 有 46 个 `--type=renderer`、6 个带 `--extension-process`、3 个 GPU、若干 `--utility-sub-type` 服务；Brave 19 / 6 / 1。按标签页对应进程号的扩展接口只在 Dev 通道（见 [U-NG-8|648c]）。
 
-[U-SPK-9|9bf4] Docker 容器拆分。未验证：spike 当时 Docker daemon 未运行（`docker stats` 报连不上 socket）。处置：需 spike，P3 时间盒 30 分钟，开 Docker Desktop 起一个容器后对比 `docker stats --no-stream` 与虚拟机进程 footprint。
+[U-SPK-9|36c2] Docker 容器拆分。未验证：spike 当时 Docker daemon 未运行（`docker stats` 报连不上 socket）。处置：需 spike，P3 时间盒 30 分钟，开 Docker Desktop 起一个容器后对比 `docker stats --no-stream` 与虚拟机进程 footprint。 裁决（2026-10-14 scaffold review）：拆不到容器时接受只显示 Docker 虚拟机整体占用加建议，报告里写明。
 
 [U-SPK-10|e74f] 知识库条目会过时（软件改设置名、改默认值）。处置：接受风险；每条带 `checked` 日期与出处，`whoate insights --list` 可列出全部条目供人复核。
 
 ## 验收承诺
 
-[U-ACC-1|a19b] P1 采集：本机快照抽 10 个本账号 pid，footprint 与同时刻 `top -l 1 -stats pid,mem` 误差 < 1%；一次快采（不含慢采）< 50ms；`record-fixture` 能把本机快照存成脱敏 JSON（argv 只留可执行名与前两个参数，路径把 `$HOME` 换成 `~`）。
+[U-ACC-1|d344] P1 采集：本机快照抽 10 个本账号 pid，footprint 与同时刻 `top -l 1 -stats pid,mem` 误差 < 1%；一次快采（不含慢采）< 50ms；`record-fixture` 能把本机快照存成脱敏 JSON（argv 只留可执行名与前两个参数，路径把 `$HOME` 换成 `~`）。 裁决（2026-10-14 scaffold review）：脱敏规则改为保留全部 `--` 开关名与识别器需要的参数位，路径里的用户目录换成 `~`，网址、token、私有项目路径等取值换成占位符；原「只留前两个参数」作废（Chromium 的 `--extension-process` 在 argv 第 4 位）。
 
 [U-ACC-2|2d64] P2 归因核心与编程助手：fixture 回放测试覆盖五个场景且全部断言具体归属与证据——孤儿 wrangler（TMUX_PANE 指向已关闭 pane → orphan certain，规则 orphan-dev-server 命中）、tmux 内 Claude 会话（sessions 文件 → agent_session certain，name / title / first_prompt 非空）、opencode 目录时间配对（inferred）、Chrome Helper 归 app、root 进程归 system；每个进程恰好一个归属，归属内存之和等于快照总和。
 
@@ -292,15 +292,15 @@ If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息�
 
 [U-ACC-5|061f] agent 定位端到端：对本会话的 claude 进程跑 `whoate why <pid> --json`，加 `--prompts` 时返回 `agent.name`、`agent.title`、`agent.first_prompt`、`agent.first_reply` 与 `~/.claude` 里的原始值一致（回复按截断规则比对前缀）；不加 `--prompts` 时后两个字段为 null。
 
-[U-ACC-6|0f94] GUI：菜单栏面板与主窗口在浅色、深色两种外观各截一张图，文字无溢出、无截断；1 秒刷新 60 秒内 whoate 进程平均 CPU < 1%；点「关闭」弹出确认框且列出 pid。
+[U-ACC-6|fc20] GUI：菜单栏面板与主窗口在浅色、深色两种外观各截一张图，文字无溢出、无截断；1 秒刷新 60 秒内 whoate 进程平均 CPU < 1%；点「关闭」弹出确认框且列出 pid。 裁决（2026-10-14 scaffold review）：若 1 秒刷新做不到 CPU < 1%，接受改为 2 秒刷新，验收相应改为「2 秒刷新时 60 秒平均 CPU < 1%」。
 
 [U-ACC-7|40e3] 发布：在一个没装过 whoate 的用户目录下，按 README 的一行命令装好 CLI 并跑通 `whoate top`；Release 页有 CLI 二进制与 `.app` 压缩包；产品介绍页可访问（落点按 [U-DEC-5|e8d0] 裁决）。
 
-[U-ACC-8|5cf3] P2/P3 识别器：fixture 回放断言——node 进程认出 `package.json` 的项目名与脚本名、python 认出虚拟环境；Chrome 与 Brave 的标签页进程 / 扩展进程 / GPU 计数与快照一致；WebKit 网页进程归到其 responsible 应用；VS Code 的扩展宿主与语言服务器各成一个细分；JetBrains 读出 `-Xmx`。真机：本机 `whoate why <一个 Chrome 标签页进程 pid> --json` 返回 `parts` 含「标签页进程」。
+[U-ACC-8|a592] P2/P3 识别器：fixture 回放断言——node 进程认出 `package.json` 的项目名与脚本名、python 认出虚拟环境；Chrome 与 Brave 的标签页进程 / 扩展进程 / GPU 计数与快照一致；WebKit 网页进程归到其 responsible 应用；VS Code 的扩展宿主与语言服务器各成一个细分；JetBrains 读出 `-Xmx`。真机：本机 `whoate why <一个 Chrome 标签页进程 pid> --json` 返回 `parts` 含「标签页进程」。 裁决（2026-10-14 scaffold review）：本机无运行中的 JetBrains IDE 时，`-Xmx` 读取用手工构造的 fixture 验证，报告里写明。
 
 [U-ACC-9|f303] 知识库：每条都有 `source` 且为 https 链接、`trigger` 只引用已登记的信号名（测试遍历全部条目校验）；本机至少命中一条浏览器建议与一条编程助手建议并在 `whoate top` 里显示。
 
-[U-ACC-10|077d] 同类进程群：用 2026-10-14 19:17 的真实快照回放，`chrome-reading-list-mcp` 合成一个散布型群，`count`=61、`mem_bytes` 与成员 footprint 之和一致、`owners` 覆盖 21 个 Claude 会话；真机脚本让一个父进程在 1 分钟内拉起 30 个相同的 `sleep 600`，`whoate swarms --json` 一次调用返回一个爆发型群，`parents` 指向该父进程、规则 swarm-burst 命中。
+[U-ACC-10|8816] 同类进程群：用 2026-10-14 19:17 的真实快照回放，`chrome-reading-list-mcp` 合成一个散布型群，`count`=61、`mem_bytes` 与成员 footprint 之和一致、`owners` 覆盖 21 个 Claude 会话；真机脚本让一个父进程在 1 分钟内拉起 30 个相同的 `sleep 600`，`whoate swarms --json` 一次调用返回一个爆发型群，`parents` 指向该父进程、规则 swarm-burst 命中。 裁决（2026-10-14 scaffold review）：19:17 的快照未保存，回放改用 19:40 录下的原始快照（本机工作区 `raw-snapshot-20261014-1940.json`，不进仓库），断言 `count`、`mem_bytes`、`owners` 覆盖数等于该快照内实测值（录制时为 69 个、合计 2.70G）。
 
 ## 现成方案
 
@@ -346,11 +346,11 @@ whoate/
 
 | 期 | 内容 | 验证 |
 |---|---|---|
-| P1 采集 [be] | workspace、model、snapshot、sample/*（含 responsible pid）、record-fixture | `cargo test -p whoate-core`；[U-ACC-1|a19b] |
-| P2 归因核心与编程助手 [be] | attribute、swarm、verdict、history、recognizers/coding_agents、dev_runtimes、sources/* | fixture 回放；[U-ACC-2|2d64] [U-ACC-8|5cf3] [U-ACC-10|077d] |
-| P3 识别器扩展与知识库 [be] | recognizers/chromium、webkit_host、docker、ide；insights/*.toml；[U-SPK-9|9bf4] spike | fixture 回放；[U-ACC-8|5cf3] [U-ACC-9|f303] |
+| P1 采集 [be] | workspace、model、snapshot、sample/*（含 responsible pid）、record-fixture | `cargo test -p whoate-core`；[U-ACC-1|d344] |
+| P2 归因核心与编程助手 [be] | attribute、swarm、verdict、history、recognizers/coding_agents、dev_runtimes、sources/* | fixture 回放；[U-ACC-2|2d64] [U-ACC-8|a592] [U-ACC-10|8816] |
+| P3 识别器扩展与知识库 [be] | recognizers/chromium、webkit_host、docker、ide；insights/*.toml；[U-SPK-9|36c2] spike | fixture 回放；[U-ACC-8|a592] [U-ACC-9|f303] |
 | P4 CLI [be] | whoate-cli、JSON Schema、kill 安全、agent-guide、SKILL.md | 合同测试 + [U-ACC-3|3ad1] [U-ACC-4|ba7a] [U-ACC-5|061f] |
-| P5 GUI [fe] | whoate-ffi、app/、bundle-app.sh、[U-SPK-6|8f90] spike | 截图验收 + [U-ACC-6|0f94] |
+| P5 GUI [fe] | whoate-ffi、app/、bundle-app.sh、[U-SPK-6|8f90] spike | 截图验收 + [U-ACC-6|fc20] |
 | P6 发布与门面 [int] | logo 定稿、README、CI、release.sh、homebrew-tap、site/ | [U-ACC-7|40e3] |
 
 依赖：P2←P1，P3←P2，P4←P2，P5←P2，P6←P3、P4、P5。P3、P4、P5 可并行。

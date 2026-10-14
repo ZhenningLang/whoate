@@ -7,3 +7,4 @@
 *.comments.incoming.json
 *.review-inbox.md
 *.drafts.json
+.long-loop/
