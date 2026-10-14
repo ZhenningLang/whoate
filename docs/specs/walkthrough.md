@@ -1,6 +1,6 @@
 Audience:   P1 审批 owner | P2 跨职能
 Scope:      内存偏紧时从菜单栏定位孤儿进程并关闭；在主窗口认出一个 Claude 会话并跳回它的终端 / Non-scope: 命令行用法（见 overview.md CLI 节）、设置页
-State:      in-review
+State:      approved
 Genre:      G-WALK
 Code-Root:  /Users/zhenninglang/Projects/whoate-docs-design
 Prefixes:   U-DIAG, U-ACC, U-BEH
@@ -22,9 +22,9 @@ Prototype:  mockups @ v0.1-2026-10-14
 
 ![](walkthrough/S1.png)
 
-面板顶部写着「内存偏紧」和一句结论，最该处理的「无人管理的开发服务器 9.7G」排在第一行。内存正常时图标保持灰色，面板顶部写「内存充足」，列表照常按占用排序。
+面板顶部是内存压力条和「内存 / CPU」排序切换，下面 5 行按内存从大到小排；「无人管理的开发服务器 9.7G」标着「建议关闭」，同样的小进程合成「阅读清单服务 × 61」一行。切到 CPU 排序后，列表改按 CPU 占用排；内存正常时图标保持灰色。
 
-### 第 2 步 · 在第一行点「为什么」
+### 第 2 步 · 在「无人管理的开发服务器」那一行点「详情」
 
 作为开发者，我想要先知道凭什么说它没人管，以便放心关掉而不是误杀正在用的服务（来源 [U-ACC-4|ba7a]）
 
@@ -42,19 +42,27 @@ Prototype:  mockups @ v0.1-2026-10-14
 
 ### 第 4 步 · 左栏点「agent 会话」，选中第一个会话
 
-作为开发者，我想要认出占内存的是哪个助手会话、当时问的是什么，以便决定要不要回去处理它（来源 [U-ACC-5|d18b]）
+作为开发者，我想要认出占内存的是哪个助手会话、当时问的是什么，以便决定要不要回去处理它（来源 [U-ACC-5|061f]）
 
 ![](walkthrough/S4.png)
 
-右栏显示会话标题「Node 进程内存占用过高」、第一个问题原文、所在终端位置和会话下的进程。opencode 或 kilo 的会话靠目录和时间配对，可信度一栏显示「推断」。
+右栏显示会话标题「Node 进程内存占用过高」；会话名下面「会话」一行是开头的一问一答（User 一句、Assistant 回复的开头），再往下是所在终端位置和会话下的进程。opencode 或 kilo 的会话靠目录和时间配对，可信度一栏显示「推断」。
 
 ### 第 5 步 · 点「在终端里跳到这个 pane」
 
-作为开发者，我想要一键回到那个会话所在的终端，以便直接在那里处理（来源 [U-ACC-5|d18b]）
+作为开发者，我想要一键回到那个会话所在的终端，以便直接在那里处理（来源 [U-ACC-5|061f]）
 
 ![](walkthrough/S5.png)
 
 终端切到 tmux main:15.1，whoate 窗口留在原处。会话不在 tmux 里时按钮置灰，改为显示「在 Finder 显示目录」。
+
+### 第 6 步 · 左栏点「应用」，选中 Google Chrome，看「省内存建议」
+
+作为开着几十个标签页的开发者，我想要知道浏览器的内存花在标签页、扩展还是 GPU 上，以及在我这台机器上具体能怎么省，以便不用去网上搜一堆泛泛的建议（来源 [U-ACC-9|f303]）
+
+![](walkthrough/S6.png)
+
+右栏先按标签页进程、扩展、GPU、服务拆开内存，并读出省内存模式已开；再列出只在你机器上命中的建议，例如标签页进程超过 30 个、6 个扩展常驻。没有命中任何建议时，这张卡片不出现；精确到哪个标签页做不到，建议里会引导你按 Shift+Esc 打开浏览器自带的任务管理器。
 
 <!-- walk:auto-end:steps -->
 
@@ -74,7 +82,8 @@ Prototype:  mockups @ v0.1-2026-10-14
 | 第 1 步（S1） | `mockups/menubar.html` | `walkthrough/S1.png` | [U-DIAG-1|a758] |
 | 第 2 步（S2） | `mockups/menubar.html` | `walkthrough/S2.png` | [U-ACC-4|ba7a] |
 | 第 3 步（S3） | `mockups/window-orphan.html` | `walkthrough/S3.png` | [U-BEH-1|033d]、[U-ACC-6|0f94] |
-| 第 4 步（S4） | `mockups/window-agent.html` | `walkthrough/S4.png` | [U-ACC-5|d18b] |
-| 第 5 步（S5） | `mockups/window-agent.html` | `walkthrough/S5.png` | [U-ACC-5|d18b] |
+| 第 4 步（S4） | `mockups/window-agent.html` | `walkthrough/S4.png` | [U-ACC-5|061f] |
+| 第 5 步（S5） | `mockups/window-agent.html` | `walkthrough/S5.png` | [U-ACC-5|061f] |
+| 第 6 步（S6） | `mockups/window-browser.html` | `walkthrough/S6.png` | [U-ACC-9|f303] |
 
 <!-- walk:auto-end:index -->

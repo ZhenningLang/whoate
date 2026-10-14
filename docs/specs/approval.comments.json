@@ -1,6 +1,140 @@
 {
   "schema_version": 2,
   "spec_file": "approval.md",
-  "review_version": 0,
-  "anchors": {}
+  "review_version": 2,
+  "anchors": {
+    "U-DEC-1": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 5 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T10-52-39-154Z-U-DEC-1-0",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "第一版不做公证，有人用起来再办账号。",
+          "response": "已写回 U-DEC-1，投影已刷新",
+          "fingerprint_at_comment": "803c",
+          "created_in_version": 1,
+          "resolved_in_version": 1
+        }
+      ],
+      "unit_id": "U-DEC-1"
+    },
+    "U-DEC-2": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 5 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T10-52-39-154Z-U-DEC-2-1",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "默认不给助手看第一个问题。",
+          "response": "已写回 U-DEC-2，投影已刷新",
+          "fingerprint_at_comment": "c796",
+          "created_in_version": 1,
+          "resolved_in_version": 1
+        }
+      ],
+      "unit_id": "U-DEC-2"
+    },
+    "U-DEC-3": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 5 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T10-52-39-154Z-U-DEC-3-2",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "允许助手写明确认后关程序，系统程序一律拒绝。",
+          "response": "已写回 U-DEC-3，投影已刷新",
+          "fingerprint_at_comment": "ecb3",
+          "created_in_version": 1,
+          "resolved_in_version": 1
+        }
+      ],
+      "unit_id": "U-DEC-3"
+    },
+    "U-DEC-4": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 5 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T10-52-39-154Z-U-DEC-4-3",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "跟随系统语言，中英双语。",
+          "response": "已写回 U-DEC-4，投影已刷新",
+          "fingerprint_at_comment": "8bac",
+          "created_in_version": 1,
+          "resolved_in_version": 1
+        }
+      ],
+      "unit_id": "U-DEC-4"
+    },
+    "U-DEC-5": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 5 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T10-52-39-154Z-U-DEC-5-4",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "用 GitHub 免费网页托管公开发布介绍页。",
+          "response": "已写回 U-DEC-5，投影已刷新",
+          "fingerprint_at_comment": "98d4",
+          "created_in_version": 1,
+          "resolved_in_version": 1
+        }
+      ],
+      "unit_id": "U-DEC-5"
+    },
+    "U-DEC-6": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 2 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T11-20-05-370Z-U-DEC-6-0",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "第一版只做 tmux 切换，iTerm2 和系统终端的精确跳转放下一期。",
+          "response": "已写回 U-DEC-6，投影已刷新",
+          "fingerprint_at_comment": "5d8a",
+          "created_in_version": 2,
+          "resolved_in_version": 2
+        }
+      ],
+      "unit_id": "U-DEC-6"
+    },
+    "U-DEC-7": {
+      "kind": "unit",
+      "heading": "2. 要你拍的 2 件事",
+      "comments": [
+        {
+          "id": "c-2026-10-14T11-20-05-370Z-U-DEC-7-1",
+          "role": "user",
+          "kind": "decision",
+          "status": "resolved",
+          "classification": "decision",
+          "text": "第一版就支持用户规则文件。",
+          "response": "已写回 U-DEC-7，投影已刷新",
+          "fingerprint_at_comment": "e404",
+          "created_in_version": 2,
+          "resolved_in_version": 2
+        }
+      ],
+      "unit_id": "U-DEC-7"
+    }
+  }
 }

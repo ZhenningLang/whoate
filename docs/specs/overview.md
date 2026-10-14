@@ -1,6 +1,6 @@
 Audience:   P3 实现 agent
-Scope:      whoate v1：macOS 上按归属（tmux pane、agent 会话、应用、孤儿、系统）汇总内存与 CPU，Rust 核心 + SwiftUI 界面 + 给 agent 用的 CLI / Non-scope: Linux/Windows、长期历史库、需要 root 的深度取证
-State:      in-review
+Scope:      whoate v1：macOS 上用按软件定制的识别器解释进程（编程助手、开发运行时、Chromium 浏览器、WebKit 宿主、Docker、IDE），按归属汇总内存与 CPU 并给出带出处的省内存建议；Rust 核心 + SwiftUI 界面 + 给 agent 用的 CLI / Non-scope: Linux/Windows、长期历史库、需要 root 的深度取证
+State:      approved
 Genre:      G-SPEC
 Code-Root:  /Users/zhenninglang/Projects/whoate-docs-design
 Prefixes:   U-DEC, U-BEH, U-GATE, U-SPK, U-ACC, U-NG, U-DEP, U-DIAG
@@ -19,6 +19,8 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 - U-NG: non-goals
 - U-DEP: 新增依赖
 - U-DIAG: 根因与现状诊断
+- 识别器（Recognizer）：针对一种软件的解释模块，用那个软件自己的说法认出它的进程（会话、项目、标签页进程、扩展、容器），并挂上该软件的知识库条目。
+- 知识库条目（Insight）：某个软件的一条「常见原因 + 可观察信号 + 建议 + 出处」，只在本机信号命中时显示。
 - 归属（Owner）：人认得出的资源主人，一个进程恰好记在一个归属下。种类见「核心概念」。
 - 归因证据（Evidence）：把进程归到某个归属的一条理由，带可信度 certain / inferred / weak。
 - 诊断（Verdict）：规则表给一个归属打的等级 ok / watch / act，加一句话和建议动作。
@@ -26,16 +28,21 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 - 快采 / 慢采：快采用 libproc 读本账号进程（毫秒级）；慢采用 `top` 补齐其他账号进程（秒级，后台跑）。
 - footprint：macOS 的 phys footprint，含压缩与换出部分，与活动监视器「内存」列同口径。
 - whoate/v1：CLI `--json` 与 GUI 共用的 JSON 合同版本号。
+- 开头一问一答：会话信息卡里「会话名」下面单独一行，标签叫「会话」，内容两行 `User: <第一条用户消息>` 与 `Assistant: <第一条助手文字回复的开头>`，对应字段 `agent.first_prompt` 与 `agent.first_reply`。不要叫「第一个问题」或单独做一张卡片（owner 2026-10-14）。
 
 ## TL;DR
 
-做一个 Rust 写的进程归因引擎，同时喂给 SwiftUI 菜单栏应用和一个对 agent 友好的 CLI：一次调用返回「谁占得最多、它是谁、证据是什么、要不要管」，几十毫秒、零 token。分五期：采集、归因与诊断、CLI、GUI、发布与介绍页，走 dev-long-run。
+做一个 Rust 写的进程归因引擎，卖点是按软件定制的识别器：用编程助手、开发运行时、浏览器、IDE、Docker 各自的说法解释它们的进程，并在本机信号命中时给出带出处的省内存建议。引擎同时喂给 SwiftUI 菜单栏应用和对 agent 友好的 CLI：一次调用返回「谁占得最多、它是谁、为什么、怎么省」，几十毫秒、零 token。分六期：采集、归因核心与编程助手、识别器扩展与知识库、CLI、GUI、发布与介绍页，走 dev-long-run。
 
 ## 现状诊断
 
 [U-DIAG-1|a758] 2026-10-14 本机一个 node 进程 footprint 9.7G（top MEM 列 9727M），活动监视器与 htop 只显示「node」。查清它是谁用了 9 次工具调用：它是某前端项目的 `wrangler dev --port 8799`，04:52 由一个已关闭的 tmux pane 启动，父进程 npm exec 已被 launchd 收养，无人管理近 12 小时。现成工具（活动监视器、htop/btop、Mac Performance Monitor、Waterline）都不按 tmux pane 或 agent 会话归组，也不追孤儿出处（README 层面核对，未逐个安装实测）。
 
 [U-DIAG-2|7070] 本机已有的 dotfiles `mem-snapshot report` 也漏掉了它：报告只按「窗口内涨幅」排序，该进程 04:52–06:30 从 3.3G 涨到 9.7G，之后持平，12 小时窗口从 04:57 起算，窗口内涨幅约 0，未进榜。缺「现在谁最大」与「启动初期暴涨」两个视角。
+
+[U-DIAG-3|6572] 本机 mem-snapshot 过去 30 天 2966 次快照（每次只记前 20 名进程，总量偏低、排名可信）：平均占用最高的是 WebKit 网页进程 2.6G（峰值 10.0G）、Brave 2.2G+0.9G、Chrome 1.6G+0.7G；峰值最高的是 opencode 92.5G、python3.13 27.0G、node 12.2G、Chrome 主进程 9.1G、Docker 一类虚拟机 5.9G。平时最占内存的是浏览器，把机器拖垮的是编程工具突然暴涨。
+
+[U-DIAG-4|fb34] 「一堆同类小进程加起来很大」在本机真实存在且会被按会话分组漏掉。2026-10-14 19:17 实测（libproc footprint）：`chrome-reading-list-mcp` 61 个进程合计 2.38G（每个 Claude 会话各起一份，单个约 40M），`feishu-avatar/mcp_server` 24 个合计 0.31G，`opencode.exe serve --stdio` 7 个合计 1.66G；按会话分组时它们散在 21 个 Claude 会话下，没有一个能进前 5。
 
 ## 已锁定
 
@@ -46,24 +53,30 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 - agent 会话要定位到会话名、自动标题、第一个用户问题（owner 2026-10-14）。
 - 诊断由规则生成，不调模型。
 - 开发路线 dev-long-run（owner 2026-10-14）。
+- 定位改为「按软件定制的洞察」：现有工具的软件内视角（浏览器任务管理器、docker stats、VS Code 进程管理器）各自锁在软件里，whoate 把它们统一到一处并加上开发者工作上下文（owner 2026-10-14）。
+- v1 识别器：编程助手 + tmux、开发运行时（node / python / bun）、Chromium 浏览器（Chrome / Brave）、WebKit 宿主、Docker 虚拟机、IDE（VS Code、JetBrains）（owner 2026-10-14）。
 
 ## 核心概念
 
-- **归属**：每个进程恰好记在一个归属下，资源只计一次。归属种类：`tmux_pane`（仍存在的 pane 下的进程树）、`agent_session`（pane 内 coding agent 会话，挂在 pane 下做细分）、`app`（launchd 拉起的 .app 及其 Helper）、`orphan`（孤儿）、`service`（launchd 拉起的后台服务）、`system`（其他账号进程且无更好归属）。
-- **归因证据**：每个归属判断带一串有序证据，每条有来源与可信度；没有证据的归属不允许出现。
+- **识别器**：每种软件一个，用那个软件自己的说法解释它的进程，并挂上该软件的知识库条目；识别器只读本机信号，不改软件设置。
+- **归属**：每个进程恰好记在一个归属下，资源只计一次，且带一串有序的归因证据（来源 + 可信度 certain / inferred / weak）。归属种类：`tmux_pane`（仍存在的 pane 下的进程树）、`agent_session`（pane 内 coding agent 会话，挂在 pane 下做细分）、`app`（launchd 拉起的 .app 及其 Helper）、`orphan`（孤儿）、`service`（launchd 拉起的后台服务）、`system`（其他账号进程且无更好归属）。
 - **诊断**：每个归属恰好一个等级 ok / watch / act 和一句话；只有 act 级带建议动作。
 
 ## 有意行为变化
 
 [U-BEH-1|033d] whoate 能结束进程。GUI「关闭」按钮与 CLI `whoate kill` 走同一实现：先列出将被结束的 pid 集合并要求确认（GUI 弹确认框，CLI 需 `--yes` 或交互确认），先 SIGTERM，5 秒未退再询问是否 SIGKILL；拒绝结束 uid 0 进程、Apple 平台签名进程与 whoate 自身。
 
-[U-BEH-2|7953] whoate 只读本机其他 agent 的会话数据：`~/.claude/sessions/<pid>.json`、`~/.claude/projects/<slug>/<sessionId>.jsonl`（只读前 64KB 找第一个用户问题，倒读末尾 64KB 找 `ai-title` 与 `gitBranch`）、`~/.local/share/opencode/opencode.db` 与 `~/.local/share/kilo/kilo.db`（SQLite 只读模式，遇锁跳过本轮）。从不写这些位置。第一个用户问题截断到 200 字符，去掉 `<system-reminder>`、`<pasted_content …>` 等包裹块。
+[U-BEH-2|4f08] whoate 只读本机其他 agent 的会话数据：`~/.claude/sessions/<pid>.json`、`~/.claude/projects/<slug>/<sessionId>.jsonl`（只读前 256KB 找第一条用户消息与第一条助手文字回复，倒读末尾 64KB 找 `ai-title` 与 `gitBranch`）、`~/.local/share/opencode/opencode.db` 与 `~/.local/share/kilo/kilo.db`（SQLite 只读模式，遇锁跳过本轮）。从不写这些位置。第一条用户消息截断到 200 字符、助手回复截断到 120 字符，去掉 `<system-reminder>`、`<pasted_content …>` 等包裹块，跳过工具调用与工具结果。opencode / kilo 从会话库取首条 user 与首条 assistant 文本。
+
+[U-BEH-3|85a7] whoate 调用苹果未公开接口 `responsibility_get_pid_responsible_for_pid`（libSystem 导出，无需 root），把 WebKit 网页/GPU/网络进程与 `com.apple.Virtualization.VirtualMachine` 归到发起它们的应用（如 Mail、Raycast、Docker）。符号缺失或返回 ≤1 时回落到 `service`，证据标 weak。
+
+[U-BEH-4|a61f] whoate 只读各软件的配置以判断知识库条目是否命中：Chrome / Brave 的 `Local State` 与 `Default/Preferences`（JSON，只取约定键）、VS Code 的 `settings.json`、JetBrains 的 `*.vmoptions`、Docker Desktop 的 `settings-store.json`；只读、不改写，不读浏览历史与网址。
 
 ## 单向门
 
 [U-GATE-1|2104] 仓库名与命令名 whoate 已公开（2026-10-14 建库），改名要动 GitHub 仓库、Homebrew 公式、二进制名与 agent skill 文件。
 
-[U-GATE-2|fd28] `whoate/v1` JSON 合同一旦发布，agent 的 skill、脚本会依赖它。规则：字段只增不改；改语义或删字段升 `whoate/v2`，旧版本至少保留一个 minor 版本可用（`--schema v1`）。顶层固定键：`schema`、`taken_at`（RFC 3339，本地时区）、`host`（`mem_total_bytes`、`mem_used_bytes`、`compressed_bytes`、`swap_used_bytes`、`pressure`: normal|warn|critical）、`system_procs`（`fresh`|`stale`|`missing` + `as_of`）、`owners[]`。owner 对象：`id`（稳定：种类前缀 + 键，如 `pane:%266`、`app:com.google.Chrome`、`orphan:16977`）、`kind`、`label`、`mem_bytes`、`cpu_pct`、`pids[]`、`origin`（可选：`tmux_pane`、`pane_alive`、`cwd`、`ports[]`）、`agent`（可选：`tool`、`session_id`、`name`、`title`、`first_prompt`、`status`、`cwd`、`branch`、`model`、`cost_usd`、`confidence`）、`evidence[]`（`kind`、`detail`、`confidence`）、`verdict`（`level`、`rule`、`text`、`action` 可选）。
+[U-GATE-2|ec3c] `whoate/v1` JSON 合同一旦发布，agent 的 skill、脚本会依赖它。规则：字段只增不改；改语义或删字段升 `whoate/v2`，旧版本至少保留一个 minor 版本可用（`--schema v1`）。顶层固定键：`schema`、`taken_at`（RFC 3339，本地时区）、`host`（`mem_total_bytes`、`mem_used_bytes`、`compressed_bytes`、`swap_used_bytes`、`pressure`: normal|warn|critical）、`system_procs`（`fresh`|`stale`|`missing` + `as_of`）、`owners[]`、`swarms[]`（见「同类进程群」）。owner 对象：`id`（稳定：种类前缀 + 键，如 `pane:%266`、`app:com.google.Chrome`、`orphan:16977`）、`kind`、`label`、`mem_bytes`、`cpu_pct`、`pids[]`、`origin`（可选：`tmux_pane`、`pane_alive`、`cwd`、`ports[]`）、`agent`（可选：`tool`、`session_id`、`name`、`title`、`first_prompt`、`first_reply`、`status`、`cwd`、`branch`、`model`、`cost_usd`、`confidence`）、`evidence[]`（`kind`、`detail`、`confidence`）、`verdict`（`level`、`rule`、`text`、`action` 可选）。
 
 单向门发散：替代一「每个归属一行 NDJSON」——在 agent 需要流式处理上万归属时反超；本机归属数在 100 量级，单对象更易读，不采用，`whoate watch --json-lines` 另给流式。替代二「MCP 服务器代替 CLI JSON」——在 agent 宿主普遍只认 MCP、不允许跑 shell 时反超；当前三家宿主（Claude Code、kilo、opencode）都能跑 shell，MCP 列为以后可加的薄壳，不作为主合同。版本号机制使这扇门可后退，故不跑 design-divergence-challenger。
 
@@ -71,15 +84,19 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 
 ## 待决策
 
-[U-DEC-1|803c] `.app` 是否做 Apple 公证：不公证则用户首次打开会被系统拦下，要去「系统设置 → 隐私与安全性」点「仍要打开」（macOS 15 起取消了右键打开这条路），或执行 `xattr -d com.apple.quarantine`；公证需要 Apple Developer Program 账号（年费 99 美元）与签名证书。
+[U-DEC-1|d7c7] `.app` 是否做 Apple 公证：不公证则用户首次打开会被系统拦下，要去「系统设置 → 隐私与安全性」点「仍要打开」（macOS 15 起取消了右键打开这条路），或执行 `xattr -d com.apple.quarantine`；公证需要 Apple Developer Program 账号（年费 99 美元）与签名证书。 裁决（2026-10-14）：第一版不做公证，有人用起来再办账号。
 
-[U-DEC-2|c796] CLI `--json` 是否默认输出其他 agent 会话的第一个用户问题：默认输出方便 agent 定位，但会让一个 agent 读到另一个会话的提问原文；不默认输出则需要 `--prompts` 才给。
+[U-DEC-2|ac64] CLI `--json` 是否默认输出其他 agent 会话的第一个用户问题：默认输出方便 agent 定位，但会让一个 agent 读到另一个会话的提问原文；不默认输出则需要 `--prompts` 才给。 裁决（2026-10-14）：默认不给助手看第一个问题。
 
-[U-DEC-3|ecb3] agent 能否通过 CLI 结束进程：允许（`whoate kill <pid> --yes`）还是 CLI 只给出命令供人执行（`whoate kill` 只做 dry-run，真正结束只能在 GUI 或交互终端里确认）。
+[U-DEC-3|8bb7] agent 能否通过 CLI 结束进程：允许（`whoate kill <pid> --yes`）还是 CLI 只给出命令供人执行（`whoate kill` 只做 dry-run，真正结束只能在 GUI 或交互终端里确认）。 裁决（2026-10-14）：允许助手写明确认后关程序，系统程序一律拒绝。
 
-[U-DEC-4|8bac] 界面与 CLI 文案语言：跟随系统语言中英双语，还是只做英文，还是只做中文。
+[U-DEC-4|fcd2] 界面与 CLI 文案语言：跟随系统语言中英双语，还是只做英文，还是只做中文。 裁决（2026-10-14）：跟随系统语言，中英双语。
 
-[U-DEC-5|98d4] 产品介绍页放哪：GitHub Pages（`zhenninglang.github.io/whoate`），还是只放仓库里的 `site/` 由 README 链接本地预览。
+[U-DEC-6|fe85] 「跳到这个会话」做到哪一步：只做 tmux 切换（`tmux switch-client` + `select-window` + `select-pane`）并把宿主终端应用切到前台、不在 tmux 里的会话按钮置灰；还是第一版就给 iTerm2 和系统「终端」做按 tty 精确切标签页（AppleScript）。Ghostty、Alacritty、Warp 无脚本接口，只能切到应用。 裁决（2026-10-14）：第一版只做 tmux 切换，iTerm2 和系统终端的精确跳转放下一期。
+
+[U-DEC-7|81dc] 用户能否自己加识别规则：只提供编译进程序的识别器；还是另外读一个用户规则文件 `~/.config/whoate/rules.toml`（按可执行名 / 参数正则 / 目录匹配，给出显示名和一条建议），让用户为自己的小众软件补洞察。 裁决（2026-10-14）：第一版就支持用户规则文件。
+
+[U-DEC-5|e8d0] 产品介绍页放哪：GitHub Pages（`zhenninglang.github.io/whoate`），还是只放仓库里的 `site/` 由 README 链接本地预览。 裁决（2026-10-14）：用 GitHub 免费网页托管公开发布介绍页。
 
 ## 边界
 
@@ -91,11 +108,15 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 
 [U-NG-4|cb80] v1 不识别 Codex、Cursor、Aider 等其他 agent 的会话；`sources/` 留扩展点，这些进程仍按 tmux pane / cwd 归属。
 
-[U-NG-5|a552] 不用私有 API（如 responsible pid）；WebKit、XPC 这类替应用干活但父进程是 launchd 的服务归为 `service`。
+[U-NG-5|86bb] 不用私有 API（如 responsible pid）；WebKit、XPC 这类替应用干活但父进程是 launchd 的服务归为 `service`。 已推翻（2026-10-14，owner 选做 WebKit 与 Docker 识别器）：改用 responsible pid，见 [U-BEH-3|85a7]。
 
 [U-NG-6|43fd] 不做 TUI（owner 2026-10-14 去掉）。
 
 [U-NG-7|5162] 诊断与建议不调大模型，不联网，不收集遥测。
+
+[U-NG-8|648c] 浏览器不精确到具体是哪个标签页：Chrome 提供 `chrome.processes.getProcessIdForTab` 的扩展接口只在 Dev 通道可用（官方文档 developer.chrome.com/docs/extensions/reference/api/processes），正式版拿不到标签页与进程号的对应。v1 只按进程类型拆分（标签页进程、扩展进程、GPU、各服务），建议里引导用户打开浏览器自带任务管理器（Shift+Esc）。
+
+[U-NG-9|1392] 不替用户改任何软件的设置或关标签页；建议只给出设置名、路径和命令，由人或 agent 自己执行。
 
 ## 新增依赖
 
@@ -109,6 +130,8 @@ Planned at: 6622904 · 2026-10-14（仓库此时只有 README、LICENSE 与设�
 
 [U-DEP-5|a60c] GitHub Actions macOS runner：CI 跑 `cargo test`、`cargo clippy -D warnings`、`swift build`；公开仓库免费额度。备选只在本机跑（贡献者 PR 无人把关）。
 
+[U-DEP-7|bbd9] `plist` crate：读 `.app` 的 Info.plist 取 bundle id 与显示名（二进制与 XML 两种格式）；标准库无 plist 解析。备选 shell out 调 `defaults read`（每个应用一个子进程，太慢）。
+
 [U-DEP-6|b3fe] 新公开仓库 `ZhenningLang/homebrew-tap`：放 whoate 的 Homebrew 公式（CLI）与 cask（GUI）。备选提交到 homebrew-core（要求一定 star 数与稳定发布，v1 达不到）。
 
 SwiftUI、Swift Charts、MenuBarExtra 是系统框架，不算新增依赖。
@@ -117,9 +140,9 @@ SwiftUI、Swift Charts、MenuBarExtra 是系统框架，不算新增依赖。
 
 | Scenario | Actor / Context | Step-by-step path | System touchpoints | Exposed issue | Requirement / Contract |
 |---|---|---|---|---|---|
-| 孤儿大户 | 开发者，内存偏紧，菜单栏图标变黄 | 点菜单栏 → 面板首行「无人管理的开发服务器 9.7G」→ 点「为什么」→ 主窗口看证据 → 点「关闭这 4 个进程」→ 确认 | libproc 快采、KERN_PROCARGS2 读 TMUX_PANE、tmux list-panes、proc_pidfdinfo 端口、kill | node 可能改写 argv 区导致读不到环境变量 | 读不到 TMUX_PANE 时退到 cwd + 开发运行时判定，可信度降为 inferred（[U-SPK-3|0000]） |
-| agent 自查 | Claude Code 跑构建前想知道机器还有没有余量 | `whoate top --json -n 5` → 读 `host.pressure` 与 `owners[0]` → 发现自己会话 2.6G 在涨 → `whoate why <pid> --json` | CLI 冷启动、慢采缓存、sessions/<pid>.json | 冷启动若等 top 要 3 秒，agent 体验差 | CLI 不等慢采，用 30 秒内缓存或标 `system_procs: stale`（[U-ACC-3|0000]） |
-| 会话库被锁 | opencode 正在写库，GUI 每秒读一次 | 打开 `opencode.db` 只读 → SQLITE_BUSY | rusqlite 只读、busy_timeout | 每秒重试可能放大锁竞争 | busy_timeout 50ms，失败本轮沿用上次缓存并在证据里标 stale，不报错（[U-BEH-2|0000]） |
+| 孤儿大户 | 开发者，内存偏紧，菜单栏图标变黄 | 点菜单栏 → 面板首行「无人管理的开发服务器 9.7G」→ 点「详情」→ 主窗口看证据 → 点「关闭这 4 个进程」→ 确认 | libproc 快采、KERN_PROCARGS2 读 TMUX_PANE、tmux list-panes、proc_pidfdinfo 端口、kill | node 可能改写 argv 区导致读不到环境变量 | 读不到 TMUX_PANE 时退到 cwd + 开发运行时判定，可信度降为 inferred（[U-SPK-3|4f53]） |
+| agent 自查 | Claude Code 跑构建前想知道机器还有没有余量 | `whoate top --json -n 5` → 读 `host.pressure` 与 `owners[0]` → 发现自己会话 2.6G 在涨 → `whoate why <pid> --json` | CLI 冷启动、慢采缓存、sessions/<pid>.json | 冷启动若等 top 要 3 秒，agent 体验差 | CLI 不等慢采，用 30 秒内缓存或标 `system_procs: stale`（[U-ACC-3|3ad1]） |
+| 会话库被锁 | opencode 正在写库，GUI 每秒读一次 | 打开 `opencode.db` 只读 → SQLITE_BUSY | rusqlite 只读、busy_timeout | 每秒重试可能放大锁竞争 | busy_timeout 50ms，失败本轮沿用上次缓存并在证据里标 stale，不报错（[U-BEH-2|4f08]） |
 
 ## 方案
 
@@ -142,7 +165,36 @@ SwiftUI、Swift Charts、MenuBarExtra 是系统框架，不算新增依赖。
 4. 祖先链断到 launchd 且 envp 有 `TMUX_PANE` → 该 pane 不存在时归 `orphan`（certain，origin 记 pane id 与 `pane_alive:false`）；存在时归回该 pane（certain）。
 5. 祖先链断到 launchd、无 TMUX_PANE、可执行属开发运行时（node、bun、deno、python3、ruby、java、go 构建产物不判）且 cwd 在 `$HOME` 下 → `orphan`（weak）。
 6. 可执行路径在某个 `.app/Contents/` 下 → `app`，按最外层 .app 的 bundle id 归组（certain）。
-7. 其他 launchd 子进程 → `service`；其他账号且以上都不成立 → `system`。
+7. launchd 子进程且 responsible pid 指向另一个应用（WebKit 网页/GPU/网络进程、`com.apple.Virtualization.VirtualMachine`）→ 归到那个应用（certain，[U-BEH-3|85a7]）。
+8. 其他 launchd 子进程 → `service`；其他账号且以上都不成立 → `system`。
+
+归属定下之后，命中的识别器再给它补软件内的细分与知识库条目（下节）。
+
+### 识别器（`crates/whoate-core/src/recognizers/`，一个软件一个文件）
+
+接口：`trait Recognizer { fn id(&self) -> &'static str; fn matches(&self, proc: &Proc) -> bool; fn explain(&self, owner: &mut Owner, snap: &Snapshot, cfg: &ConfigReader); }`。`explain` 只能往 owner 上加 `parts[]`（软件内细分：名称、内存、进程数）、`facts[]`（识别出的事实）和 `insights[]`（命中的知识库条目 id），不能改归属。
+
+| 识别器 | 认什么 | 软件内细分 | 读的本机配置 |
+|---|---|---|---|
+| coding-agents | Claude Code（可执行名为版本号如 `2.1.299` 或 `claude`）、opencode、kilo | 会话、子 agent、MCP 服务器子进程 | sessions 文件、会话库（[U-BEH-2|4f08]） |
+| dev-runtimes | node、bun、deno、python3.x | 项目名（向上找 `package.json` 的 `name` 或 `pyproject.toml`）、脚本（vite、next、wrangler、tsserver、jupyter kernel）、虚拟环境、监听端口 | 无 |
+| chromium | Google Chrome、Brave（含 Helper） | 标签页进程（`--type=renderer`）、扩展进程（`--extension-process`）、GPU、各服务（`--utility-sub-type`） | `Local State`、`Default/Preferences` 中省内存模式等约定键（[U-BEH-4|a61f]） |
+| webkit-host | `com.apple.WebKit.*` | 归到 responsible 应用后按网页/GPU/网络拆 | 无 |
+| docker | Docker Desktop 与其虚拟机 | 容器（慢采里跑 `docker stats --no-stream`，daemon 不在时跳过） | `settings-store.json` 的内存上限键 |
+| ide | VS Code（`Code Helper` 的 `--type=extensionHost`、语言服务器子进程）、JetBrains（`idea`/`pycharm` JVM） | 扩展宿主、各语言服务器、JVM 堆上限 | VS Code `settings.json`、JetBrains `*.vmoptions` |
+
+### 知识库（`crates/whoate-core/src/insights/*.toml`，编进二进制）
+
+每条：`id`、`recognizer`、`trigger`（只能引用本机可观察信号：进程类型计数、内存阈值、配置键取值）、`cause`、`advice`（中英双语，含设置名或命令）、`source`（URL）、`checked`（核对日期）。显示规则：trigger 命中才显示；advice 只给出做法，不替用户执行（[U-NG-9|1392]）。初版条目来自 `docs/research/memory-insights.md` 的调研，每条必须带出处。
+
+### 同类进程群（`crates/whoate-core/src/swarm.rs`）
+
+归属之外再做一次横向合并：进程签名 = 可执行名 + 前三个参数中去掉纯数字、端口、pid、uuid、临时路径后的部分。同一签名的进程按两种形态成群：
+
+- 爆发型：同一个父进程（或同一个 tmux pane）在 10 分钟内拉起 ≥ 20 个同签名子进程。
+- 散布型：≥ 10 个同签名进程分属 ≥ 5 个不同归属，合计 ≥ 1 GiB。
+
+群不改变归属（每个进程仍只记在一个归属下），只额外输出一条 `swarms[]` 记录：`signature`、`label`（识别器给的白话名，如「阅读清单服务」）、`count`、`mem_bytes`、`cpu_pct`、`shape`（burst / spread）、`owners[]`（各归属 id 与份数）、`parents[]`、`started_span_s`、`verdict`。界面在菜单栏列表与主窗口里把群当一行显示（「阅读清单服务 × 61」），展开看分布；CLI `whoate swarms [--json]`。阈值是初值，用 [U-DIAG-4|fb34] 的真实快照回放校准。
 
 ### 诊断规则（表驱动，`crates/whoate-core/src/verdict/rules.rs` 一张表）
 
@@ -150,6 +202,8 @@ SwiftUI、Swift Charts、MenuBarExtra 是系统框架，不算新增依赖。
 |---|---|---|---|---|
 | orphan-dev-server | orphan 且有 LISTEN 端口且 ESTABLISHED=0 | act | 无人管理的开发服务器，建议关闭 | `whoate kill <pids>` |
 | orphan-heavy | orphan 且 mem ≥ 1 GiB | act | 启动它的 pane 已关闭 <时长>，占 <内存> | `whoate kill <pids>` |
+| swarm-burst | 爆发型同类进程群 | act | 一个 <父进程说明> 在 <时长> 内拉起了 <N> 个相同的 <签名白话名>，合计 <内存>，疑似失控 | `whoate kill <群内 pids>` |
+| swarm-spread | 散布型同类进程群 | watch | 每个 <归属类型> 各起了一份 <签名白话名>，共 <N> 份 <内存>；关掉闲置的 <归属类型> 能一起释放 | 无 |
 | leak-suspect | 30 分钟内单调不降且涨幅 ≥ 1 GiB | act | 30 分钟只涨不降，疑似泄漏 | 无 |
 | fast-growth | 10 分钟内涨幅 ≥ 500 MiB 且最近一分钟仍在涨 | watch | 近 10 分钟 +<量>，还在涨 | 无 |
 | idle-agent | agent 会话空闲 ≥ 2 小时且 mem ≥ 500 MiB | watch | 空闲 <时长>，可关 | 无 |
@@ -165,6 +219,7 @@ whoate                          # 等同 whoate top
 whoate top [--by mem|cpu] [-n 10] [--json] [--fresh] [--prompts|--redact]
 whoate why <pid> [--json]
 whoate orphans [--json]
+whoate swarms [--json]
 whoate pane <%id|session:win.pane> [--json]
 whoate agents [--json]
 whoate kill <pid|owner-id>... [--dry-run] [--yes]
@@ -177,7 +232,7 @@ whoate --version
 
 ### GUI
 
-菜单栏常驻（`MenuBarExtra`，window 样式），点击弹面板：压力条（已用 / 压缩 / swap）+ 一句结论 + 前 5 个归属（act 级排最前）+「打开 whoate」。主窗口三栏：左栏归属种类与筛选，中栏归属列表（按内存/CPU，带 30 分钟迷你曲线），右栏详情（诊断、证据链、曲线、agent 会话信息、动作按钮）。页面示意见 approval.md「页面示意」小节与 walkthrough.md。
+菜单栏常驻（`MenuBarExtra`，window 样式），点击弹面板：压力条（已用 / 压缩 / swap）+「内存 / CPU」排序切换 + 前 5 行（归属或同类进程群，按所选指标从大到小，不再把 act 级强行置顶，靠诊断胶囊颜色区分）+「打开 whoate」。面板不放整句结论（owner 2026-10-14）。主窗口三栏：左栏归属种类与筛选，中栏归属列表（按内存/CPU，带 30 分钟迷你曲线），右栏详情（诊断、证据链、曲线、agent 会话信息、动作按钮）。页面示意见 approval.md「页面示意」小节与 walkthrough.md。
 
 ### GUI 与 Rust 的接口
 
@@ -199,9 +254,9 @@ Swift 侧 SwiftPM C target 引头文件，`Codable` 解码。曲线环形缓冲�
 
 ### Premise Collapse
 
-If 本账号进程的 footprint 不能用 libproc 在毫秒级读到，「实时、零 token」的卖点塌掉，GUI 只能降到数秒一刷。（已验证，见 [U-SPK-2|0000]）
+If 本账号进程的 footprint 不能用 libproc 在毫秒级读到，「实时、零 token」的卖点塌掉，GUI 只能降到数秒一刷。（已验证，见 [U-SPK-2|4f56]）
 
-If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息退化成「Claude · cwd」，归属本身仍按 tmux 链成立。（接受风险，见 [U-SPK-5|0000]）
+If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息退化成「Claude · cwd」，归属本身仍按 tmux 链成立。（接受风险，见 [U-SPK-5|c4ec]）
 
 ### 翻车假设与 spike
 
@@ -217,21 +272,35 @@ If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息�
 
 [U-SPK-6|8f90] GUI 每秒刷新时自身 CPU < 1%（单核）。处置：需 spike，P4 第一步，时间盒 1 小时：引擎 tick 循环 + 空 SwiftUI 列表跑 60 秒，用 `top -pid` 取平均；不达标改 2 秒刷新、列表 diff 更新。
 
+[U-SPK-7|5580] responsible pid 私有接口可用。已验证 2026-10-14：Python ctypes 从 `/usr/lib/libSystem.B.dylib` 取到 `responsibility_get_pid_responsible_for_pid`，无 root 把 12 个 WebKit 进程分别归到 Mail、Raycast、agentsview-desktop、WPSQuickLook。风险：未公开接口，未来系统可能移除；处置：符号缺失时回落 `service`，证据标 weak。
+
+[U-SPK-8|c1d7] Chromium 按进程类型拆分可行、按标签页不可行。已验证 2026-10-14：本机 Chrome 有 46 个 `--type=renderer`、6 个带 `--extension-process`、3 个 GPU、若干 `--utility-sub-type` 服务；Brave 19 / 6 / 1。按标签页对应进程号的扩展接口只在 Dev 通道（见 [U-NG-8|648c]）。
+
+[U-SPK-9|9bf4] Docker 容器拆分。未验证：spike 当时 Docker daemon 未运行（`docker stats` 报连不上 socket）。处置：需 spike，P3 时间盒 30 分钟，开 Docker Desktop 起一个容器后对比 `docker stats --no-stream` 与虚拟机进程 footprint。
+
+[U-SPK-10|e74f] 知识库条目会过时（软件改设置名、改默认值）。处置：接受风险；每条带 `checked` 日期与出处，`whoate insights --list` 可列出全部条目供人复核。
+
 ## 验收承诺
 
 [U-ACC-1|a19b] P1 采集：本机快照抽 10 个本账号 pid，footprint 与同时刻 `top -l 1 -stats pid,mem` 误差 < 1%；一次快采（不含慢采）< 50ms；`record-fixture` 能把本机快照存成脱敏 JSON（argv 只留可执行名与前两个参数，路径把 `$HOME` 换成 `~`）。
 
-[U-ACC-2|fe1e] P2 归因与诊断：fixture 回放测试覆盖五个场景且全部断言具体归属与证据——孤儿 wrangler（TMUX_PANE 指向已关闭 pane → orphan certain，规则 orphan-dev-server 命中）、tmux 内 Claude 会话（sessions 文件 → agent_session certain，name / title / first_prompt 非空）、opencode 目录时间配对（inferred）、Chrome Helper 归 app、root 进程归 system；每个进程恰好一个归属，归属内存之和等于快照总和。
+[U-ACC-2|2d64] P2 归因核心与编程助手：fixture 回放测试覆盖五个场景且全部断言具体归属与证据——孤儿 wrangler（TMUX_PANE 指向已关闭 pane → orphan certain，规则 orphan-dev-server 命中）、tmux 内 Claude 会话（sessions 文件 → agent_session certain，name / title / first_prompt 非空）、opencode 目录时间配对（inferred）、Chrome Helper 归 app、root 进程归 system；每个进程恰好一个归属，归属内存之和等于快照总和。
 
-[U-ACC-3|41ff] P3 CLI：本机 `whoate top --json` 冷启动（慢采缓存存在）< 300ms，缓存缺失时 < 500ms 且 `system_procs` 为 `missing` 或 `stale`；输出过 whoate/v1 JSON Schema 校验；退出码五种各有测试；`whoate kill` 对 uid 0 进程返回 4 且不发信号。
+[U-ACC-3|3ad1] P4 CLI：本机 `whoate top --json` 冷启动（慢采缓存存在）< 300ms，缓存缺失时 < 500ms 且 `system_procs` 为 `missing` 或 `stale`；输出过 whoate/v1 JSON Schema 校验；退出码五种各有测试；`whoate kill` 对 uid 0 进程返回 4 且不发信号。
 
 [U-ACC-4|ba7a] 孤儿端到端：在新 tmux pane 里起 `python3 -m http.server 8797`，`tmux kill-pane` 关掉该 pane 后，`whoate orphans --json` 一次调用列出该进程，`origin.tmux_pane` 等于原 pane id，`pane_alive=false`，`ports` 含 8797。
 
-[U-ACC-5|d18b] agent 定位端到端：对本会话的 claude 进程跑 `whoate why <pid> --json`，返回 `agent.name`、`agent.title`、`agent.first_prompt` 与 `~/.claude` 里的原始值一致。
+[U-ACC-5|061f] agent 定位端到端：对本会话的 claude 进程跑 `whoate why <pid> --json`，加 `--prompts` 时返回 `agent.name`、`agent.title`、`agent.first_prompt`、`agent.first_reply` 与 `~/.claude` 里的原始值一致（回复按截断规则比对前缀）；不加 `--prompts` 时后两个字段为 null。
 
 [U-ACC-6|0f94] GUI：菜单栏面板与主窗口在浅色、深色两种外观各截一张图，文字无溢出、无截断；1 秒刷新 60 秒内 whoate 进程平均 CPU < 1%；点「关闭」弹出确认框且列出 pid。
 
-[U-ACC-7|8627] 发布：在一个没装过 whoate 的用户目录下，按 README 的一行命令装好 CLI 并跑通 `whoate top`；Release 页有 CLI 二进制与 `.app` 压缩包；产品介绍页可访问（落点按 [U-DEC-5|0000] 裁决）。
+[U-ACC-7|40e3] 发布：在一个没装过 whoate 的用户目录下，按 README 的一行命令装好 CLI 并跑通 `whoate top`；Release 页有 CLI 二进制与 `.app` 压缩包；产品介绍页可访问（落点按 [U-DEC-5|e8d0] 裁决）。
+
+[U-ACC-8|5cf3] P2/P3 识别器：fixture 回放断言——node 进程认出 `package.json` 的项目名与脚本名、python 认出虚拟环境；Chrome 与 Brave 的标签页进程 / 扩展进程 / GPU 计数与快照一致；WebKit 网页进程归到其 responsible 应用；VS Code 的扩展宿主与语言服务器各成一个细分；JetBrains 读出 `-Xmx`。真机：本机 `whoate why <一个 Chrome 标签页进程 pid> --json` 返回 `parts` 含「标签页进程」。
+
+[U-ACC-9|f303] 知识库：每条都有 `source` 且为 https 链接、`trigger` 只引用已登记的信号名（测试遍历全部条目校验）；本机至少命中一条浏览器建议与一条编程助手建议并在 `whoate top` 里显示。
+
+[U-ACC-10|077d] 同类进程群：用 2026-10-14 19:17 的真实快照回放，`chrome-reading-list-mcp` 合成一个散布型群，`count`=61、`mem_bytes` 与成员 footprint 之和一致、`owners` 覆盖 21 个 Claude 会话；真机脚本让一个父进程在 1 分钟内拉起 30 个相同的 `sleep 600`，`whoate swarms --json` 一次调用返回一个爆发型群，`parents` 指向该父进程、规则 swarm-burst 命中。
 
 ## 现成方案
 
@@ -243,6 +312,7 @@ If Claude Code 改了 sessions 文件或 transcript 格式，agent 会话信息�
 - 会话库：第 5 级（rusqlite），不自写 SQLite 解析。
 - 曲线图：第 4 级（Swift Charts 系统框架）。
 - 菜单栏：第 4 级（SwiftUI MenuBarExtra）。
+- Info.plist 读取：第 5 级（`plist` crate，二进制与 XML 两种格式都要读）。
 - `.app` 打包：第 6 级，一个 shell 脚本写 Info.plist + `codesign -s -`，不引入 Xcode 工程或打包工具。
 
 ## 实施步骤
@@ -259,6 +329,8 @@ whoate/
 │   │   ├── sample/{libproc,sysctl,top,tmux,ports}.rs
 │   │   ├── sources/{claude_code,opencode,kilo}.rs
 │   │   ├── attribute/mod.rs         # Snapshot → Vec<Owner>
+│   │   ├── recognizers/{coding_agents,dev_runtimes,chromium,webkit_host,docker,ide}.rs
+│   │   ├── insights/*.toml          # 知识库，编进二进制
 │   │   ├── verdict/rules.rs         # 诊断规则表
 │   │   └── history.rs               # 30 分钟环形缓冲
 │   ├── whoate-cli/src/main.rs       # clap 子命令 + 渲染 + 退出码
@@ -274,13 +346,14 @@ whoate/
 
 | 期 | 内容 | 验证 |
 |---|---|---|
-| P1 采集 [be] | workspace、model、snapshot、sample/*、record-fixture | `cargo test -p whoate-core`；[U-ACC-1|0000] |
-| P2 归因与诊断 [be] | sources/*、attribute、verdict、history | fixture 回放；[U-ACC-2|0000] |
-| P3 CLI [be] | whoate-cli、JSON Schema、kill 安全、agent-guide、SKILL.md | 合同测试 + [U-ACC-3|0000] [U-ACC-4|0000] [U-ACC-5|0000] |
-| P4 GUI [fe] | whoate-ffi、app/、bundle-app.sh、[U-SPK-6|0000] spike | 截图验收 + [U-ACC-6|0000] |
-| P5 发布与门面 [int] | logo 定稿、README、CI、release.sh、homebrew-tap、site/ | [U-ACC-7|0000] |
+| P1 采集 [be] | workspace、model、snapshot、sample/*（含 responsible pid）、record-fixture | `cargo test -p whoate-core`；[U-ACC-1|a19b] |
+| P2 归因核心与编程助手 [be] | attribute、swarm、verdict、history、recognizers/coding_agents、dev_runtimes、sources/* | fixture 回放；[U-ACC-2|2d64] [U-ACC-8|5cf3] [U-ACC-10|077d] |
+| P3 识别器扩展与知识库 [be] | recognizers/chromium、webkit_host、docker、ide；insights/*.toml；[U-SPK-9|9bf4] spike | fixture 回放；[U-ACC-8|5cf3] [U-ACC-9|f303] |
+| P4 CLI [be] | whoate-cli、JSON Schema、kill 安全、agent-guide、SKILL.md | 合同测试 + [U-ACC-3|3ad1] [U-ACC-4|ba7a] [U-ACC-5|061f] |
+| P5 GUI [fe] | whoate-ffi、app/、bundle-app.sh、[U-SPK-6|8f90] spike | 截图验收 + [U-ACC-6|0f94] |
+| P6 发布与门面 [int] | logo 定稿、README、CI、release.sh、homebrew-tap、site/ | [U-ACC-7|40e3] |
 
-依赖：P2←P1，P3←P2，P4←P2，P5←P3、P4。P3 与 P4 可并行。
+依赖：P2←P1，P3←P2，P4←P2，P5←P2，P6←P3、P4、P5。P3、P4、P5 可并行。
 
 ```yaml
 # spec-contract
@@ -292,12 +365,16 @@ checks:
   - "whoate why <本会话 claude pid> 返回 name/title/first_prompt 与 ~/.claude 原值一致"
   - "GUI 浅/深两套截图无溢出，1 秒刷新 60 秒平均 CPU < 1%"
   - "按 README 一行命令在新用户目录装好 CLI 并跑通 whoate top"
+  - "识别器 fixture 回放：node 项目名、python venv、Chromium 进程类型计数、WebKit responsible 应用、VS Code 扩展宿主、JetBrains Xmx 全部断言通过"
+  - "同类进程群：真实快照里 61 个阅读清单服务合成一群；一个父进程拉起 30 个 sleep 被识别为爆发型并命中 swarm-burst"
+  - "知识库每条有 https 出处、trigger 只引用已登记信号；本机至少命中一条浏览器建议与一条编程助手建议"
 non_goals:
   - "Linux / Windows"
   - "长期历史库与告警推送"
   - "需要 root 的取证"
   - "Codex / Cursor 等其他 agent 会话识别"
-  - "私有 API"
+  - "浏览器精确到具体标签页"
+  - "替用户改软件设置"
   - "TUI"
   - "调大模型生成建议"
 validation_commands:
@@ -309,6 +386,8 @@ locked_decisions:
   - "Rust 核心 + SwiftUI GUI + CLI，无 TUI，只做 macOS"
   - "诊断规则生成，不调模型"
   - "whoate/v1 字段只增不改"
+  - "定位为按软件定制的洞察，v1 六类识别器"
+  - "WebKit 与虚拟机归属用 responsible pid 私有接口"
 derisk_spikes:
   - type: "#4 未知技术 / #8 环境差异"
     question: "无 Xcode 时 SwiftPM 能否链接 Rust staticlib 并构建 SwiftUI"
@@ -325,5 +404,17 @@ derisk_spikes:
   - type: "#11 性能"
     question: "GUI 1 秒刷新自身 CPU 能否 < 1%"
     method: "tick 循环 + 空列表跑 60 秒取平均"
+    status: "spike-before-implement"
+  - type: "#4 未知技术"
+    question: "responsible pid 私有接口能否无 root 归属 WebKit 进程"
+    method: "ctypes 调 libSystem 符号对本机 WebKit 进程取 responsible pid"
+    status: "verified"
+  - type: "#2 第三方契约"
+    question: "正式版 Chrome 能否拿到标签页与进程号对应"
+    method: "查 chrome.processes 官方文档可用通道 + 本机命令行参数统计"
+    status: "verified(不可行，改按进程类型拆)"
+  - type: "#2 第三方契约"
+    question: "docker stats 能否把虚拟机内存拆到容器"
+    method: "开 Docker Desktop 起容器对比"
     status: "spike-before-implement"
 ```
