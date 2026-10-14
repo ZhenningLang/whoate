@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whoate · 导航</title>
+<style>
+:root { color-scheme: light; --bg: #f8fafc; --panel: #ffffff; --text: #111827; --muted: #64748b; --border: #dbe3ef; --accent: #1f4b99; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+header { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+section { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.2; margin: 1.4em 0 0.5em; }
+header h1 { margin-top: 0; }
+p { margin: 0.75em 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul { padding-left: 1.4rem; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0f172a; color: #e5e7eb; padding: 14px; border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+td code, th code { overflow-wrap: anywhere; }
+th { background: #eef4ff; }
+.meta { color: var(--muted); font-size: 0.92rem; }
+.diagram-figure { margin: 1.2rem 0; padding: 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; text-align: center; }
+.diagram-figure svg { height: auto; } /* 不设 max-width：宽图保持自然尺寸，figure 的 overflow-x 负责滚动 */
+table.state-transitions { margin-top: -0.4rem; font-size: 0.92rem; }
+table.state-transitions caption { caption-side: top; text-align: left; color: var(--muted); font-size: 0.82rem; padding: 0 0 6px; }
+table.state-transitions td.st-num { width: 2.2em; text-align: center; font-size: 1.1rem; color: var(--accent); }
+.image-figure { margin: 1.2rem 0; padding: 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 10px; text-align: center; }
+.image-figure img { max-width: 100%; height: auto; border-radius: 6px; }
+.image-figure figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+.badge { display: inline-block; background: #e0ecff; color: var(--accent); border-radius: 999px; padding: 2px 10px; font-size: 0.82rem; margin-right: 8px; }
+blockquote.alert { margin: 1rem 0; padding: 10px 14px; border-left: 4px solid var(--accent); background: #f2f6fd; border-radius: 0 8px 8px 0; }
+blockquote.alert p { margin: 0.3em 0; }
+blockquote.alert .alert-label { margin: 0 0 4px; font-weight: 600; font-size: 0.86rem; color: var(--accent); }
+blockquote.alert-tip { border-left-color: #047857; background: #eefaf4; }
+blockquote.alert-tip .alert-label { color: #047857; }
+blockquote.alert-warning { border-left-color: #b45309; background: #fdf6ec; }
+blockquote.alert-warning .alert-label { color: #b45309; }
+blockquote.alert-important { border-left-color: #7c3aed; background: #f6f2fd; }
+blockquote.alert-important .alert-label { color: #7c3aed; }
+blockquote.alert-caution { border-left-color: #b91c1c; background: #fdf2f2; }
+blockquote.alert-caution .alert-label { color: #b91c1c; }
+sup.regid { font-size: 0.66em; color: var(--muted); margin-left: 2px; white-space: nowrap; font-family: ui-monospace, monospace; }
+pre.wireframe { white-space: pre; overflow-x: auto; background: #fffdf5; color: #1f2937; border: 1px dashed #c8b98a; border-radius: 10px; padding: 14px 16px; line-height: 1.35; position: relative; }
+pre.wireframe::before { content: "页面示意（线框）"; display: block; color: #8a7a4a; font-size: 0.78rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin-bottom: 8px; }
+.layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0 8px; max-width: 1220px; margin: 0 auto; }
+.layout main { margin: 0; min-width: 0; }
+.sidebar { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; box-sizing: border-box; padding: 32px 0 32px 20px; font-size: 0.9rem; }
+.back-link { display: inline-block; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; margin-bottom: 10px; font-weight: 600; }
+.toc-title { color: var(--muted); font-size: 0.8rem; margin: 8px 0 4px; }
+ul.toc { list-style: none; padding-left: 0; margin: 0; }
+ul.toc li { margin: 2px 0; }
+ul.toc a { display: block; padding: 4px 8px; border-radius: 6px; color: var(--text); overflow-wrap: anywhere; }
+ul.toc a:hover { background: #e8eefc; color: var(--accent); text-decoration: none; }
+h2[id], h3[id] { scroll-margin-top: 16px; }
+@media (max-width: 1100px) { .layout { display: block; } .sidebar { position: static; max-height: none; padding: 20px 20px 0; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">generic</span>
+<h1>whoate · 导航</h1>
+<div class="meta">Source: index.md</div>
+<div class="meta">Generated: 2026-10-14T09:59:34+00:00</div>
+</header>
+<section>
+<p>Audience:   P1 审批 owner | P2 跨职能 | P3 实现 agent | P4 接手的人 Scope:      whoate v1 规格评审包导航 / Non-scope: 规格正文 State:      in-review Genre:      G-NAV Code-Root:  /Users/zhenninglang/Projects/whoate-docs-design Prefixes:   none</p>
+<h1>whoate · 导航</h1>
+<p>whoate v1 规格评审包，2026-10-14，State: in-review（待 owner 审批）。</p>
+<table><thead><tr><th>文件</th><th>读者</th><th>一句话</th></tr></thead><tbody><tr><td><a href="./approval.html">approval</a></td><td>审批 owner</td><td>十分钟看完要拍的 5 件事——<strong>从这里开始</strong></td></tr><tr><td><a href="./walkthrough.html">walkthrough</a></td><td>审批 owner / 跨职能</td><td>拿着界面原型走一遍：找到并关掉没人管的程序，再认出一个助手会话</td></tr><tr><td><a href="./architecture.html">architecture</a></td><td>跨职能 / 接手的人</td><td>一张图看懂边界，三个场景看懂数据怎么流</td></tr><tr><td><a href="./overview.html">overview</a></td><td>实现 agent</td><td>全部登记单元的唯一登记处：采集、归因规则、诊断规则、CLI、接口、分期</td></tr></tbody></table>
+</section>
+</main>
+
+</body>
+</html>

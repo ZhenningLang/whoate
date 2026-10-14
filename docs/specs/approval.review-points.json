@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "points": [
+    {"anchor": "whoate-·-审批投影", "kind": "unclear", "prompt": "开头这张图能一眼看出五件事各管哪一块吗"},
+    {"anchor": "核心概念", "kind": "unclear", "prompt": "「归属 / 归因证据 / 诊断」这三个词，看完例子能分清吗"},
+    {"anchor": "U-DEC-1", "kind": "decide", "prompt": "第一版不花 99 美元公证、让别人第一次去系统设置里放行，你接受吗"},
+    {"anchor": "U-DEC-2", "kind": "decide", "prompt": "助手默认看不到你在别的会话里打的原话，你同意这个默认吗"},
+    {"anchor": "U-DEC-3", "kind": "decide", "prompt": "助手可以不经过你、自己确认后关程序，你放心吗，还是要每次都由你点"},
+    {"anchor": "U-DEC-4", "kind": "decide", "prompt": "界面跟随系统语言、中英都做，还是只做一种"},
+    {"anchor": "U-DEC-5", "kind": "decide", "prompt": "介绍页公开挂在 GitHub 免费网页上，你同意吗"},
+    {"anchor": "5-分几期、多久、每期拿到什么、怎么算做完", "kind": "assumption", "prompt": "五期一到两天是按代码量估的，没实测过，你觉得靠谱吗"}
+  ]
+}

@@ -1,0 +1,55 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>whoate · 菜单栏面板</title><style>
+:root{--desk:#c9ccd3;--win:#f6f6f7;--side:#ebebee;--surface:#fff;--fg:#1d1d1f;--muted:#6e6e73;--faint:#a1a1a6;
+--line:#dcdce0;--act:#d9622b;--act-bg:#fbeee6;--watch:#b8860b;--watch-bg:#fbf4dc;--trace:#16857a;--trace-bg:#e3f3f1;
+--sel:#dfe8f8;--blue:#2f6fde;--mono:"SF Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--desk);font:13px/1.45 -apple-system,"PingFang SC",system-ui,sans-serif;color:var(--fg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}.mono{font-family:var(--mono);font-size:12px}
+.menubar{height:26px;background:rgba(246,246,247,.92);border-bottom:1px solid var(--line);display:flex;justify-content:flex-end;align-items:center;gap:18px;padding:0 14px;font-size:13px}
+.menubar .ico{display:inline-flex;align-items:center;gap:5px;padding:2px 6px;border-radius:5px}
+.menubar .ico.on{background:rgba(0,0,0,.12)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.act{color:var(--act);background:var(--act-bg)}.pill.watch{color:var(--watch);background:var(--watch-bg)}.pill.ok{color:var(--muted);background:#ececf0}.pill.trace{color:var(--trace);background:var(--trace-bg)}
+.btn{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--fg)}
+.btn.primary{background:var(--act);border-color:var(--act);color:#fff;font-weight:600}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.window{margin:28px auto;width:1180px;background:var(--win);border-radius:12px;box-shadow:0 22px 60px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.25);overflow:hidden}
+.titlebar{height:44px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:#f1f1f3}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.titlebar .title{font-weight:600}.titlebar .sum{margin-left:auto;display:flex;gap:16px;color:var(--muted);font-size:12px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}.seg span{padding:2px 10px;font-size:12px}.seg span.on{background:var(--surface);font-weight:600}
+.cols{display:grid;grid-template-columns:200px 400px 1fr;height:700px}
+.side{background:var(--side);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.side h6{margin:12px 8px 4px;font-size:11px;color:var(--faint);font-weight:600}
+.side a{display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+.side a.on{background:var(--sel);font-weight:600}.side a small{color:var(--muted)}
+.list{border-right:1px solid var(--line);background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.list .head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 14px;border-bottom:1px solid #efeff2}
+.row.on{background:var(--sel)}.row .t{font-weight:600;min-width:0;overflow-wrap:anywhere}.row .m{font-weight:600;text-align:right}
+.row .s{color:var(--muted);font-size:12px;min-width:0}.row .c{color:var(--muted);font-size:12px;text-align:right}
+.row .v{grid-column:1/-1;display:flex;gap:6px;align-items:center;margin-top:3px}
+.spark{width:64px;height:18px}
+.detail{padding:20px 24px;overflow:hidden;display:flex;flex-direction:column;gap:16px}
+.detail h2{margin:0;font-size:20px}.detail .sub{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:5px 12px}.kv dt{color:var(--muted)}.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.ev{display:grid;grid-template-columns:18px 1fr auto;gap:2px 10px;padding:7px 0;border-bottom:1px dashed var(--line)}.ev:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:4px}.dot.certain{background:var(--trace)}.dot.inferred{border:2px solid var(--trace)}.dot.weak{border:2px dashed var(--faint)}
+.ev .why{grid-column:2/-1;color:var(--muted);font-size:12px}
+.quote{border-left:3px solid var(--trace);padding:6px 12px;background:var(--trace-bg);border-radius:0 8px 8px 0;font-size:13.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.verdict{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--act-bg);color:#7a3412}
+.verdict b{color:var(--act);white-space:nowrap}
+</style></head><body><div style="position:relative;height:640px"><div class="menubar"><span>周二 17:42</span><span>Wi‑Fi</span><span class="ico on" id="menubar-icon" data-step="S1"><svg width="16" height="12" viewBox="0 0 72 54"><defs><mask id="b"><rect width="72" height="54" fill="#fff"/><circle cx="62" cy="4" r="9"/><circle cx="54" cy="-2" r="7"/></mask></defs><rect x="4" y="2" width="64" height="40" rx="5" fill="#b8860b" mask="url(#b)"/><g fill="#b8860b"><rect x="12" y="42" width="5" height="9"/><rect x="24" y="42" width="5" height="9"/><rect x="43" y="42" width="5" height="9"/><rect x="55" y="42" width="5" height="9"/></g></svg> <b class="num" style="color:#b8860b">41.2G</b></span></div>
+<div style="position:absolute;right:120px;top:32px;width:420px;background:rgba(250,250,251,.97);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.2);overflow:hidden">
+ <div style="padding:14px 16px 10px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:15px">内存偏紧</b><span class="num" style="color:var(--muted)">41.2G / 48G · swap 20.4G</span></div>
+  <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 6px;background:#e5e5ea"><i style="width:62%;background:#8e8e93"></i><i style="width:17%;background:#c7c7cc"></i><i style="width:13%;background:var(--watch)"></i></div>
+  <div style="display:flex;gap:14px;font-size:11px;color:var(--muted)"><span>■ 已用</span><span style="color:#aeaeb2">■ 压缩</span><span style="color:var(--watch)">■ swap</span></div>
+  <p style="margin:10px 0 0;color:#5a3a12">最大的问题是一个<b>无人管理的开发服务器</b>，占 9.7G，关掉即可释放。</p>
+ </div>
+ <div style="border-top:1px solid var(--line)"><div class="row" data-step="S2" id="row-orphan"><div class="t">无人管理的开发服务器</div><div class="m num">9.7G</div><div class="s">wrangler dev :8799 · 启动它的 pane 已关闭 11 小时</div><div class="c"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,11.7 10.7,3.0 21.3,2.1 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#d9622b" stroke-width="1.6"/></svg></div><div class="v"><span class="pill act">建议关闭</span><span style="margin-left:auto"><button class="btn" data-step="S2b" id="btn-why">为什么</button> <button class="btn primary">关闭</button></span></div></div><div class="row"><div class="t">Google Chrome</div><div class="m num">12.8G</div><div class="s">50 个进程 · 最大标签页 1.5G</div><div class="c"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,2.9 10.7,2.5 21.3,2.8 32.0,2.2 42.7,2.0 53.3,2.1 64.0,2.0" fill="none" stroke="#a1a1a6" stroke-width="1.6"/></svg></div><div class="v"><span class="pill ok">正常</span><span style="margin-left:auto"></span></div></div><div class="row"><div class="t">Claude · Node 进程内存占用过高</div><div class="m num">2.6G</div><div class="s">tmux main:15.1 · ~/.dotfiles</div><div class="c"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,5.8 10.7,5.2 21.3,4.7 32.0,4.2 42.7,3.1 53.3,2.5 64.0,2.0" fill="none" stroke="#b8860b" stroke-width="1.6"/></svg></div><div class="v"><span class="pill watch">近 10 分钟 +400M</span><span style="margin-left:auto"></span></div></div><div class="row"><div class="t">opencode · Phase 05 price label build</div><div class="m num">0.9G</div><div class="s">pane 已关闭 · 空闲 2 小时</div><div class="c"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,2.0 10.7,2.0 21.3,2.0 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#b8860b" stroke-width="1.6"/></svg></div><div class="v"><span class="pill watch">可关</span><span style="margin-left:auto"></span></div></div><div class="row"><div class="t">Spotlight 索引</div><div class="m num">1.6G</div><div class="s">系统进程</div><div class="c"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,2.9 10.7,2.0 21.3,2.0 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#a1a1a6" stroke-width="1.6"/></svg></div><div class="v"><span class="pill ok">勿关</span><span style="margin-left:auto"></span></div></div></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)"><span>每秒刷新 · 系统进程 6 秒前</span><button class="btn" id="btn-open" data-step="S2c">打开 whoate</button></div>
+</div></div></body></html>

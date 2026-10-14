@@ -3,3 +3,7 @@
 *.app
 .DS_Store
 /dist
+*.review.html
+*.comments.incoming.json
+*.review-inbox.md
+*.drafts.json

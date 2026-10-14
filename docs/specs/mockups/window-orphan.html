@@ -1,0 +1,61 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>whoate · 孤儿进程详情</title><style>
+:root{--desk:#c9ccd3;--win:#f6f6f7;--side:#ebebee;--surface:#fff;--fg:#1d1d1f;--muted:#6e6e73;--faint:#a1a1a6;
+--line:#dcdce0;--act:#d9622b;--act-bg:#fbeee6;--watch:#b8860b;--watch-bg:#fbf4dc;--trace:#16857a;--trace-bg:#e3f3f1;
+--sel:#dfe8f8;--blue:#2f6fde;--mono:"SF Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--desk);font:13px/1.45 -apple-system,"PingFang SC",system-ui,sans-serif;color:var(--fg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}.mono{font-family:var(--mono);font-size:12px}
+.menubar{height:26px;background:rgba(246,246,247,.92);border-bottom:1px solid var(--line);display:flex;justify-content:flex-end;align-items:center;gap:18px;padding:0 14px;font-size:13px}
+.menubar .ico{display:inline-flex;align-items:center;gap:5px;padding:2px 6px;border-radius:5px}
+.menubar .ico.on{background:rgba(0,0,0,.12)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.act{color:var(--act);background:var(--act-bg)}.pill.watch{color:var(--watch);background:var(--watch-bg)}.pill.ok{color:var(--muted);background:#ececf0}.pill.trace{color:var(--trace);background:var(--trace-bg)}
+.btn{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--fg)}
+.btn.primary{background:var(--act);border-color:var(--act);color:#fff;font-weight:600}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.window{margin:28px auto;width:1180px;background:var(--win);border-radius:12px;box-shadow:0 22px 60px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.25);overflow:hidden}
+.titlebar{height:44px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:#f1f1f3}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.titlebar .title{font-weight:600}.titlebar .sum{margin-left:auto;display:flex;gap:16px;color:var(--muted);font-size:12px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}.seg span{padding:2px 10px;font-size:12px}.seg span.on{background:var(--surface);font-weight:600}
+.cols{display:grid;grid-template-columns:200px 400px 1fr;height:700px}
+.side{background:var(--side);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.side h6{margin:12px 8px 4px;font-size:11px;color:var(--faint);font-weight:600}
+.side a{display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+.side a.on{background:var(--sel);font-weight:600}.side a small{color:var(--muted)}
+.list{border-right:1px solid var(--line);background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.list .head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 14px;border-bottom:1px solid #efeff2}
+.row.on{background:var(--sel)}.row .t{font-weight:600;min-width:0;overflow-wrap:anywhere}.row .m{font-weight:600;text-align:right}
+.row .s{color:var(--muted);font-size:12px;min-width:0}.row .c{color:var(--muted);font-size:12px;text-align:right}
+.row .v{grid-column:1/-1;display:flex;gap:6px;align-items:center;margin-top:3px}
+.spark{width:64px;height:18px}
+.detail{padding:20px 24px;overflow:hidden;display:flex;flex-direction:column;gap:16px}
+.detail h2{margin:0;font-size:20px}.detail .sub{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:5px 12px}.kv dt{color:var(--muted)}.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.ev{display:grid;grid-template-columns:18px 1fr auto;gap:2px 10px;padding:7px 0;border-bottom:1px dashed var(--line)}.ev:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:4px}.dot.certain{background:var(--trace)}.dot.inferred{border:2px solid var(--trace)}.dot.weak{border:2px dashed var(--faint)}
+.ev .why{grid-column:2/-1;color:var(--muted);font-size:12px}
+.quote{border-left:3px solid var(--trace);padding:6px 12px;background:var(--trace-bg);border-radius:0 8px 8px 0;font-size:13.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.verdict{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--act-bg);color:#7a3412}
+.verdict b{color:var(--act);white-space:nowrap}
+</style></head><body><div class="menubar"><span>周二 17:42</span><span>Wi‑Fi</span><span class="ico " id="menubar-icon" data-step="S1"><svg width="16" height="12" viewBox="0 0 72 54"><defs><mask id="b"><rect width="72" height="54" fill="#fff"/><circle cx="62" cy="4" r="9"/><circle cx="54" cy="-2" r="7"/></mask></defs><rect x="4" y="2" width="64" height="40" rx="5" fill="#b8860b" mask="url(#b)"/><g fill="#b8860b"><rect x="12" y="42" width="5" height="9"/><rect x="24" y="42" width="5" height="9"/><rect x="43" y="42" width="5" height="9"/><rect x="55" y="42" width="5" height="9"/></g></svg> <b class="num" style="color:#b8860b">41.2G</b></span></div><div class="window"><div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><span class="title">whoate</span>
+<div class="sum"><span class="pill watch">内存偏紧</span><span class="num">已用 41.2G / 48G</span><span class="num">swap 20.4G</span><span class="seg"><span class="on">内存</span><span>CPU</span></span></div></div>
+<div class="cols"><nav class="side"><h6>归属</h6><a href="#" class="" ><span>全部</span><small class="num">41.2G</small></a><a href="#" class="" ><span>tmux</span><small class="num">5.1G</small></a><a href="#" class="" data-step="S4" id="side-agents"><span>agent 会话</span><small class="num">4.4G</small></a><a href="#" class="" ><span>应用</span><small class="num">26.0G</small></a><a href="#" class="on" ><span>孤儿</span><small class="num">10.6G</small></a><a href="#" class="" ><span>系统</span><small class="num">6.0G</small></a><h6>筛选</h6><a href="#"><span>需要处理</span><small class="num">2</small></a><a href="#"><span>在涨</span><small class="num">3</small></a></nav><section class="list"><div class="head"><span>3 个归属 · 按内存</span><span>最近 30 分钟</span></div><div class="row on"><div class="t">wrangler dev :8799</div><div class="m num">9.7G</div><div class="s">来自 pane %266（已关闭）· ~/Projects/site/worker</div><div class="c num">CPU 0%</div><div class="v"><span class="pill act">无人管理，建议关闭</span><span style="margin-left:auto"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,11.7 10.7,3.0 21.3,2.1 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#d9622b" stroke-width="1.6"/></svg></span></div></div><div class="row "><div class="t">opencode · Phase 05 price label build</div><div class="m num">0.9G</div><div class="s">来自 pane %3647（已关闭）</div><div class="c num">CPU 0.2%</div><div class="v"><span class="pill watch">空闲 2 小时，可关</span><span style="margin-left:auto"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,2.0 10.7,2.0 21.3,2.0 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#b8860b" stroke-width="1.6"/></svg></span></div></div><div class="row "><div class="t">mysqld</div><div class="m num">0.8G</div><div class="s">来自 pane %266（已关闭）· ~/Projects/site/db</div><div class="c num">CPU 0.1%</div><div class="v"><span class="pill watch">开发数据库，确认后再关</span><span style="margin-left:auto"><svg class="spark" viewBox="0 0 64 18"><polyline points="0.0,2.0 10.7,2.0 21.3,2.0 32.0,2.0 42.7,2.0 53.3,2.0 64.0,2.0" fill="none" stroke="#b8860b" stroke-width="1.6"/></svg></span></div></div></section><section class="detail">
+<div><div class="sub">孤儿进程 · pid 16977 及 3 个子进程</div><h2>wrangler dev :8799</h2></div>
+<div class="verdict"><b>建议关闭</b><span>启动它的 tmux pane 11 小时前已关闭，端口 8799 当前 0 个连接。它在启动后 1.5 小时内涨到 9.7G，之后不再变化。</span></div>
+<div class="card"><h4>为什么归到这里（按可信度排序）</h4>
+ <div class="ev"><i class="dot certain"></i><b>环境变量 TMUX_PANE=%266</b><span class="pill trace">确定</span><span class="why">这个 pane 现在已经不存在</span></div>
+ <div class="ev"><i class="dot certain"></i><b>父进程链断开</b><span class="pill trace">确定</span><span class="why mono">16977 → 16971 wrangler → 16942 npm exec → launchd</span></div>
+ <div class="ev"><i class="dot inferred"></i><b>工作目录 ~/Projects/site/worker</b><span class="pill ok">推断项目</span><span class="why">Cloudflare Worker 项目，命令行是 wrangler dev --port 8799</span></div>
+ <div class="ev"><i class="dot certain"></i><b>监听 127.0.0.1:8799</b><span class="pill trace">确定</span><span class="why">0 个已建立连接</span></div>
+</div>
+<div class="card"><h4>内存 · 启动以来</h4>
+ <svg viewBox="0 0 600 90" style="width:100%;height:90px"><line x1="0" y1="80" x2="600" y2="80" stroke="#e5e5ea"/><line x1="0" y1="10" x2="600" y2="10" stroke="#f0f0f3"/>
+ <polyline points="0,80 20,58 40,30 60,14 80,11 600,11" fill="none" stroke="#d9622b" stroke-width="2"/><circle cx="600" cy="11" r="3" fill="#d9622b"/>
+ <text x="4" y="22" font-size="11" fill="#6e6e73">9.7G</text><text x="4" y="76" font-size="11" fill="#6e6e73">04:52</text><text x="560" y="76" font-size="11" fill="#6e6e73">现在</text></svg></div>
+<div class="actions"><button class="btn primary" id="btn-kill" data-step="S3">关闭这 4 个进程</button><button class="btn">复制 whoate why 16977</button><button class="btn">在 Finder 显示目录</button></div>
+</section></div></div></body></html>
