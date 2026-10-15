@@ -1,0 +1,29 @@
+[package]
+name = "whoate-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+live-acceptance = []
+
+[[test]]
+name = "capture_archive"
+required-features = ["live-acceptance"]
+
+[[test]]
+name = "capture_live"
+required-features = ["live-acceptance"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+libc.workspace = true
+rusqlite.workspace = true
+plist.workspace = true
+toml.workspace = true
+regex.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true

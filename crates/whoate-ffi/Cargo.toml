@@ -1,0 +1,13 @@
+[package]
+name = "whoate-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+whoate-core = { path = "../whoate-core" }
+serde_json.workspace = true
+libc.workspace = true

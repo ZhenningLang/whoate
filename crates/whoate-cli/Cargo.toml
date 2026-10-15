@@ -1,0 +1,15 @@
+[package]
+name = "whoate-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "whoate"
+path = "src/main.rs"
+
+[dependencies]
+whoate-core = { path = "../whoate-core" }
+clap.workspace = true
+serde_json.workspace = true
+time.workspace = true
