@@ -1,0 +1,2 @@
+{"type":"user","uuid":"a1b2...","parentUuid":null,"timestamp":"2026-07-09T15:04:11.220Z","sessionId":"3c90...","cwd":"/Users/you/code/app","gitBranch":"main","message":{"role":"user","content":"fix the failing test"}}
+{"type":"user","timestamp":"2026-07-09T15:04:19.880Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01x...","is_error":false,"content":"..."}]},"toolUseResult":{"stdout":"3 passed","stderr":"","exitCode":0}}

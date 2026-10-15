@@ -66,8 +66,19 @@ fn phase_one_module_tree_rejects_business_code_and_missing_declarations() {
         ("verdict/rules.rs", &[]),
     ];
     for (path, declarations) in tree {
-        let content = std::fs::read_to_string(root.join(path))
-            .unwrap_or_else(|_| panic!("missing phase module {path}"));
+        assert!(root.join(path).is_file(), "missing phase module {path}");
+        // P2 is authorized to implement these modules. Preserve the P1-only
+        // no-early-business gate against its immutable delivered baseline.
+        let output = Command::new("git")
+            .current_dir(root.join("../../.."))
+            .args([
+                "show",
+                &format!("7f9c20146457ceec50c30a1dc7a35edb742bb85b:crates/whoate-core/src/{path}"),
+            ])
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "missing P1 baseline module {path}");
+        let content = String::from_utf8(output.stdout).unwrap();
         assert!(
             placeholder_only(&content, declarations),
             "P1 placeholder contains business code or wrong declarations: {path}"
