@@ -113,6 +113,13 @@ impl History {
             .map(|s| s.points.iter().map(|p| p.sample.clone()).collect())
             .unwrap_or_default()
     }
+    /// A stored window is usable only when its last point is the current sample.
+    pub fn ends_at(&self, id: &str, time_s: i64) -> bool {
+        self.owners
+            .get(id)
+            .and_then(|s| s.points.back())
+            .is_some_and(|p| p.sample.timestamp_s == time_s)
+    }
     pub fn window(&self, id: &str, seconds: usize) -> Option<Trend> {
         let points = &self.owners.get(id)?.points;
         if seconds == 0 || points.len() < seconds {

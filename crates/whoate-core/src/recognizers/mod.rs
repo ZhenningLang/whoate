@@ -3,6 +3,8 @@ pub mod coding_agents;
 pub mod dev_runtimes;
 pub mod docker;
 pub mod ide;
+pub mod registry;
+pub mod user_rules;
 pub mod webkit_host;
 
 #[path = "../config_reader.rs"]
@@ -20,10 +22,7 @@ pub trait Recognizer {
 }
 
 pub fn builtins() -> Vec<Box<dyn Recognizer>> {
-    vec![
-        Box::new(coding_agents::CodingAgents),
-        Box::new(dev_runtimes::DevRuntimes),
-    ]
+    registry::builtins()
 }
 
 /// Reject a recognizer that violates the ownership contract, including future plugins.

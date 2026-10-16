@@ -1,0 +1,53 @@
+[[entries]]
+id = "chrome.memory-saver-off"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_chrome", min = 1 }, { kind = "config", key = "chrome.memory_saver_state", equals = 0 }] }
+cause = { zh = "Memory Saver 用户偏好为关闭；企业策略仍可能覆盖它。", en = "The Memory Saver user preference is off; enterprise policy may override it." }
+advice = { zh = "在性能设置中检查 Memory Saver；启用后，不活跃页面可被停用。", en = "Review Memory Saver in performance settings; it can deactivate inactive pages." }
+source = "https://support.google.com/chrome/answer/12929150?hl=en"
+checked = "2026-10-16"
+
+[[entries]]
+id = "chrome.memory-saver-legacy"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_chrome", min = 1 }, { kind = "config", key = "chrome.memory_saver_state", equals = 1 }] }
+cause = { zh = "Memory Saver 是旧偏好值，不能确认已启用；企业策略也可能覆盖。", en = "Memory Saver has a legacy preference value, not confirmed enabled; enterprise policy may also override it." }
+advice = { zh = "在浏览器性能设置中确认 Memory Saver 当前状态。", en = "Confirm the current Memory Saver state in browser performance settings." }
+source = "https://github.com/chromium/chromium/blob/main/components/performance_manager/user_tuning/prefs.cc"
+checked = "2026-10-16"
+
+[[entries]]
+id = "chrome.extensions"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_chrome", min = 1 }, { kind = "count", signal = "chrome_extensions", min = 5 }] }
+cause = { zh = "观察到至少五个扩展进程；这不是已安装扩展总数。", en = "At least five extension processes are observed; this is not the number of installed extensions." }
+advice = { zh = "在浏览器任务管理器比较扩展占用，再逐个停用不需要的扩展。", en = "Compare extension usage in the browser task manager, then disable unnecessary extensions one at a time." }
+source = "https://chromium.googlesource.com/chromium/src/+/main/docs/process_model_and_site_isolation.md"
+checked = "2026-10-16"
+
+[[entries]]
+id = "brave.memory-saver-off"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_brave", min = 1 }, { kind = "config", key = "brave.memory_saver_state", equals = 0 }] }
+cause = { zh = "Chromium 的 Memory Saver 用户偏好为关闭；不代表企业策略的最终状态。", en = "The Chromium Memory Saver user preference is off; this is not the effective enterprise policy state." }
+advice = { zh = "检查 Brave 性能设置中的 Memory Saver；此建议依据共享 Chromium 偏好实现。", en = "Review Memory Saver in Brave performance settings; this advice uses the shared Chromium preference implementation." }
+source = "https://github.com/chromium/chromium/blob/main/components/performance_manager/user_tuning/prefs.cc"
+checked = "2026-10-16"
+
+[[entries]]
+id = "brave.memory-saver-legacy"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_brave", min = 1 }, { kind = "config", key = "brave.memory_saver_state", equals = 1 }] }
+cause = { zh = "Chromium Memory Saver 为旧偏好值，不能确认已启用；策略可能覆盖。", en = "Chromium Memory Saver has a legacy preference value, not confirmed enabled; policy may override it." }
+advice = { zh = "在 Brave 性能设置中确认当前状态；不把旧偏好当作有效策略。", en = "Confirm the current state in Brave performance settings; do not treat a legacy preference as effective policy." }
+source = "https://github.com/chromium/chromium/blob/main/components/performance_manager/user_tuning/prefs.cc"
+checked = "2026-10-16"
+
+[[entries]]
+id = "brave.extensions"
+recognizer = "chromium"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_brave", min = 1 }, { kind = "count", signal = "brave_extensions", min = 5 }] }
+cause = { zh = "观察到至少五个扩展进程，扩展进程也会占用独立资源。", en = "At least five extension processes are observed, each consuming separate resources." }
+advice = { zh = "检查不需要的扩展并逐个停用；进程数不等于安装数量。", en = "Review and disable unnecessary extensions one at a time; process count is not installation count." }
+source = "https://chromium.googlesource.com/chromium/src/+/main/docs/process_model_and_site_isolation.md"
+checked = "2026-10-16"

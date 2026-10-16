@@ -4,9 +4,65 @@ use crate::{
     model::{Fact, FactValue, Owner, Part},
     snapshot::{Proc, Snapshot},
 };
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::{Component, Path, PathBuf},
+};
 
 pub struct DevRuntimes;
+
+fn venv_entry(entry: &str, cwd: Option<&str>, cfg: &ConfigReader) -> Option<PathBuf> {
+    let path = Path::new(entry);
+    let relative = !path.is_absolute();
+    // A bare activated name has no unique venv signal in the approved Snapshot.
+    if path.components().count() < 2 {
+        return None;
+    }
+    let name = path.file_name()?.to_str()?;
+    let valid_python = matches!(name, "python" | "python3")
+        || name
+            .strip_prefix("python3.")
+            .is_some_and(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit() || b == b'.'));
+    if !valid_python || path.parent()?.file_name()? != "bin" {
+        return None;
+    }
+    let path = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        Path::new(cwd?).join(path)
+    };
+    let root = path.parent()?.parent()?;
+    let mut normalized = PathBuf::new();
+    for component in root.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if !normalized.pop() {
+                    return None;
+                }
+            }
+            _ => normalized.push(component.as_os_str()),
+        }
+    }
+    if let Ok(canonical) = normalized.canonicalize() {
+        if !cfg.allows(&normalized) {
+            return None;
+        }
+        normalized = cfg
+            .home
+            .canonicalize()
+            .ok()
+            .and_then(|home| canonical.strip_prefix(home).ok().map(|p| cfg.home.join(p)))
+            .unwrap_or(canonical);
+    } else if relative || !normalized.starts_with(&cfg.home) {
+        return None;
+    }
+    let named = normalized
+        .file_name()
+        .is_some_and(|name| name == ".venv" || name == "venv");
+    (named || (cfg.allows(&normalized) && normalized.join("pyvenv.cfg").is_file()))
+        .then_some(normalized)
+}
 
 pub fn script(proc: &Proc) -> Option<&'static str> {
     for arg in proc.argv.iter().skip(1) {
@@ -77,6 +133,8 @@ impl Recognizer for DevRuntimes {
     }
     fn matches(&self, proc: &Proc) -> bool {
         is_runtime(proc)
+            || (super::ide::family(proc) == Some("vscode")
+                && super::registry::runtime_family(proc).is_some())
     }
     fn explain(&self, owner: &mut Owner, snap: &Snapshot, cfg: &ConfigReader) {
         let mut groups: BTreeMap<String, Vec<&Proc>> = BTreeMap::new();
@@ -151,18 +209,12 @@ impl Recognizer for DevRuntimes {
                 .into_iter()
                 .chain(proc.argv.first().map(String::as_str))
             {
-                if let Some((venv, _)) = exe.split_once("/bin/python")
-                    && (Path::new(venv)
-                        .file_name()
-                        .is_some_and(|name| name == ".venv" || name == "venv")
-                        || (cfg.allows(Path::new(venv))
-                            && Path::new(venv).join("pyvenv.cfg").is_file()))
-                {
+                if let Some(venv) = venv_entry(exe, proc.cwd.as_deref(), cfg) {
                     fact(
                         owner,
                         "venv",
                         cfg.language.choose("虚拟环境", "Virtual environment"),
-                        FactValue::Text(venv.into()),
+                        FactValue::Text(venv.to_string_lossy().into()),
                     );
                 }
             }

@@ -1,0 +1,21 @@
+{
+  "attempts": [
+    {"duration_ms":134,"exit":0,"operation":"version"},
+    {"duration_ms":45,"exit":0,"operation":"image"},
+    {"duration_ms":220,"exit":0,"operation":"run"},
+    {"duration_ms":1042,"exit":0,"operation":"stats"},
+    {"duration_ms":66,"exit":0,"operation":"rm"}
+  ],
+  "branch":"container_stats",
+  "container_count":1,
+  "started_at":"2026-10-15T23:29:22.653115+00:00",
+  "finished_at":"2026-10-15T23:29:24.228925+00:00",
+  "local_unix_only":true,
+  "memory_usage":["3.859MiB / 7.748GiB"],
+  "own_container_removed":true,
+  "reason":"distinct_linux_stats_not_a_decomposition_of_macos_footprint",
+  "vm_measurements":[
+    {"errno":null,"footprint_bytes":38486904,"name":"com.docker.virtualization","pid":83598},
+    {"errno":null,"footprint_bytes":1108232616,"name":"com.apple.Virtualization.VirtualMachine","pid":83604}
+  ]
+}

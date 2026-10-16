@@ -1,0 +1,107 @@
+[[entries]]
+id = "vite.profile"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_vite", min = 1 }, { kind = "memory", min_bytes = 536870912 }] }
+cause = { zh = "此归属包含 Vite，资源较高；插件和转换工作可能值得检查。", en = "This owner includes Vite and has elevated usage; plugin and transform work may merit inspection." }
+advice = { zh = "用 vite --profile 录制，再按 p 和回车导出性能记录。", en = "Run vite --profile, then press p and Enter to export a performance recording." }
+source = "https://vite.dev/guide/performance"
+checked = "2026-10-16"
+
+[[entries]]
+id = "vite.imports"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_vite", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "大型依赖和聚合导出可能增加 Vite 转换工作；这里尚未检查项目源码。", en = "Large dependencies and barrel exports can increase Vite transform work; project source was not inspected." }
+advice = { zh = "检查聚合导出；按需动态导入只在特定场景使用的大依赖。", en = "Review barrel exports and dynamically import large dependencies used only in specific cases." }
+source = "https://vite.dev/guide/performance"
+checked = "2026-10-16"
+
+[[entries]]
+id = "next.inspect"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_next", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "此归属含 Next.js；单次内存占用无法确定保留对象的来源。", en = "This owner includes Next.js; a single memory sample cannot identify retained objects." }
+advice = { zh = "需要定位时，用 NODE_OPTIONS=--inspect 启动开发服务，并在 DevTools 录制堆快照。", en = "For diagnosis, start the dev server with NODE_OPTIONS=--inspect and record a heap snapshot in DevTools." }
+source = "https://nextjs.org/docs/app/guides/memory-usage"
+checked = "2026-10-16"
+
+[[entries]]
+id = "next.webpack-memory"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_next", min = 1 }, { kind = "memory", min_bytes = 2147483648 }] }
+cause = { zh = "此归属内存较高；若使用 webpack，可检查其内存优化选项。", en = "This owner has high memory usage; if using webpack, review its memory optimization options." }
+advice = { zh = "仅在支持的 Next.js webpack 模式中评估 experimental.webpackMemoryOptimizations；可能增加编译时间。", en = "Evaluate experimental.webpackMemoryOptimizations only in supported Next.js webpack mode; compilation may take longer." }
+source = "https://nextjs.org/docs/app/guides/memory-usage"
+checked = "2026-10-16"
+
+[[entries]]
+id = "webpack.pathinfo"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_webpack", min = 1 }, { kind = "memory", min_bytes = 536870912 }] }
+cause = { zh = "webpack 的路径信息在大型项目中会增加垃圾回收压力；尚未读取此配置。", en = "webpack path information can add garbage collection pressure in large projects; this configuration was not read." }
+advice = { zh = "在大型开发构建中评估 output.pathinfo: false。", en = "Evaluate output.pathinfo: false for large development builds." }
+source = "https://webpack.js.org/guides/build-performance/"
+checked = "2026-10-16"
+
+[[entries]]
+id = "webpack.source-maps"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_webpack", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "开发 source map 的精度会影响构建开销；未确认当前配置。", en = "Development source map precision affects build cost; the current configuration is unknown." }
+advice = { zh = "按调试需求选择成本较低的 cheap 或 eval source map 变体。", en = "Choose a cheaper cheap or eval source map variant according to debugging needs." }
+source = "https://webpack.js.org/guides/build-performance/"
+checked = "2026-10-16"
+
+[[entries]]
+id = "wrangler.snapshot"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_wrangler", min = 1 }, { kind = "memory", min_bytes = 536870912 }] }
+cause = { zh = "此归属含 Wrangler 开发服务；需要堆快照才能确认对象保留。", en = "This owner includes a Wrangler dev server; a heap snapshot is needed to identify retained objects." }
+advice = { zh = "在 Wrangler 终端按 D 打开 DevTools，使用 Memory 面板取快照。", en = "Press D in the Wrangler terminal to open DevTools and take a snapshot in the Memory panel." }
+source = "https://developers.cloudflare.com/workers/observability/dev-tools/memory-usage/"
+checked = "2026-10-16"
+
+[[entries]]
+id = "wrangler.compare"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_wrangler", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "高占用本身不能区分临时分配和持续保留。", en = "High usage alone cannot distinguish temporary allocation from persistent retention." }
+advice = { zh = "用相同请求和数据重复取快照，对照对象增量；本工具不自动发送请求。", en = "Compare snapshots using the same requests and data to inspect object growth; this tool sends no requests." }
+source = "https://developers.cloudflare.com/workers/observability/dev-tools/memory-usage/"
+checked = "2026-10-16"
+
+[[entries]]
+id = "tsserver.files"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_tsserver", min = 1 }, { kind = "memory", min_bytes = 536870912 }] }
+cause = { zh = "TypeScript 语言服务可能加载过多文件；此处尚未读取 tsconfig。", en = "The TypeScript language service may load too many files; tsconfig was not read here." }
+advice = { zh = "用 tsc --listFilesOnly 检查文件集合；显式 exclude 时保留 node_modules 和构建目录排除。", en = "Inspect the file set with tsc --listFilesOnly; keep node_modules and build output excluded when using an explicit exclude." }
+source = "https://github.com/microsoft/TypeScript/wiki/Performance"
+checked = "2026-10-16"
+
+[[entries]]
+id = "tsserver.references"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_tsserver", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "大型单工程会增加语言服务负担；占用不能证明具体项目结构有误。", en = "Large single projects can burden the language service; usage does not prove a project structure problem." }
+advice = { zh = "对大型 monorepo 评估 project references，并检查加载引用工程的范围。", en = "Evaluate project references for a large monorepo and review the scope of referenced project loading." }
+source = "https://github.com/microsoft/TypeScript/wiki/Performance"
+checked = "2026-10-16"
+
+[[entries]]
+id = "python.output-cache"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_python", min = 1 }, { kind = "count", signal = "python_kernel", min = 1 }, { kind = "memory", min_bytes = 536870912 }] }
+cause = { zh = "此归属包含 IPython kernel；Out 缓存可能保留旧结果，但尚未检查 Python 对象。", en = "This owner includes an IPython kernel; Out may retain results, but Python objects were not inspected." }
+advice = { zh = "确认不再需要结果后，使用 %reset out 或 %xdel 清理大对象。", en = "After confirming results are no longer needed, use %reset out or %xdel to remove large objects." }
+source = "https://ipython.readthedocs.io/en/stable/interactive/reference.html"
+checked = "2026-10-16"
+
+[[entries]]
+id = "python.cache-limit"
+recognizer = "dev-runtimes"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_python", min = 1 }, { kind = "count", signal = "python_kernel", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "IPython 输出缓存会阻止旧结果被回收；这里不把 kernel 内存等同缓存大小。", en = "IPython output caching can prevent collection of old results; kernel memory is not measured cache size." }
+advice = { zh = "若不需要输出历史，可评估 InteractiveShell.cache_size = 0 关闭输出缓存。", en = "If output history is unnecessary, consider InteractiveShell.cache_size = 0 to disable output caching." }
+source = "https://ipython.readthedocs.io/en/stable/interactive/reference.html"
+checked = "2026-10-16"

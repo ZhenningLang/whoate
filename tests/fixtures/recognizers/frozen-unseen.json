@@ -1,0 +1,19 @@
+{
+  "source": "synthetic post-implementation acceptance holdout, frozen after simplify; no production classifier used to derive expected values",
+  "rows": [
+    [960100,1,"opencode","/public/opencode",[],11],
+    [960110,960100,"docker","/public/docker",["run","-i","--rm","mcp/filesystem"],22],
+    [960111,960110,"Helper","brave",["--type=renderer"],33],
+    [960120,960100,"Helper","brave",["--type=renderer"],null],
+    [960130,960100,"Helper","code",["--type=fileWatcher"],44],
+    [960131,960130,"node","/public/node",["/public/typescript/lib/tsserver.js"],55],
+    [960140,960100,"python3.13","/public/python3.13",[],66],
+    [960150,960100,"Brave Browser Helper","/untrusted/not-browser",["--type=renderer"],77]
+  ],
+  "parts": {
+    "mcp": [960110,960111],
+    "tabs": [960120],
+    "watchers": [960130],
+    "languages": [960131]
+  }
+}

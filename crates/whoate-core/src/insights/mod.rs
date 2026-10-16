@@ -4,6 +4,7 @@ use crate::{
     recognizers::ConfigReader,
 };
 use serde::{Deserialize, Serialize};
+pub mod registry;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Localized {
@@ -39,7 +40,7 @@ pub struct Insight {
     pub checked: String,
 }
 pub fn all() -> Vec<Insight> {
-    vec![]
+    registry::load().expect("embedded insight library must pass full validation")
 }
 
 #[derive(Clone, Default)]
@@ -167,6 +168,6 @@ mod tests {
             catalog.attach("coding-agents", &mut owner, &cfg),
             Err("unknown_count_signal")
         );
-        assert!(all().is_empty());
+        assert!(!all().is_empty());
     }
 }

@@ -3,7 +3,12 @@ use serde_json::Value;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
+    sync::{Arc, Mutex},
 };
+#[path = "config_reader/cache.rs"]
+mod cache;
+#[path = "config_reader/jsonc.rs"]
+mod jsonc;
 
 #[derive(Clone, Debug)]
 pub struct ConfigReader {
@@ -14,6 +19,9 @@ pub struct ConfigReader {
     /// Registered software configuration signals supplied by read-only adapters.
     pub values: BTreeMap<String, Value>,
     isolated: bool,
+    rules_explicit: bool,
+    files: Arc<Mutex<cache::Files>>,
+    docker: Arc<super::docker::Monitor>,
 }
 
 impl ConfigReader {
@@ -32,16 +40,21 @@ impl ConfigReader {
         let cache = env("WHOATE_CACHE_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join("Library/Caches/whoate"));
-        let rules = env("WHOATE_RULES")
+        let rules_override = env("WHOATE_RULES");
+        let rules_explicit = rules_override.is_some();
+        let rules = rules_override
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".config/whoate/rules.toml"));
         Ok(Self {
             language: crate::verdict::Language::En,
+            docker: Arc::new(super::docker::Monitor::native(home.clone())),
             home,
             cache,
             rules,
             values: BTreeMap::new(),
             isolated,
+            rules_explicit,
+            files: Arc::default(),
         })
     }
     pub fn isolated(home: PathBuf) -> Self {
@@ -49,9 +62,12 @@ impl ConfigReader {
             language: crate::verdict::Language::En,
             cache: home.join("cache"),
             rules: home.join("rules.toml"),
+            docker: Arc::new(super::docker::Monitor::native(home.clone())),
             home,
             values: BTreeMap::new(),
             isolated: true,
+            rules_explicit: false,
+            files: Arc::default(),
         }
     }
     pub fn allows(&self, path: &Path) -> bool {
@@ -62,12 +78,48 @@ impl ConfigReader {
                 .zip(self.home.canonicalize().ok())
                 .is_some_and(|(p, home)| p.starts_with(home))
     }
+    pub fn with_docker_source(mut self, source: impl super::docker::DockerSource) -> Self {
+        self.docker = Arc::new(super::docker::Monitor::new(source));
+        self
+    }
+    pub fn docker_monitor(&self) -> Arc<super::docker::Monitor> {
+        self.docker.clone()
+    }
     pub fn read_json(&self, path: &Path) -> Result<Value, &'static str> {
+        let data = self.read_text(path)?;
+        serde_json::from_str(&data).map_err(|_| "invalid_json")
+    }
+    pub fn read_text(&self, path: &Path) -> Result<String, &'static str> {
         if !self.allows(path) {
             return Err("outside_fixture_root");
         }
-        let data = std::fs::read(path).map_err(|_| "read_failed")?;
-        serde_json::from_slice(&data).map_err(|_| "invalid_json")
+        self.files
+            .lock()
+            .map_err(|_| "config_cache_poisoned")?
+            .read(path)
+    }
+    pub fn read_jsonc(&self, path: &Path) -> Result<Value, &'static str> {
+        jsonc::parse(&self.read_text(path)?)
+    }
+    /// WHOATE_RULES is an explicit single-file capability, not a general root.
+    pub fn read_rules_text(&self) -> Result<Option<String>, &'static str> {
+        match std::fs::symlink_metadata(&self.rules) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(_) => return Err("rules_read_failed"),
+            Ok(_) => {}
+        }
+        if !self.rules_explicit && !self.allows(&self.rules) {
+            return Err("outside_fixture_root");
+        }
+        self.files
+            .lock()
+            .map_err(|_| "config_cache_poisoned")?
+            .read(&self.rules)
+            .map(Some)
+    }
+    /// Observable I/O count; clones share the same read-only file cache.
+    pub fn disk_reads(&self) -> usize {
+        self.files.lock().expect("config cache lock").reads
     }
     pub fn project_file(&self, cwd: &Path, name: &str) -> Option<PathBuf> {
         for ancestor in cwd.ancestors() {
@@ -85,7 +137,13 @@ impl ConfigReader {
         if !self.allows(path) {
             return Err("outside_fixture_root");
         }
-        plist::Value::from_file(path).map_err(|_| "app_metadata_unavailable")
+        let bytes = self
+            .files
+            .lock()
+            .map_err(|_| "config_cache_poisoned")?
+            .read_bytes(path)?;
+        plist::Value::from_reader(std::io::Cursor::new(bytes))
+            .map_err(|_| "app_metadata_unavailable")
     }
 }
 

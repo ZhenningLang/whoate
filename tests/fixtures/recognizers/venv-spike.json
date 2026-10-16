@@ -1,0 +1,13 @@
+{
+  "kind": "native_venv_spike",
+  "new_environment_fields": false,
+  "production_sampler": "MacSampler",
+  "recorded_at": "2026-10-15T23:30:33.446346Z",
+  "rows": [
+    {"mode":"absolute","sample":{"argv0":"$FIXTURE/project with spaces/.venv/bin/python3","comm":"python3.13","cwd":"$FIXTURE/project with spaces","exe_path":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/bin/python3.13"},"truth":{"executable":"$FIXTURE/project with spaces/.venv/bin/python3","is_venv":true,"prefix":"$FIXTURE/project with spaces/.venv"}},
+    {"mode":"relative","sample":{"argv0":".venv/bin/python3","comm":"python3.13","cwd":"$FIXTURE/project with spaces","exe_path":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/bin/python3.13"},"truth":{"executable":"$FIXTURE/project with spaces/.venv/bin/python3","is_venv":true,"prefix":"$FIXTURE/project with spaces/.venv"}},
+    {"mode":"activated","sample":{"argv0":"python","comm":"python3.13","cwd":"$FIXTURE/project with spaces","exe_path":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/bin/python3.13"},"truth":{"executable":"$FIXTURE/project with spaces/.venv/bin/python","is_venv":true,"prefix":"$FIXTURE/project with spaces/.venv"}},
+    {"mode":"base","sample":{"argv0":"python","comm":"python3.13","cwd":"$FIXTURE/project with spaces","exe_path":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/bin/python3.13"},"truth":{"executable":"~/.local/share/uv/python/cpython-3.13-macos-aarch64-none/bin/python3.13","is_venv":false,"prefix":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none"}},
+    {"mode":"symlink","sample":{"argv0":"$FIXTURE/project with spaces/venv-link/bin/python3","comm":"python3.13","cwd":"$FIXTURE/project with spaces","exe_path":"~/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/bin/python3.13"},"truth":{"executable":"$FIXTURE/project with spaces/venv-link/bin/python3","is_venv":true,"prefix":"$FIXTURE/project with spaces/venv-link"}}
+  ]
+}

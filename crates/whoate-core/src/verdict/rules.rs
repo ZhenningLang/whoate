@@ -18,6 +18,12 @@ struct Rule {
 fn orphan(c: &Context<'_>) -> bool {
     c.owner.kind == OwnerKind::Orphan
 }
+fn current_trend(c: &Context<'_>) -> bool {
+    c.continuous
+        && c.owner.unknown_mem_count == 0
+        && timestamp_us(c.snapshot)
+            .is_some_and(|at| c.history.ends_at(&c.owner.id, (at / 1_000_000) as i64))
+}
 fn disconnected(c: &Context<'_>) -> bool {
     let ps: Vec<_> = c
         .snapshot
@@ -67,7 +73,7 @@ static RULES: &[Rule] = &[
         id: "leak-suspect",
         level: Level::Act,
         test: Some(|c| {
-            c.continuous
+            current_trend(c)
                 && c.history
                     .window(&c.owner.id, 1800)
                     .is_some_and(|w| w.monotonic && w.growth_bytes >= 1024 * 1024 * 1024)
@@ -78,7 +84,7 @@ static RULES: &[Rule] = &[
         id: "fast-growth",
         level: Level::Watch,
         test: Some(|c| {
-            c.continuous
+            current_trend(c)
                 && c.history
                     .window(&c.owner.id, 600)
                     .is_some_and(|w| w.growth_bytes >= 500 * 1024 * 1024)

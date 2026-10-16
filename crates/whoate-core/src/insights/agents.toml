@@ -1,0 +1,35 @@
+[[entries]]
+id = "claude.large-session"
+recognizer = "coding-agents"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_claude", min = 1 }, { kind = "memory", min_bytes = 4294967296 }] }
+cause = { zh = "此归属占用较大；上游有长会话增长报告，但此快照不能证明泄漏。", en = "This owner is large. Upstream reports long-session growth; this snapshot does not prove a leak." }
+advice = { zh = "先保存工作；需要时退出，再用 claude --resume 继续并比较内存。", en = "Save work first. If needed, exit and continue with claude --resume, then compare memory." }
+source = "https://github.com/anthropics/claude-code/issues/18859"
+checked = "2026-10-16"
+
+[[entries]]
+id = "claude.mcp"
+recognizer = "coding-agents"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_claude", min = 1 }, { kind = "count", signal = "mcp_count", min = 1 }] }
+cause = { zh = "会话包含本地 MCP 子树；stdio 服务会占用独立进程资源。", en = "The session includes a local MCP subtree; stdio servers consume separate process resources." }
+advice = { zh = "在 /mcp 检查当前项目不需要的服务，并在不用的会话中停用。", en = "Use /mcp to review servers not needed by this project and disable them in unused sessions." }
+source = "https://code.claude.com/docs/en/mcp"
+checked = "2026-10-16"
+
+[[entries]]
+id = "opencode.large-session"
+recognizer = "coding-agents"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_opencode", min = 1 }, { kind = "memory", min_bytes = 2147483648 }] }
+cause = { zh = "此归属超过 2 GiB；上游收集内存问题快照，单次占用不能确定根因。", en = "This owner exceeds 2 GiB. Upstream collects memory snapshots; one sample cannot establish the cause." }
+advice = { zh = "保存工作；需要复现时用 OPENCODE_AUTO_HEAP_SNAPSHOT=1 启动留证，再比较重启前后。", en = "Save work. To reproduce, start with OPENCODE_AUTO_HEAP_SNAPSHOT=1 to collect evidence and compare before and after restarting." }
+source = "https://github.com/anomalyco/opencode/issues/20695"
+checked = "2026-10-16"
+
+[[entries]]
+id = "opencode.mcp"
+recognizer = "coding-agents"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_opencode", min = 1 }, { kind = "count", signal = "mcp_count", min = 1 }] }
+cause = { zh = "此归属包含本地 MCP 子树。", en = "This owner contains a local MCP subtree." }
+advice = { zh = "检查 mcp 配置；把当前项目不用的服务设为 enabled: false。", en = "Review the mcp configuration and set enabled: false for servers not needed by this project." }
+source = "https://opencode.ai/docs/mcp-servers/"
+checked = "2026-10-16"

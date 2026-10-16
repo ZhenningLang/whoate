@@ -58,10 +58,11 @@ fn phase02_verdict_language_orphan_heavy() {
 #[test]
 fn phase02_verdict_language_leak() {
     let (mut o, s) = fixture(OwnerKind::Service, 0);
+    let now = (crate::swarm::timestamp_us(&s).unwrap() / 1_000_000) as i64;
     let mut h = History::default();
     for t in 0..=1800 {
         o.mem_bytes = if t == 0 { 0 } else { 1073741824 };
-        h.record_at(&o, &s.procs, t);
+        h.record_at(&o, &s.procs, now - 1800 + t);
     }
     let (zh, en) = texts(&o, &s, &h, true);
     assert_eq!(zh, "30 分钟只涨不降，疑似泄漏");
@@ -70,6 +71,7 @@ fn phase02_verdict_language_leak() {
 #[test]
 fn phase02_verdict_language_fast_growth() {
     let (mut o, s) = fixture(OwnerKind::Service, 0);
+    let now = (crate::swarm::timestamp_us(&s).unwrap() / 1_000_000) as i64;
     let mut h = History::default();
     for t in 0..=600 {
         o.mem_bytes = if t == 0 {
@@ -79,7 +81,7 @@ fn phase02_verdict_language_fast_growth() {
         } else {
             500 * 1024 * 1024
         };
-        h.record_at(&o, &s.procs, t);
+        h.record_at(&o, &s.procs, now - 600 + t);
     }
     let (zh, en) = texts(&o, &s, &h, true);
     assert_eq!(zh, "近 10 分钟 +500 MiB，还在涨");

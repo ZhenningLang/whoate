@@ -1,0 +1,19 @@
+{
+  "source": "synthetic independent acceptance oracle; no private machine data",
+  "rows": [
+    [940001,1,"claude","/public/claude",[],10],
+    [940002,940001,"uvx","/public/uvx",["mcp-server-fetch"],20],
+    [940003,940002,"Helper","chrome",["--type=renderer"],30],
+    [940004,940001,"Helper","chrome",["--type=renderer"],40],
+    [940005,940001,"Helper","code",["--type=extensionHost"],50],
+    [940006,940005,"node","/public/node",["/public/typescript/lib/tsserver.js"],60],
+    [940007,940001,"python3","/public/python3",[],70],
+    [940008,940001,"Google Chrome Helper","/untrusted/not-browser",["--type=renderer"],null]
+  ],
+  "parts": {
+    "mcp": [940002,940003],
+    "tabs": [940004],
+    "extension_hosts": [940005],
+    "languages": [940006]
+  }
+}

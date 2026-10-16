@@ -16,35 +16,85 @@ pub struct CodingAgents;
 
 /// A package entry, not a substring in a shell's command text.
 pub fn mcp_name(proc: &Proc) -> Option<String> {
-    if !matches!(
-        proc.comm.as_str(),
-        "node" | "bun" | "deno" | "npm" | "npx" | "python3"
-    ) {
+    let executable = proc
+        .exe_path
+        .as_deref()
+        .and_then(|p| Path::new(p).file_name()?.to_str())
+        .unwrap_or(&proc.comm);
+    let args = &proc.argv;
+    if executable == "uvx" {
+        return (args.get(1)?.as_str() == "mcp-server-fetch").then(|| "mcp-server-fetch".into());
+    }
+    let python = matches!(executable, "python" | "python3")
+        || executable
+            .strip_prefix("python3.")
+            .is_some_and(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit() || b == b'.'));
+    if python {
+        return (args.get(1)?.as_str() == "-m" && args.get(2)?.as_str() == "mcp_server_fetch")
+            .then(|| "mcp-server-fetch".into());
+    }
+    if executable == "docker" {
+        if args.get(1)?.as_str() != "run" {
+            return None;
+        }
+        // Only the documented stdio forms. Unknown options may consume an image-
+        // shaped value, so never skip arbitrary flags while searching for an image.
+        let image = args
+            .iter()
+            .skip(2)
+            .find(|a| !matches!(a.as_str(), "-i" | "--interactive" | "--rm" | "-t" | "--tty"))?;
+        return matches!(image.as_str(), "mcp/fetch" | "mcp/filesystem").then(|| image.clone());
+    }
+    if !matches!(executable, "node" | "bun" | "deno" | "npm" | "npx") {
         return None;
     }
-    for arg in proc.argv.iter().skip(1) {
-        let components: Vec<_> = arg.split('/').collect();
-        let name = if let Some(i) = components.iter().rposition(|v| *v == "node_modules") {
-            let pkg = *components.get(i + 1)?;
-            if pkg == ".bin" {
-                components.get(i + 2)?.to_string()
-            } else if pkg.starts_with('@') {
-                format!("{pkg}/{}", components.get(i + 2)?)
-            } else {
-                pkg.to_owned()
+    let name = crate::swarm::logical_service(proc).or_else(|| {
+        if !matches!(executable, "node" | "bun" | "deno") {
+            return None;
+        }
+        Path::new(args.get(1)?)
+            .file_name()?
+            .to_str()
+            .map(|s| s.trim_end_matches(".js").to_owned())
+    })?;
+    (name.ends_with("-mcp")
+        || name.starts_with("mcp-")
+        || name == "mcp_server"
+        || name.starts_with("@modelcontextprotocol/server-"))
+    .then_some(name)
+}
+
+/// Explicit MCP subtrees outrank software-specific and generic fallback parts.
+/// Paths stop at the owner's boundary; unrelated parents cannot contribute.
+pub(crate) fn mcp_members(owner: &Owner, snap: &Snapshot) -> BTreeMap<i32, String> {
+    if owner.agent.is_none() {
+        return BTreeMap::new();
+    }
+    let members: BTreeSet<_> = owner.pids.iter().copied().collect();
+    let index: BTreeMap<_, _> = snap
+        .procs
+        .iter()
+        .filter(|p| members.contains(&p.pid))
+        .map(|p| (p.pid, p))
+        .collect();
+    let mut result = BTreeMap::new();
+    // ceiling: walk each owner's finite ancestry; memoize if deep process trees
+    // make this measurable, without extending traversal outside owner membership.
+    for proc in index.values() {
+        let mut current = *proc;
+        let mut seen = BTreeSet::new();
+        while seen.insert(current.pid) {
+            if let Some(name) = mcp_name(current) {
+                result.insert(proc.pid, name);
+                break;
             }
-        } else {
-            Path::new(arg)
-                .file_name()?
-                .to_str()?
-                .trim_end_matches(".js")
-                .to_owned()
-        };
-        if name.ends_with("-mcp") || name.starts_with("mcp-") || name == "mcp_server" {
-            return Some(name);
+            let Some(parent) = index.get(&current.ppid) else {
+                break;
+            };
+            current = parent;
         }
     }
-    None
+    result
 }
 impl Recognizer for CodingAgents {
     fn id(&self) -> &'static str {
@@ -57,26 +107,11 @@ impl Recognizer for CodingAgents {
         if owner.agent.is_none() {
             return;
         }
-        let index: BTreeMap<_, _> = snap.procs.iter().map(|p| (p.pid, p)).collect();
         let members: BTreeSet<_> = owner.pids.iter().copied().collect();
+        let mcp = mcp_members(owner, snap);
         let mut groups: BTreeMap<String, Vec<&Proc>> = BTreeMap::new();
         for proc in snap.procs.iter().filter(|p| members.contains(&p.pid)) {
-            let mut current = proc;
-            let mut seen = BTreeSet::new();
-            let mut classification = None;
-            while seen.insert(current.pid) {
-                if let Some(name) = mcp_name(current) {
-                    classification = Some(format!("MCP: {name}"));
-                    break;
-                }
-                let Some(parent) = index
-                    .get(&current.ppid)
-                    .filter(|p| members.contains(&p.pid))
-                else {
-                    break;
-                };
-                current = parent;
-            }
+            let classification = mcp.get(&proc.pid).map(|name| format!("MCP: {name}"));
             let label = classification.unwrap_or_else(|| {
                 if self.matches(proc) && members.contains(&proc.ppid) {
                     format!(

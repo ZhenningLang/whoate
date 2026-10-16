@@ -355,7 +355,14 @@ mod tests {
         let builtins = crate::recognizers::builtins();
         assert_eq!(
             builtins.iter().map(|r| r.id()).collect::<Vec<_>>(),
-            vec!["coding-agents", "dev-runtimes"]
+            vec![
+                "chromium",
+                "webkit-host",
+                "ide",
+                "docker",
+                "coding-agents",
+                "dev-runtimes"
+            ]
         );
         let json = serde_json::to_value(super::Owner::new(
             "service:1".into(),

@@ -357,13 +357,14 @@ fn phase02_swarm_time_pane_count_and_exact_binary_gib_boundaries() {
 #[test]
 fn phase02_verdict_curve_and_idle_exact_boundaries_both_languages() {
     let s = snap(vec![proc(999001, 1, "demo")]);
+    let now = (swarm::timestamp_us(&s).unwrap() / 1_000_000) as i64;
     let mut o = Owner::new("service:demo".into(), OwnerKind::Service, "demo".into());
     o.pids = vec![999001];
     for growth in [1073741823_u64, 1073741824] {
         let mut h = History::default();
         for t in 0..=1800 {
             o.mem_bytes = if t == 0 { 0 } else { growth };
-            h.record_at(&o, &s.procs, t);
+            h.record_at(&o, &s.procs, now - 1800 + t);
         }
         for lang in [Language::Zh, Language::En] {
             let v = rules::owner(&o, &s, &h, true, false, lang);
@@ -388,7 +389,7 @@ fn phase02_verdict_curve_and_idle_exact_boundaries_both_languages() {
         } else {
             500 * 1024 * 1024
         };
-        h.record_at(&o, &s.procs, t);
+        h.record_at(&o, &s.procs, now - 600 + t);
     }
     for lang in [Language::Zh, Language::En] {
         let v = rules::owner(&o, &s, &h, true, false, lang);
@@ -400,7 +401,7 @@ fn phase02_verdict_curve_and_idle_exact_boundaries_both_languages() {
     let mut flat = History::default();
     for t in 0..=600 {
         o.mem_bytes = if t == 0 { 0 } else { 500 * 1024 * 1024 };
-        flat.record_at(&o, &s.procs, t);
+        flat.record_at(&o, &s.procs, now - 600 + t);
     }
     assert_eq!(
         rules::owner(&o, &s, &flat, true, false, Language::En).rule,
@@ -594,6 +595,7 @@ fn phase02_verdict_swarm_bilingual_action_and_rule_metadata() {
 #[test]
 fn phase02_verdict_negative_growth_threshold_and_nonmonotonic_curve() {
     let s = snap(vec![proc(999001, 1, "demo")]);
+    let now = (swarm::timestamp_us(&s).unwrap() / 1_000_000) as i64;
     let mut o = Owner::new("service:demo".into(), OwnerKind::Service, "demo".into());
     o.pids = vec![999001];
     let mut h = History::default();
@@ -605,7 +607,7 @@ fn phase02_verdict_negative_growth_threshold_and_nonmonotonic_curve() {
         } else {
             500 * 1024 * 1024 - 1
         };
-        h.record_at(&o, &s.procs, t);
+        h.record_at(&o, &s.procs, now - 600 + t);
     }
     assert_eq!(
         rules::owner(&o, &s, &h, true, false, Language::En).rule,
@@ -620,7 +622,7 @@ fn phase02_verdict_negative_growth_threshold_and_nonmonotonic_curve() {
         } else {
             2 * 1073741824
         };
-        h.record_at(&o, &s.procs, t);
+        h.record_at(&o, &s.procs, now - 1800 + t);
     }
     assert!(!h.window(&o.id, 1800).unwrap().monotonic);
     assert_eq!(

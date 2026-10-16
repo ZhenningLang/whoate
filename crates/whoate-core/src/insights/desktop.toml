@@ -1,0 +1,53 @@
+[[entries]]
+id = "vscode.extension-bisect"
+recognizer = "ide"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_vscode", min = 1 }, { kind = "count", signal = "vscode_extension_hosts", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "此归属有扩展宿主；单次总占用不能确认是哪一个扩展。", en = "This owner has an extension host; a total usage sample cannot identify a specific extension." }
+advice = { zh = "先看 Process Explorer，再用 Help: Start Extension Bisect 定位扩展。", en = "Inspect Process Explorer, then use Help: Start Extension Bisect to isolate an extension." }
+source = "https://github.com/microsoft/vscode/wiki/Performance-Issues"
+checked = "2026-10-16"
+
+[[entries]]
+id = "vscode.watchers"
+recognizer = "ide"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_vscode", min = 1 }, { kind = "count", signal = "vscode_watchers", min = 1 }] }
+cause = { zh = "此归属包含文件监视进程；占用可能与监视范围有关。", en = "This owner includes a file watcher; usage may relate to the watched scope." }
+advice = { zh = "若文件监视开销较高，在 files.watcherExclude 中排除不需要监视的构建输出。", en = "If file watching is expensive, exclude unneeded build output in files.watcherExclude." }
+source = "https://github.com/microsoft/vscode/wiki/File-Watcher-Issues"
+checked = "2026-10-16"
+
+[[entries]]
+id = "jetbrains.heap-settings"
+recognizer = "ide"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_jetbrains", min = 1 }, { kind = "memory", min_bytes = 2147483648 }] }
+cause = { zh = "JVM 堆上限不等于实际占用，进程总内存还包括非堆资源。", en = "A JVM heap limit is not measured usage; total process memory also includes non-heap resources." }
+advice = { zh = "结合 IDE 内存指示器，在 Help → Change Memory Settings 中评估堆上限，不只根据 RSS 调整。", en = "Use the IDE memory indicator when evaluating Help → Change Memory Settings; do not adjust solely from RSS." }
+source = "https://www.jetbrains.com/help/pycharm/increasing-memory-heap.html"
+checked = "2026-10-16"
+
+[[entries]]
+id = "jetbrains.indexing"
+recognizer = "ide"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_jetbrains", min = 1 }, { kind = "memory", min_bytes = 1073741824 }] }
+cause = { zh = "索引和分析项目文件需要资源；此快照不能证明正在索引。", en = "Indexing and project analysis consume resources; this snapshot does not prove indexing is active." }
+advice = { zh = "若正在索引大型生成目录，把不需要分析的构建输出标为 Excluded。", en = "If indexing large generated directories, mark build output that needs no analysis as Excluded." }
+source = "https://www.jetbrains.com/help/pycharm/indexing.html"
+checked = "2026-10-16"
+
+[[entries]]
+id = "docker.default-memory"
+recognizer = "docker"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_docker", min = 1 }, { kind = "config", key = "docker.memory_default", equals = true }] }
+cause = { zh = "有效配置未设 MemoryMiB，Docker Desktop 默认 VM 内存上限为本机的一半；不是当前占用。", en = "Valid settings omit MemoryMiB, so Docker Desktop defaults the VM memory limit to half of host memory; this is not current usage." }
+advice = { zh = "结合容器统计峰值和余量，在 Resources → Advanced 评估内存上限。", en = "Use container usage peaks plus headroom to evaluate the memory limit in Resources → Advanced." }
+source = "https://docs.docker.com/desktop/settings-and-maintenance/settings/"
+checked = "2026-10-16"
+
+[[entries]]
+id = "docker.resource-saver"
+recognizer = "docker"
+trigger = { kind = "all", triggers = [{ kind = "count", signal = "software_docker", min = 1 }, { kind = "config", key = "docker.resource_saver_disabled", equals = true }] }
+cause = { zh = "用户配置关闭 Resource Saver；空闲 VM 可能继续占用主机资源。", en = "The user configuration disables Resource Saver; an idle VM may continue consuming host resources." }
+advice = { zh = "若无需常驻容器，评估打开 Resource Saver，让空闲时自动暂停 VM。", en = "If containers need not stay active, consider Resource Saver to pause the VM when idle." }
+source = "https://docs.docker.com/desktop/use-desktop/resource-saver/"
+checked = "2026-10-16"

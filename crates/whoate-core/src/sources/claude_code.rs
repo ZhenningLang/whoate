@@ -149,7 +149,7 @@ pub fn read_transcript(
         .and_then(|d| i64::try_from(d.as_millis()).ok());
     let mut prefix = vec![];
     (&mut file)
-        .take(PREFIX_BYTES)
+        .take(PREFIX_BYTES.min(len))
         .read_to_end(&mut prefix)
         .map_err(|_| "transcript_read_failed")?;
     let mut seen = std::collections::BTreeSet::new();
@@ -161,7 +161,7 @@ pub fn read_transcript(
         let Ok(v) = serde_json::from_slice::<Value>(line) else {
             // A bounded read may end mid-record. Only that final fragment is
             // ignored; complete invalid lines inside the window still report.
-            if lines.peek().is_none() && len > PREFIX_BYTES {
+            if lines.peek().is_none() {
                 continue;
             }
             issues.push("transcript_invalid_line");
@@ -193,7 +193,8 @@ pub fn read_transcript(
         .take(TAIL_BYTES)
         .read_to_end(&mut tail)
         .map_err(|_| "transcript_read_failed")?;
-    for (index, line) in tail.split(|b| *b == b'\n').enumerate() {
+    let mut lines = tail.split(|b| *b == b'\n').enumerate().peekable();
+    while let Some((index, line)) = lines.next() {
         if line.is_empty() {
             continue;
         }
@@ -201,6 +202,11 @@ pub fn read_transcript(
             // Only an invalid leading fragment is discarded. A complete JSON
             // record at the exact window boundary must remain visible.
             if offset > 0 && index == 0 {
+                continue;
+            }
+            // A writer can be between writes at EOF. Only its invalid,
+            // unterminated final fragment is pending, never a complete bad line.
+            if lines.peek().is_none() {
                 continue;
             }
             issues.push("transcript_invalid_line");

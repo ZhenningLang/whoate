@@ -55,7 +55,7 @@ pub struct Engine<S = MacSampler, C = SystemClock> {
 impl Engine<MacSampler, SystemClock> {
     pub fn new() -> SampleResult<Self> {
         let cfg = ConfigReader::from_env().map_err(|e| SampleError::new("config", e))?;
-        Ok(Self::with_sampler(
+        Self::try_with_sampler(
             MacSampler::new()?,
             SystemClock::default(),
             Context {
@@ -64,23 +64,28 @@ impl Engine<MacSampler, SystemClock> {
                 language: Language::system(),
                 platform_probe: kill::platform_binary,
             },
-        ))
+        )
     }
 }
 impl<S: Sampler, C: Clock> Engine<S, C> {
-    pub fn with_sampler(sampler: S, clock: C, mut context: Context) -> Self {
+    pub fn with_sampler(sampler: S, clock: C, context: Context) -> Self {
+        Self::try_with_sampler(sampler, clock, context)
+            .expect("embedded insight library must pass full validation")
+    }
+    pub fn try_with_sampler(sampler: S, clock: C, mut context: Context) -> SampleResult<Self> {
+        let entries = insights::registry::load().map_err(|e| SampleError::new("insights", e))?;
         context.cfg.language = context.language;
-        Self {
+        Ok(Self {
             sampler,
             clock,
             context,
             sessions: Sessions::default(),
             history: History::default(),
             recognizers: recognizers::builtins(),
-            catalog: Catalog::new(insights::all()),
+            catalog: Catalog::new(entries),
             previous: None,
             latest: None,
-        }
+        })
     }
     pub fn latest_snapshot(&self) -> Option<&Snapshot> {
         self.latest.as_ref()
@@ -139,31 +144,36 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
         let mut report = Report::from_snapshot(&current);
         report.owners =
             attribute::attribute(&current, self.context.uid, &self.context.cfg, &agents);
+        let user_rules = match recognizers::user_rules::Rules::load(&self.context.cfg) {
+            Ok(rules) => rules,
+            Err(code) => {
+                report.issues.push(SampleIssue {
+                    stage: "user_rules".into(),
+                    pid: None,
+                    code: code.into(),
+                });
+                recognizers::user_rules::Rules::default()
+            }
+        };
         for owner in &mut report.owners {
+            let owner_cfg = recognizers::registry::prepare(owner, &current, &self.context.cfg);
             for recognizer in &self.recognizers {
-                let matched = match recognizers::apply(
-                    recognizer.as_ref(),
-                    owner,
-                    &current,
-                    &self.context.cfg,
-                ) {
-                    Ok(matched) => matched,
-                    Err(code) => {
-                        report.issues.push(SampleIssue {
-                            stage: recognizer.id().into(),
-                            pid: None,
-                            code: code.into(),
-                        });
-                        false
-                    }
-                };
+                let matched =
+                    match recognizers::apply(recognizer.as_ref(), owner, &current, &owner_cfg) {
+                        Ok(matched) => matched,
+                        Err(code) => {
+                            report.issues.push(SampleIssue {
+                                stage: recognizer.id().into(),
+                                pid: None,
+                                code: code.into(),
+                            });
+                            false
+                        }
+                    };
                 if !matched {
                     continue;
                 }
-                if let Err(code) = self
-                    .catalog
-                    .attach(recognizer.id(), owner, &self.context.cfg)
-                {
+                if let Err(code) = self.catalog.attach(recognizer.id(), owner, &owner_cfg) {
                     report.issues.push(SampleIssue {
                         stage: "insights".into(),
                         pid: None,
@@ -171,6 +181,7 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                     });
                 }
             }
+            recognizers::registry::finish(owner);
             if current
                 .procs
                 .iter()
@@ -210,6 +221,7 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                 platform,
                 self.context.language,
             );
+            user_rules.apply(owner, &current, &self.context.cfg);
         }
         self.history
             .retain(&report.owners.iter().map(|o| o.id.clone()).collect());
