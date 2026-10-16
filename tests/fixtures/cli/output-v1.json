@@ -1,0 +1,65 @@
+{
+  "schema": "whoate/v1",
+  "taken_at": "2026-10-14T19:40:00+08:00",
+  "host": {
+    "mem_total_bytes": 17179869184,
+    "mem_used_bytes": 8589934592,
+    "compressed_bytes": 1073741824,
+    "wired_bytes": 2147483648,
+    "swap_used_bytes": 0,
+    "pressure": "normal"
+  },
+  "system_procs": {"status": "missing", "as_of": null},
+  "owners": [{
+    "id": "agent:claude:demo-session",
+    "kind": "agent_session",
+    "label": "展示会话 / Demo session",
+    "mem_bytes": 1572864000,
+    "unknown_mem_count": 1,
+    "cpu_pct": 250.5,
+    "pids": [900001,900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021],
+    "origin": {"tmux_pane": "%demo", "pane_alive": true, "cwd": "~/demo", "ports": []},
+    "agent": {
+      "tool": "claude",
+      "session_id": "demo-session",
+      "name": "展示会话",
+      "name_source": "manual",
+      "title": "解释共享内存归因",
+      "first_prompt": null,
+      "first_reply": null,
+      "status": "working",
+      "cwd": "~/demo",
+      "branch": "demo",
+      "model": "example-model",
+      "cost_usd": 0.25,
+      "confidence": "certain",
+      "updated_at_ms": 1791978000000,
+      "stale": false
+    },
+    "evidence": [{"kind":"pane_ancestor","detail":"%demo","confidence":"certain"},{"kind":"agent_source","detail":"claude","confidence":"certain"}],
+    "parts": [
+      {"name":"Session","mem_bytes":524288000,"process_count":1,"pids":[900001],"unknown_mem_count":1},
+      {"name":"MCP: demo-service","mem_bytes":1048576000,"process_count":20,"pids":[900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021],"unknown_mem_count":0}
+    ],
+    "facts": [{"key":"sample","label":"展示样例 / Handwritten example","value":"Not a live observation"}],
+    "insights": ["demo.insight"],
+    "history": [],
+    "verdict": {"level":"ok","rule":"default","text":"正常"}
+  }],
+  "swarms": [{
+    "signature":"swarm:6d4d41e5e6ec65a3",
+    "label":"demo-service",
+    "count":20,
+    "mem_bytes":1048576000,
+    "unknown_mem_count":0,
+    "cpu_pct":2.5,
+    "shape":"burst",
+    "owners":[{"id":"agent:claude:demo-session","count":20}],
+    "parents":[900001],
+    "started_span_s":5.0,
+    "pids":[900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021],
+    "evidence":[{"kind":"synthetic_sample","detail":"Handwritten demo, not observed","confidence":"weak"}],
+    "verdict":{"level":"act","rule":"swarm-burst","text":"同一父进程拉起 20 个相同服务，疑似失控","action":"whoate kill 900002 900003 900004 900005 900006 900007 900008 900009 900010 900011 900012 900013 900014 900015 900016 900017 900018 900019 900020 900021"}
+  }],
+  "issues": []
+}

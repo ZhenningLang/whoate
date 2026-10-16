@@ -20,6 +20,7 @@ struct SessionKey {
     start: u64,
     cwd: Option<String>,
     home: std::path::PathBuf,
+    session_pid: Option<i32>,
 }
 
 pub fn tool(proc: &Proc) -> Option<&'static str> {
@@ -78,9 +79,18 @@ impl Sessions {
         let mut issues = vec![];
         let mut active = BTreeSet::new();
         for proc in procs {
+            // Capability check precedes every source open, including SQLite.
+            if cfg.session_pid().is_some_and(|pid| proc.pid != pid) {
+                continue;
+            }
             let Some(tool) = tool(proc) else {
                 continue;
             };
+            // The limited transcript reader is Claude-specific. Never silently
+            // fall back to an unrestricted database reader for the same PID.
+            if cfg.session_pid().is_some() && tool != "claude" {
+                continue;
+            }
             let key = proc.start_time.map(|start| SessionKey {
                 tool: tool.to_owned(),
                 pid: proc.pid,
@@ -88,6 +98,7 @@ impl Sessions {
                 start,
                 cwd: proc.cwd.clone(),
                 home: cfg.home.clone(),
+                session_pid: cfg.session_pid(),
             });
             if let Some(key) = &key {
                 active.insert(key.clone());

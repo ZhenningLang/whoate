@@ -39,6 +39,17 @@ pub fn apply(
     {
         return Ok(false);
     }
+    apply_matched(recognizer, owner, snap, cfg)
+}
+
+/// Engine has already matched an owner member through its per-tick PID index.
+/// Keep the full snapshot and the same rollback guard as the public entry.
+pub(crate) fn apply_matched(
+    recognizer: &dyn Recognizer,
+    owner: &mut Owner,
+    snap: &Snapshot,
+    cfg: &ConfigReader,
+) -> Result<bool, &'static str> {
     let before = owner.clone();
     recognizer.explain(owner, snap, cfg);
     let mut fixed = owner.clone();

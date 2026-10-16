@@ -20,6 +20,9 @@ pub struct ConfigReader {
     pub values: BTreeMap<String, Value>,
     isolated: bool,
     rules_explicit: bool,
+    // Optional validation capability: one Claude PID, first pair only. Private
+    // and immutable after construction so clones cannot widen the read scope.
+    session_pid: Option<i32>,
     files: Arc<Mutex<cache::Files>>,
     docker: Arc<super::docker::Monitor>,
 }
@@ -45,6 +48,15 @@ impl ConfigReader {
         let rules = rules_override
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".config/whoate/rules.toml"));
+        let session_pid = env("WHOATE_SESSION_PID")
+            .map(|raw| {
+                raw.to_str()
+                    .filter(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()))
+                    .and_then(|s| s.parse::<i32>().ok())
+                    .filter(|pid| *pid > 0)
+                    .ok_or("invalid_session_read_limit")
+            })
+            .transpose()?;
         Ok(Self {
             language: crate::verdict::Language::En,
             docker: Arc::new(super::docker::Monitor::native(home.clone())),
@@ -54,6 +66,7 @@ impl ConfigReader {
             values: BTreeMap::new(),
             isolated,
             rules_explicit,
+            session_pid,
             files: Arc::default(),
         })
     }
@@ -67,8 +80,14 @@ impl ConfigReader {
             values: BTreeMap::new(),
             isolated: true,
             rules_explicit: false,
+            session_pid: None,
             files: Arc::default(),
         }
+    }
+    /// WHOATE_SESSION_PID only narrows source reads; absence preserves normal
+    /// product behavior. It never filters process/resource sampling itself.
+    pub fn session_pid(&self) -> Option<i32> {
+        self.session_pid
     }
     pub fn allows(&self, path: &Path) -> bool {
         !self.isolated

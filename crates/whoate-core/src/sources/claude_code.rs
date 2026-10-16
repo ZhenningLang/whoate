@@ -82,6 +82,9 @@ fn string(value: &Value, key: &str) -> Option<String> {
 }
 
 pub fn read(proc: &Proc, cfg: &ConfigReader) -> Result<ClaudeRead, &'static str> {
+    if cfg.session_pid().is_some_and(|pid| pid != proc.pid) {
+        return Err("session_read_restricted");
+    }
     let session = cfg.home.join(format!(".claude/sessions/{}.json", proc.pid));
     let value = cfg.read_json(&session)?;
     let mut agent = Agent::unknown("claude");
@@ -125,13 +128,110 @@ pub fn read(proc: &Proc, cfg: &ConfigReader) -> Result<ClaudeRead, &'static str>
         .join(format!("{id}.jsonl"));
     if !cfg.allows(&transcript) {
         issues.push("transcript_unavailable");
-    } else if let Err(code) = read_transcript(&transcript, &mut agent, &mut issues) {
-        issues.push(code);
+    } else {
+        let result = if cfg.session_pid().is_some() {
+            // Titles after the first pair are not authorized by this capability.
+            // Only the separate session metadata may supply a title here.
+            agent.title = string(&value, "title");
+            read_limited_transcript(&transcript, &mut agent, &mut issues)
+        } else {
+            read_transcript(&transcript, &mut agent, &mut issues)
+        };
+        if let Err(code) = result {
+            issues.push(code);
+        }
     }
     if !issues.is_empty() {
         agent.confidence = Confidence::Weak;
     }
     Ok(ClaudeRead { agent, issues })
+}
+
+fn read_limited_transcript(
+    path: &Path,
+    agent: &mut Agent,
+    issues: &mut Vec<&'static str>,
+) -> Result<(), &'static str> {
+    let mut file = File::open(path).map_err(|_| "transcript_unavailable")?;
+    agent.updated_at_ms = file
+        .metadata()
+        .map_err(|_| "transcript_stat_failed")?
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .and_then(|d| i64::try_from(d.as_millis()).ok());
+    read_first_pair(&mut file, agent, issues)
+}
+
+fn read_first_pair(
+    reader: &mut impl Read,
+    agent: &mut Agent,
+    issues: &mut Vec<&'static str>,
+) -> Result<(), &'static str> {
+    let mut remaining = PREFIX_BYTES;
+    let (mut user, mut assistant) = (false, false);
+    let mut seen = std::collections::BTreeSet::new();
+    while remaining > 0 && !(user && assistant) {
+        let mut line = Vec::new();
+        let mut eof = false;
+        while remaining > 0 {
+            let mut byte = [0];
+            // No BufReader/read-ahead: even the next byte after the first pair
+            // may be unauthorized. The normal prefix budget still bounds I/O.
+            let count = match reader.read(&mut byte) {
+                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(_) => return Err("transcript_read_failed"),
+                Ok(count) => count,
+            };
+            if count == 0 {
+                eof = true;
+                break;
+            }
+            remaining -= 1;
+            if byte[0] == b'\n' {
+                break;
+            }
+            line.push(byte[0]);
+        }
+        if line.is_empty() {
+            if eof {
+                break;
+            }
+            continue;
+        }
+        let Ok(value) = serde_json::from_slice::<Value>(&line) else {
+            if !eof && remaining > 0 {
+                issues.push("transcript_invalid_line");
+            }
+            continue;
+        };
+        if value["isSidechain"] == true {
+            continue;
+        }
+        if let Some(uuid) = value["uuid"].as_str()
+            && !seen.insert(uuid.to_owned())
+        {
+            continue;
+        }
+        if value["type"] == "user" && !user {
+            user = true;
+            agent.first_prompt = clean_text(&value["message"]["content"], 200);
+        }
+        if value["type"] == "assistant" && !assistant {
+            assistant = true;
+            agent.first_reply = clean_text(&value["message"]["content"], 120);
+            agent.model = string(&value["message"], "model");
+        }
+        if eof {
+            break;
+        }
+    }
+    if !(user && assistant) {
+        issues.push("transcript_first_pair_incomplete");
+    }
+    issues.sort_unstable();
+    issues.dedup();
+    Ok(())
 }
 
 pub fn read_transcript(
@@ -231,6 +331,63 @@ pub fn read_transcript(
 #[cfg(test)]
 mod tests {
     use crate::{model::Agent, sources::testing::Temp};
+    #[test]
+    fn phase04_session_first_pair_never_reads_the_next_byte() {
+        struct PairOnly {
+            data: Vec<u8>,
+            offset: usize,
+        }
+        impl std::io::Read for PairOnly {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                assert!(
+                    self.offset + bytes.len() <= self.data.len(),
+                    "unauthorized read after first pair or read-ahead"
+                );
+                bytes.copy_from_slice(&self.data[self.offset..self.offset + bytes.len()]);
+                self.offset += bytes.len();
+                Ok(bytes.len())
+            }
+        }
+        let data = concat!(
+            "{\"type\":\"user\",\"message\":{\"content\":\"Hello\"}}\n",
+            "{\"type\":\"assistant\",\"message\":{\"content\":\"World\"}}\n"
+        )
+        .as_bytes()
+        .to_vec();
+        let mut reader = PairOnly { data, offset: 0 };
+        let mut agent = Agent::unknown("claude");
+        super::read_first_pair(&mut reader, &mut agent, &mut vec![]).unwrap();
+        assert_eq!(agent.first_prompt.as_deref(), Some("Hello"));
+        assert_eq!(agent.first_reply.as_deref(), Some("World"));
+    }
+    #[test]
+    fn phase04_session_first_pair_malformed_and_bounded_inputs_degrade_safely() {
+        for data in [
+            b"{\"type\":".as_slice(),
+            b"\xff\xfe\n",
+            b"{}\n{}\n",
+            b"{\"type\":\"user\",\"message\":null}\n",
+        ] {
+            let mut agent = Agent::unknown("claude");
+            let mut issues = vec![];
+            super::read_first_pair(&mut std::io::Cursor::new(data), &mut agent, &mut issues)
+                .unwrap();
+            assert!(issues.contains(&"transcript_first_pair_incomplete"));
+        }
+        struct Endless {
+            bytes: u64,
+        }
+        impl std::io::Read for Endless {
+            fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+                out.fill(b'x');
+                self.bytes += out.len() as u64;
+                Ok(out.len())
+            }
+        }
+        let mut reader = Endless { bytes: 0 };
+        super::read_first_pair(&mut reader, &mut Agent::unknown("claude"), &mut vec![]).unwrap();
+        assert_eq!(reader.bytes, super::PREFIX_BYTES);
+    }
     #[test]
     fn phase02_claude_complete_bad_prefix_line_still_degrades() {
         let t = Temp::new();

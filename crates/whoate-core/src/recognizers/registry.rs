@@ -11,8 +11,16 @@ use crate::{
 use std::{collections::BTreeMap, path::Path};
 
 /// Only executable/script entry positions count, never arbitrary argument text.
+fn runtime_execution_role(proc: &Proc) -> bool {
+    crate::attribute::is_runtime(proc)
+        || (super::ide::family(proc) == Some("vscode")
+            && proc.exe_path.as_deref().is_some_and(|exe| {
+                exe.ends_with("/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)")
+            }))
+}
+
 pub(crate) fn runtime_entry(proc: &Proc) -> Option<&str> {
-    if !crate::attribute::is_runtime(proc) && super::ide::family(proc) != Some("vscode") {
+    if !runtime_execution_role(proc) {
         return None;
     }
     let mut args = proc.argv.iter().skip(1);
@@ -35,7 +43,7 @@ pub(crate) fn runtime_entry(proc: &Proc) -> Option<&str> {
 }
 
 pub fn runtime_family(proc: &Proc) -> Option<&'static str> {
-    if !crate::attribute::is_runtime(proc) && super::ide::family(proc) != Some("vscode") {
+    if !runtime_execution_role(proc) {
         return None;
     }
     let title = proc.argv.first().map(String::as_str).unwrap_or(&proc.comm);

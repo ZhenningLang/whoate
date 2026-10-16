@@ -155,11 +155,29 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                 recognizers::user_rules::Rules::default()
             }
         };
+        let by_pid: BTreeMap<_, _> = current.procs.iter().map(|p| (p.pid, p)).collect();
         for owner in &mut report.owners {
-            let owner_cfg = recognizers::registry::prepare(owner, &current, &self.context.cfg);
-            for recognizer in &self.recognizers {
-                let matched =
-                    match recognizers::apply(recognizer.as_ref(), owner, &current, &owner_cfg) {
+            let members: Vec<_> = owner
+                .pids
+                .iter()
+                .filter_map(|pid| by_pid.get(pid))
+                .collect();
+            let matched: Vec<_> = self
+                .recognizers
+                .iter()
+                .filter(|recognizer| members.iter().any(|p| recognizer.matches(p)))
+                .collect();
+            // No builtin matches means no adapter configuration or temporary
+            // count signals are needed. Never restrict the explain snapshot.
+            if !matched.is_empty() {
+                let owner_cfg = recognizers::registry::prepare(owner, &current, &self.context.cfg);
+                for recognizer in matched {
+                    let matched = match recognizers::apply_matched(
+                        recognizer.as_ref(),
+                        owner,
+                        &current,
+                        &owner_cfg,
+                    ) {
                         Ok(matched) => matched,
                         Err(code) => {
                             report.issues.push(SampleIssue {
@@ -170,23 +188,20 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                             false
                         }
                     };
-                if !matched {
-                    continue;
-                }
-                if let Err(code) = self.catalog.attach(recognizer.id(), owner, &owner_cfg) {
-                    report.issues.push(SampleIssue {
-                        stage: "insights".into(),
-                        pid: None,
-                        code: code.into(),
-                    });
+                    if !matched {
+                        continue;
+                    }
+                    if let Err(code) = self.catalog.attach(recognizer.id(), owner, &owner_cfg) {
+                        report.issues.push(SampleIssue {
+                            stage: "insights".into(),
+                            pid: None,
+                            code: code.into(),
+                        });
+                    }
                 }
             }
             recognizers::registry::finish(owner);
-            if current
-                .procs
-                .iter()
-                .any(|p| owner.pids.contains(&p.pid) && p.cpu_pct_sampled.is_none())
-            {
+            if members.iter().any(|p| p.cpu_pct_sampled.is_none()) {
                 owner.cpu_pct = None;
             }
             if continuous {

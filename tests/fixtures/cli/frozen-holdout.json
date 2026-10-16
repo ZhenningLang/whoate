@@ -1,0 +1,14 @@
+{
+  "provenance": "Self-created after the initial CLI production pipeline was written; not a real capture.",
+  "owners": [
+    {"id":"agent:claude:unseen","kind":"agent_session","mem_bytes":100,"cpu_pct":200.0,"pid":941001},
+    {"id":"service:941002","kind":"service","mem_bytes":500,"cpu_pct":null,"pid":941002},
+    {"id":"app:example.unseen","kind":"app","mem_bytes":200,"cpu_pct":0.0,"pid":941003},
+    {"id":"orphan:941004","kind":"orphan","mem_bytes":50,"cpu_pct":1.0,"pid":941004}
+  ],
+  "expected_top_ids": ["service:941002", "app:example.unseen"],
+  "expected_top_known_bytes": 700,
+  "expected_cpu_ids": ["agent:claude:unseen", "orphan:941004", "app:example.unseen", "service:941002"],
+  "expected_total_known_bytes": 850,
+  "secret": "UNSEEN_PRIVATE_QUESTION_04"
+}
