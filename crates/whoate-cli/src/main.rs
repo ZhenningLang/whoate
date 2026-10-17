@@ -343,7 +343,7 @@ mod scenarios {
             Some("sudo launchctl kickstart -k system/com.apple.fseventsd")
         );
         let text = render::report(&projected, engine.catalog.all(), locale::Language::En);
-        assert!(text.contains("administrator"));
+        assert!(text.contains("Requires administrator privileges."));
         assert!(text.contains("watchers"));
         assert!(!text.contains("whoate kill"));
         let mut forged = input.clone();

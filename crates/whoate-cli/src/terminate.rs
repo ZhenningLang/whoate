@@ -320,9 +320,9 @@ mod tests {
         assert_eq!(json["schema"], "whoate/v1");
         assert_eq!(json["executed"], true);
         assert_eq!(json["results"][0]["status"], "still_alive");
+        assert_eq!(backend.events, vec!["measure", "signal", "wait", "measure"]);
         assert_eq!(json["memory"]["physical_memory_change_bytes"], -30);
         assert_eq!(json["memory"]["target_resident_change_bytes"], 4096);
-        assert_eq!(backend.events, vec!["measure", "signal", "wait", "measure"]);
         assert_eq!(backend.sent, vec![(940001, 15)]);
         assert_eq!(backend.waited, vec![Duration::from_secs(5)]);
         let mut backend = Fake::new();

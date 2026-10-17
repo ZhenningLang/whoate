@@ -510,3 +510,29 @@ fn resident_measurement_checks_both_identity_reads_and_deduplicates() {
         assert!(reader.reads <= 2);
     }
 }
+
+#[test]
+fn resident_attribution_conserves_known_footprint_with_unknown_members() {
+    use whoate_core::{
+        recognizers::ConfigReader,
+        snapshot::{Proc, Snapshot},
+    };
+    let home = common::Temp::new();
+    let mut first = Proc::identity(999101, 1, 501, Some(1), "first".into());
+    first.footprint_bytes = Some(123);
+    first.resident_bytes = Some(9999);
+    let mut second = Proc::identity(999102, 1, 501, Some(1), "second".into());
+    second.footprint_bytes = Some(456);
+    second.resident_bytes = Some(1);
+    let mut unknown = Proc::identity(999103, 1, 501, Some(1), "unknown".into());
+    unknown.resident_bytes = Some(1_000_000);
+    let snapshot =
+        Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![first, second, unknown]);
+    let owners = whoate_core::attribute::attribute(
+        &snapshot,
+        501,
+        &ConfigReader::isolated(home.0.clone()),
+        &Default::default(),
+    );
+    assert_eq!(owners.iter().map(|owner| owner.mem_bytes).sum::<u64>(), 579);
+}

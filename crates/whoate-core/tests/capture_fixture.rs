@@ -191,7 +191,6 @@ fn all_strings_are_scrubbed_but_switch_positions_and_public_signals_survive() {
         cwd: Some("/Users/other/PRIVATE_SENTINEL".into()),
     });
     let snap = fixture::redact(snap);
-    fixture::validate_safe(&snap).unwrap();
     let output = serde_json::to_string(&snap).unwrap();
     for secret in [
         "PRIVATE_SENTINEL",
@@ -222,6 +221,8 @@ fn all_strings_are_scrubbed_but_switch_positions_and_public_signals_survive() {
     assert_eq!(snap.procs[0].footprint_bytes, Some(456));
     assert_eq!(snap.procs[0].cpu_time_ns, Some(789));
     assert_eq!((snap.procs[0].pid, snap.procs[0].ppid), (9, 8));
+    // Check each retained signal before the mandatory whole-export privacy gate.
+    fixture::validate_safe(&snap).unwrap();
 }
 
 #[test]
