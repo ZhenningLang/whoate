@@ -262,7 +262,10 @@ mod scenarios {
                 assert_eq!(view.owners.len(), 1);
                 let text = render::report(&view, engine.catalog.all(), language);
                 assert!(text.contains("wired=2048 bytes"));
-                assert!(text.contains("4294967296 bytes"));
+                assert!(
+                    text.lines()
+                        .any(|line| line.starts_with("  data.kalloc.1024: 4294967296 bytes;"))
+                );
                 assert!(text.contains("GPU=Missing"));
                 assert!(!text.contains("PROMPT_SENTINEL"));
                 assert!(!text.contains("REPLY_SENTINEL"));

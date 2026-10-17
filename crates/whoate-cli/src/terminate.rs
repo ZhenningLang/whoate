@@ -371,7 +371,10 @@ mod tests {
         .unwrap();
         let text = String::from_utf8(out).unwrap();
         assert!(text.contains("Estimated physical reclaim"));
-        assert!(text.contains("missing"));
+        assert!(
+            text.lines()
+                .any(|line| line.starts_with("Estimated physical reclaim: missing bytes;"))
+        );
         assert!(text.contains("not guaranteed"));
         assert!(fake.sent.is_empty());
     }

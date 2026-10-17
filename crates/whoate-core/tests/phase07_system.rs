@@ -55,7 +55,12 @@ fn diagnosis_fseventsd_public_engine_explains_restart_without_enabling_kill() {
         Some("sudo launchctl kickstart -k system/com.apple.fseventsd")
     );
     assert!(report.owners[0].verdict.text.contains("launchd"));
-    assert!(report.owners[0].verdict.text.contains("administrator"));
+    assert!(
+        report.owners[0]
+            .verdict
+            .text
+            .contains("Requires administrator privileges.")
+    );
     assert!(report.owners[0].verdict.text.contains("watcher"));
 }
 
