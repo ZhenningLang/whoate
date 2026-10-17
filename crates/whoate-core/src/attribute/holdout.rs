@@ -66,6 +66,7 @@ fn phase02_attribution_edges_live_environment_and_responsible_binary_plist() {
     p.tmux_pane = Some("%live".into());
     let mut s = snap(vec![p]);
     s.tmux_panes.push(TmuxPane {
+        pane_title: None,
         pane_id: "%live".into(),
         target: "demo:0.0".into(),
         window_name: None,
@@ -240,6 +241,7 @@ fn phase02_swarm_ancestor_pane_signal_groups_children_without_environment() {
         let mut s = snap(vec![proc(990001, 1, "zsh"), proc(990002, 1, "zsh")]);
         for (pid, id) in [(990001, "%one"), (990002, "%two")] {
             s.tmux_panes.push(TmuxPane {
+                pane_title: None,
                 pane_id: id.into(),
                 target: id.into(),
                 window_name: None,
@@ -410,6 +412,7 @@ fn phase02_verdict_curve_and_idle_exact_boundaries_both_languages() {
     let mut agent = Agent::unknown("claude");
     agent.status = Some("idle".into());
     agent.updated_at_ms = Some(1791978000_i64 * 1000 - 7_200_000);
+    agent.last_activity_at = Some("2026-10-14T09:40:00Z".into());
     o.agent = Some(agent);
     o.kind = OwnerKind::AgentSession;
     o.mem_bytes = 500 * 1024 * 1024;
@@ -426,6 +429,7 @@ fn phase02_verdict_curve_and_idle_exact_boundaries_both_languages() {
     );
     o.mem_bytes += 1;
     o.agent.as_mut().unwrap().updated_at_ms = Some(1791978000_i64 * 1000 - 7_200_000 + 1);
+    o.agent.as_mut().unwrap().last_activity_at = Some("2026-10-14T09:40:00.001Z".into());
     assert_eq!(
         rules::owner(&o, &s, &History::default(), false, false, Language::En).rule,
         "default"

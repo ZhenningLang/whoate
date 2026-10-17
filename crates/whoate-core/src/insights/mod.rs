@@ -5,6 +5,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 pub mod registry;
+pub mod system_policy;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Localized {
@@ -14,6 +15,9 @@ pub struct Localized {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Trigger {
+    SystemService {
+        member: String,
+    },
     Count {
         signal: String,
         min: u64,
@@ -38,6 +42,8 @@ pub struct Insight {
     pub advice: Localized,
     pub source: String,
     pub checked: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system: Option<system_policy::Policy>,
 }
 pub fn all() -> Vec<Insight> {
     registry::load().expect("embedded insight library must pass full validation")
@@ -61,7 +67,7 @@ impl Catalog {
         cfg: &ConfigReader,
     ) -> Result<(), &'static str> {
         for entry in self.entries.iter().filter(|e| e.recognizer == recognizer) {
-            if !entry.source.starts_with("https://")
+            if !system_policy::valid_source(entry)
                 || entry.cause.zh.is_empty()
                 || entry.cause.en.is_empty()
                 || entry.advice.zh.is_empty()
@@ -91,6 +97,10 @@ pub fn evaluate(
     let mut matched = true;
     while let Some(trigger) = pending.pop() {
         let current = match trigger {
+            Trigger::SystemService { member } => owner
+                .facts
+                .iter()
+                .any(|f| f.key == "system_service" && f.value == FactValue::Text(member.clone())),
             Trigger::Memory { min_bytes } => owner.mem_bytes >= *min_bytes,
             Trigger::Count { signal, min } => {
                 let value = match signal.as_str() {
@@ -153,6 +163,7 @@ mod tests {
             },
             source: "https://example.com/evidence".into(),
             checked: "2026-10-15".into(),
+            system: None,
         };
         let mut catalog = Catalog::new(vec![entry]);
         assert_eq!(catalog.all().len(), 1);

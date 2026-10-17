@@ -132,6 +132,15 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                     .map(|(cpu, elapsed)| cpu as f64 / elapsed as f64 * 100.0);
             }
         }
+        if let Some(host) = &mut current.host
+            && let Some(zones) = &host.kernel_zones
+        {
+            host.memory_diagnostics = Some(insights::system_policy::zone_diagnostics(
+                zones,
+                self.context.language,
+                insights::system_policy::zone_policy(),
+            ));
+        }
         self.previous = Some((current.clone(), now));
         let own_agents: Vec<_> = current
             .procs
@@ -139,7 +148,10 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
             .filter(|p| p.uid == self.context.uid && crate::sources::tool(p).is_some())
             .cloned()
             .collect();
-        let (agents, issues) = self.sessions.collect(&own_agents, &self.context.cfg);
+        let (mut agents, issues) = self.sessions.collect(&own_agents, &self.context.cfg);
+        for agent in agents.values_mut() {
+            agent.idle_seconds = crate::sources::idle_seconds(agent, &current);
+        }
         current.issues.extend(issues);
         let mut report = Report::from_snapshot(&current);
         report.owners =
@@ -212,12 +224,21 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                 owner.history = self.history.series(&owner.id);
             }
             let mut platform = false;
-            if owner.kind == OwnerKind::Service {
+            let mut platform_pids = BTreeSet::new();
+            if owner.kind == OwnerKind::Service
+                || owner.kind == OwnerKind::System
+                    && members
+                        .iter()
+                        .any(|p| p.uid != 0 && insights::system_policy::member(p).is_some())
+            {
                 for pid in &owner.pids {
                     match (self.context.platform_probe)(*pid) {
                         Ok(true) => {
                             platform = true;
-                            break;
+                            platform_pids.insert(*pid);
+                            if let Some(p) = members.iter().find(|p| p.pid == *pid) {
+                                report.verified_platform.insert(*pid, (p.uid, p.start_time));
+                            }
                         }
                         Ok(false) => {}
                         Err(code) => report.issues.push(SampleIssue {
@@ -228,14 +249,23 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                     }
                 }
             }
-            owner.verdict = verdict::rules::owner(
+            owner.verdict = insights::system_policy::diagnose(
                 owner,
                 &current,
-                &self.history,
-                continuous,
-                platform,
+                &platform_pids,
                 self.context.language,
-            );
+                self.catalog.all(),
+            )
+            .unwrap_or_else(|| {
+                verdict::rules::owner(
+                    owner,
+                    &current,
+                    &self.history,
+                    continuous,
+                    platform,
+                    self.context.language,
+                )
+            });
             user_rules.apply(owner, &current, &self.context.cfg);
         }
         self.history
@@ -391,6 +421,7 @@ pub(crate) mod tests {
             },
             source: "https://example.com/evidence".into(),
             checked: "2026-10-15".into(),
+            system: None,
         }]);
         let report = engine.tick().unwrap();
         assert!(report.owners[0].insights.is_empty());
@@ -471,6 +502,7 @@ pub(crate) mod tests {
             },
             source: "https://example.com/evidence".into(),
             checked: "2026-10-15".into(),
+            system: None,
         }]);
         let report = engine.tick().unwrap();
         assert_eq!(report.owners[0].insights, vec!["pipeline-insight"]);

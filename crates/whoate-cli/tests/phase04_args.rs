@@ -53,7 +53,6 @@ fn phase04_args_reject_flags_without_a_contract_on_that_command() {
     for args in [
         vec!["insights", "--list", "--json"],
         vec!["agent-guide", "--fresh"],
-        vec!["kill", "123", "--json"],
         vec!["kill", "123", "--prompts"],
         vec!["why", "123", "--by", "mem"],
         vec!["agents", "-n", "10"],

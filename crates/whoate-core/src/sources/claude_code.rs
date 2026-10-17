@@ -14,6 +14,55 @@ use std::{
 pub const PREFIX_BYTES: u64 = 256 * 1024;
 pub const TAIL_BYTES: u64 = 64 * 1024;
 
+/// Deserialize metadata only. Unknown fields (including message.content) use
+/// serde IgnoredAny; this path does not construct a body Value or clean text.
+pub fn last_activity_from_tail(
+    tail: &[u8],
+    truncated_start: bool,
+) -> Result<Option<String>, &'static str> {
+    #[derive(serde::Deserialize)]
+    struct Activity {
+        #[serde(rename = "type")]
+        kind: Option<String>,
+        timestamp: Option<String>,
+        #[serde(rename = "isSidechain", default)]
+        sidechain: bool,
+    }
+    if tail.len() > TAIL_BYTES as usize {
+        return Err("activity_tail_limit");
+    }
+    let mut last = None;
+    let mut lines = tail.split(|b| *b == b'\n').enumerate().peekable();
+    while let Some((index, line)) = lines.next() {
+        if line.is_empty() {
+            continue;
+        }
+        let record = match serde_json::from_slice::<Activity>(line) {
+            Ok(record) => record,
+            Err(_) if index == 0 && truncated_start => continue,
+            Err(_) if lines.peek().is_none() => return Err("activity_pending_last_line"),
+            Err(_) => return Err("activity_invalid_line"),
+        };
+        if record.sidechain || !matches!(record.kind.as_deref(), Some("user" | "assistant")) {
+            continue;
+        }
+        // A later message without a usable timestamp invalidates earlier time.
+        last = match record.timestamp {
+            Some(at)
+                if time::OffsetDateTime::parse(
+                    &at,
+                    &time::format_description::well_known::Rfc3339,
+                )
+                .is_ok_and(|t| t.unix_timestamp() >= 0) =>
+            {
+                Some(at)
+            }
+            _ => None,
+        };
+    }
+    Ok(last)
+}
+
 /// Only text blocks can become a prompt/reply. Wrapped contents are discarded.
 pub fn clean_text(value: &Value, limit: usize) -> Option<String> {
     let text = if let Some(s) = value.as_str() {
@@ -293,6 +342,22 @@ pub fn read_transcript(
         .take(TAIL_BYTES)
         .read_to_end(&mut tail)
         .map_err(|_| "transcript_read_failed")?;
+    agent.last_activity_at = match last_activity_from_tail(&tail, offset > 0) {
+        Ok(at) => at,
+        // Concurrent append fragments are pending, not malformed. Keep the
+        // activity unknown without weakening the legacy session confidence.
+        Err("activity_pending_last_line") => None,
+        Err(code) => {
+            // The legacy parser already reports malformed complete records.
+            // Reuse its public code rather than duplicating the same failure.
+            issues.push(if code == "activity_invalid_line" {
+                "transcript_invalid_line"
+            } else {
+                code
+            });
+            None
+        }
+    };
     let mut lines = tail.split(|b| *b == b'\n').enumerate().peekable();
     while let Some((index, line)) = lines.next() {
         if line.is_empty() {

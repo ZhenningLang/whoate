@@ -75,7 +75,14 @@ pub fn project(input: &Report, snapshot: &Snapshot, policy: Policy) -> Report {
         }
     };
     let mut output = input.clone();
+    let platform_pids = input.verified_platform_pids(snapshot);
     for owner in &mut output.owners {
+        if policy.redact
+            && let Some(origin) = &mut owner.origin
+        {
+            origin.pane_title = origin.pane_title.as_ref().map(|_| "<redacted>".into());
+            origin.window_name = origin.window_name.as_ref().map(|_| "<redacted>".into());
+        }
         if owner.agent.is_none() {
             clean(&mut owner.label);
         }
@@ -136,7 +143,13 @@ pub fn project(input: &Report, snapshot: &Snapshot, policy: Policy) -> Report {
         if prompt_taints.iter().any(|s| owner.verdict.text.contains(s)) {
             owner.verdict.text = "<argument>".into();
         }
+        let system_action =
+            whoate_core::insights::system_policy::public_action(owner, snapshot, &platform_pids);
         if let Some(action) = &mut owner.verdict.action {
+            if let Some(registered) = system_action {
+                *action = registered;
+                continue;
+            }
             *action = format!(
                 "whoate kill {}",
                 owner

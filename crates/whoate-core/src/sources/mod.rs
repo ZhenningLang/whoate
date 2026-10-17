@@ -2,6 +2,21 @@ pub mod claude_code;
 pub mod kilo;
 pub mod opencode;
 
+pub fn idle_seconds(agent: &crate::model::Agent, snap: &crate::snapshot::Snapshot) -> Option<u64> {
+    if agent.stale {
+        return None;
+    }
+    let at = time::OffsetDateTime::parse(
+        agent.last_activity_at.as_deref()?,
+        &time::format_description::well_known::Rfc3339,
+    )
+    .ok()?;
+    let at = u64::try_from(at.unix_timestamp_nanos() / 1_000).ok()?;
+    crate::swarm::timestamp_us(snap)?
+        .checked_sub(at)
+        .map(|us| us / 1_000_000)
+}
+
 #[cfg(test)]
 mod phase02_tests;
 

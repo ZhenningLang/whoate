@@ -181,6 +181,9 @@ fn all_strings_are_scrubbed_but_switch_positions_and_public_signals_survive() {
     proc.cpu_time_ns = Some(789);
     let mut snap = Snapshot::historical("2026-10-14T19:40:08+08:00".into(), vec![proc]);
     snap.tmux_panes.push(TmuxPane {
+        pane_title: Some(
+            "PRIVATE_SENTINEL /Users/other/private-project token=PRIVATE_SENTINEL".into(),
+        ),
         pane_id: "%1".into(),
         target: "PRIVATE_SENTINEL:1.0".into(),
         window_name: Some("PRIVATE_SENTINEL".into()),
@@ -243,6 +246,23 @@ fn privacy_scanner_rejects_unmasked_text_and_fake_redacted_paths() {
     snap.procs[0].argv = vec!["node".into()];
     snap.procs[0].cwd = Some("~/redacted/path-0/UNSEEN_SECRET".into());
     assert!(fixture::validate_safe(&snap).is_err());
+}
+
+#[test]
+fn phase07_fixture_validator_rejects_unredacted_pane_titles() {
+    let mut snap = Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![]);
+    snap.tmux_panes.push(TmuxPane {
+        pane_id: "%1".into(),
+        target: "session:%1".into(),
+        window_name: Some("window".into()),
+        pane_title: Some("PRIVATE_SENTINEL /Users/other/private-project token=secret".into()),
+        pane_pid: 8,
+        cwd: None,
+    });
+    assert!(fixture::validate_safe(&snap).is_err());
+    let safe = fixture::redact(snap);
+    fixture::validate_safe(&safe).unwrap();
+    assert_eq!(safe.tmux_panes[0].pane_title.as_deref(), Some("<redacted>"));
 }
 
 #[test]

@@ -4,7 +4,10 @@ mod common;
 
 #[test]
 fn phase03_catalog_embedded_library_covers_all_twelve_software_families() {
-    let entries = insights::all();
+    let entries: Vec<_> = insights::all()
+        .into_iter()
+        .filter(|e| e.system.is_none())
+        .collect();
     assert_eq!(entries.len(), 28);
     let ids: BTreeSet<_> = entries.iter().map(|e| e.id.as_str()).collect();
     assert_eq!(ids.len(), 28);
@@ -61,7 +64,8 @@ fn phase03_catalog_embedded_library_covers_all_twelve_software_families() {
             "agents.toml".into(),
             "browsers.toml".into(),
             "desktop.toml".into(),
-            "runtimes.toml".into()
+            "runtimes.toml".into(),
+            "system.toml".into()
         ])
     );
     assert_eq!(
@@ -137,7 +141,14 @@ fn phase03_catalog_rejects_invalid_files_metadata_and_all_trigger_leaves() {
 fn phase03_catalog_embedded_data_is_available_from_an_unrelated_cwd() {
     const MARKER: &str = "WHOATE_P03_CATALOG_CHILD";
     if std::env::var_os(MARKER).is_some() {
-        assert_eq!(insights::registry::load().unwrap().len(), 28);
+        assert_eq!(
+            insights::registry::load()
+                .unwrap()
+                .iter()
+                .filter(|e| e.system.is_none())
+                .count(),
+            28
+        );
         return;
     }
     let temp = common::Temp::new();
@@ -274,7 +285,10 @@ fn phase03_insights_every_entry_has_positive_negative_boundary_and_software_cont
             Some(("docker.resource_saver_disabled", serde_json::json!(true))),
         ),
     ];
-    let entries = insights::all();
+    let entries: Vec<_> = insights::all()
+        .into_iter()
+        .filter(|entry| entry.system.is_none())
+        .collect();
     assert_eq!(cases.len(), entries.len());
     let temp = common::Temp::new();
     for (id, family, memory, count, config) in cases {

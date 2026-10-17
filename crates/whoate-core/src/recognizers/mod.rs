@@ -4,6 +4,7 @@ pub mod dev_runtimes;
 pub mod docker;
 pub mod ide;
 pub mod registry;
+pub mod system_services;
 pub mod user_rules;
 pub mod webkit_host;
 

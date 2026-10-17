@@ -725,6 +725,7 @@ fn phase03_holdout_mixed_agent_owner_reserves_mcp_and_specialized_parts_in_both_
             .collect();
         let mut snap = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), ps);
         snap.tmux_panes.push(TmuxPane {
+            pane_title: None,
             pane_id: "%holdout".into(),
             target: "test:1.0".into(),
             window_name: None,
@@ -877,6 +878,7 @@ fn phase03_user_rules_hot_reload_rejects_cross_member_and_invalid_whole_files() 
         ],
     );
     snap.tmux_panes.push(TmuxPane {
+        pane_title: None,
         pane_id: "%rules".into(),
         target: "test:1.0".into(),
         window_name: None,
@@ -1303,6 +1305,7 @@ fn phase03_holdout_frozen_unseen_brave_docker_mcp_and_ide_keep_independent_oracl
             .collect();
         let mut snap = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), ps);
         snap.tmux_panes.push(TmuxPane {
+            pane_title: None,
             pane_id: "%unseen".into(),
             target: "test:2.0".into(),
             window_name: None,

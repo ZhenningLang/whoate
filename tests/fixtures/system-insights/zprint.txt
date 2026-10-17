@@ -1,0 +1,14 @@
+                            elem         cur         max        cur         max         cur  alloc  alloc                total
+zone name                   size        size        size      #elts       #elts       inuse   size  count               allocs
+-------------------------------------------------------------------------------------------------------------------------------
+data.kalloc.1024            1024          0K          0K          0           0        1689     0K      0                   0B
+small.total                1024          0K          0K          0           0           1     0K      0                 999G
+five                           1          0K          0K          0           0         500     0K      0                   0B
+four                           1          0K          0K          0           0         400     0K      0 C                 0B
+three                          1          0K          0K          0           0         300     0K      0 P                 0B
+alpha                          1          0K          0K          0           0         200     0K      0                   0B
+beta                           1          0K          0K          0           0         200     0K      0 X                 0B
+-------------------------------------------------------------------------------------------------------------
+wired memory is not a zone row
+ZONE TOTALS
+TOTAL USED = 0

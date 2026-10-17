@@ -116,6 +116,8 @@ pub fn attribute(
             ));
             origin.tmux_pane = Some(pane.pane_id.clone());
             origin.pane_alive = Some(true);
+            origin.pane_title = pane.pane_title.clone();
+            origin.window_name = pane.window_name.clone();
             if origin.cwd.is_none() {
                 origin.cwd = pane.cwd.clone();
             }
@@ -129,6 +131,10 @@ pub fn attribute(
             };
             if origin.cwd.is_none() {
                 origin.cwd = chain.iter().find_map(|p| p.cwd.clone());
+            }
+            if let Some(pane) = snap.tmux_panes.iter().find(|p| &p.pane_id == pane_id) {
+                origin.pane_title = pane.pane_title.clone();
+                origin.window_name = pane.window_name.clone();
             }
             evidence.push(Evidence::new(
                 "tmux_environment",
@@ -315,6 +321,8 @@ pub fn attribute(
         if target.tmux_pane.is_none() {
             target.tmux_pane = origin.tmux_pane;
             target.pane_alive = origin.pane_alive;
+            target.pane_title = origin.pane_title;
+            target.window_name = origin.window_name;
         }
         // Deterministic context choice when several children provide cwd values.
         if let Some(cwd) = origin.cwd
@@ -336,6 +344,9 @@ pub fn attribute(
     }
     let mut output: Vec<_> = owners.into_values().collect();
     for owner in &mut output {
+        owner.reclaimable_physical = Some(PhysicalEstimate::from_procs(
+            owner.pids.iter().filter_map(|pid| index.get(pid).copied()),
+        ));
         owner.pids.sort_unstable();
         owner.evidence.sort_by_key(|e| {
             (

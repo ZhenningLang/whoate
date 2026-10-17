@@ -106,6 +106,9 @@ pub fn host_from_pages(
         _ => return Err(SampleError::new("host", "unknown_pressure")),
     };
     Ok(Host {
+        kernel_zones: None,
+        gpu_memory: None,
+        memory_diagnostics: None,
         mem_total_bytes: total,
         mem_used_bytes: bytes(used)?,
         compressed_bytes: bytes(compressed)?,

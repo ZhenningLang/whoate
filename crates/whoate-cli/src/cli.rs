@@ -78,7 +78,7 @@ pub fn parse() -> Cli {
             || matches.value_source(flag) == Some(ValueSource::CommandLine);
         let allowed = match flag {
             "by" | "count" => name == "top",
-            "json" => query,
+            "json" => query || name == "kill",
             _ => query || name == "watch",
         };
         if supplied && !allowed {
@@ -247,6 +247,7 @@ mod tests {
         });
         let mut snap = Snapshot::historical(r.taken_at.clone(), vec![]);
         snap.tmux_panes.push(TmuxPane {
+            pane_title: None,
             pane_id: "%42".into(),
             target: "work:0.1".into(),
             window_name: None,

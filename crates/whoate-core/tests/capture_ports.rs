@@ -82,6 +82,7 @@ fn orphan_descendant_listeners_are_candidates_but_live_panes_apps_and_cycles_are
     let mut node = Proc::identity(11, 10, 501, Some(1), "node".into());
     node.tmux_pane = Some("%99".into());
     let panes = vec![TmuxPane {
+        pane_title: None,
         pane_id: "%1".into(),
         target: "a:0.0".into(),
         window_name: None,

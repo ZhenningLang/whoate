@@ -118,6 +118,7 @@ pub fn import_archive(bytes: &[u8]) -> SampleResult<Snapshot> {
             .filter(|pid| *pid > 0)
             .ok_or_else(|| SampleError::new("archive", "invalid_pane_pid"))?;
         snap.tmux_panes.push(TmuxPane {
+            pane_title: None,
             pane_id: fields[0].into(),
             target: fields[1].into(),
             window_name: Some(fields[2].into()),
@@ -531,6 +532,7 @@ impl Redactor {
         for pane in &mut snapshot.tmux_panes {
             pane.target = format!("session:{}", pane.pane_id);
             pane.window_name = pane.window_name.as_ref().map(|_| "window".into());
+            pane.pane_title = pane.pane_title.as_ref().map(|_| "<redacted>".into());
             if let Some(path) = &mut pane.cwd {
                 *path = self.directory(path);
             }
@@ -618,6 +620,10 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
                 .window_name
                 .as_deref()
                 .is_some_and(|value| value != "window")
+            || pane
+                .pane_title
+                .as_deref()
+                .is_some_and(|value| value != "<redacted>")
             || pane.cwd.as_deref().is_some_and(|path| !valid_path(path))
         {
             return Err(SampleError::new("privacy", "unsafe_pane"));

@@ -90,9 +90,112 @@ pub trait Backend {
     fn platform_binary(&mut self, pid: i32) -> Result<bool, &'static str>;
     fn signal(&mut self, pid: i32, signal: i32) -> Result<(), &'static str>;
     fn wait(&mut self, duration: Duration);
+    fn measure_memory(&mut self, _: &KillPlan) -> MemoryMeasurement {
+        MemoryMeasurement::missing("measurement_unavailable")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MemoryMeasurement {
+    pub measured_at: Option<String>,
+    pub host_used_bytes: Option<u64>,
+    pub target_resident_bytes: Option<u64>,
+    pub unknown_count: usize,
+    pub reason: Option<String>,
+}
+impl MemoryMeasurement {
+    pub fn missing(reason: &str) -> Self {
+        Self {
+            measured_at: None,
+            host_used_bytes: None,
+            target_resident_bytes: None,
+            unknown_count: 0,
+            reason: Some(reason.into()),
+        }
+    }
+}
+pub trait MemoryReader {
+    fn memory_identity(&mut self, pid: i32) -> Result<Option<Identity>, &'static str>;
+    fn resident_bytes(&mut self, pid: i32) -> Result<u64, &'static str>;
+    fn host_used_bytes(&mut self) -> Result<u64, &'static str>;
+    fn measured_at(&mut self) -> Option<String>;
+}
+/// Same original identities before/read/after. A proven absent target contributes
+/// zero after termination; PID reuse or unreadable identities remain unknown.
+pub fn measure_memory(plan: &KillPlan, reader: &mut dyn MemoryReader) -> MemoryMeasurement {
+    let mut total = Some(0_u64);
+    let mut unknown_count = 0;
+    let mut seen = BTreeSet::new();
+    for item in &plan.pids {
+        if !seen.insert(item.pid) {
+            continue;
+        }
+        let bytes = (|| {
+            let expected = item
+                .expected
+                .as_ref()
+                .filter(|id| id.start_time.is_some())?;
+            let before = reader.memory_identity(item.pid).ok()?;
+            let Some(before) = before else {
+                return Some(0);
+            };
+            if &before != expected {
+                return None;
+            }
+            let bytes = reader.resident_bytes(item.pid).ok()?;
+            let after = reader.memory_identity(item.pid).ok()??;
+            (&after == expected).then_some(bytes)
+        })();
+        match bytes {
+            Some(bytes) => total = total.and_then(|n| n.checked_add(bytes)),
+            None => unknown_count += 1,
+        }
+    }
+    let host = reader.host_used_bytes().ok();
+    let target = (unknown_count == 0).then_some(total).flatten();
+    MemoryMeasurement {
+        measured_at: reader.measured_at(),
+        host_used_bytes: host,
+        target_resident_bytes: target,
+        unknown_count,
+        reason: if host.is_none() || target.is_none() {
+            Some("memory_measurement_incomplete".into())
+        } else {
+            None
+        },
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MemoryChange {
+    pub before: MemoryMeasurement,
+    pub after: Option<MemoryMeasurement>,
+    pub physical_memory_change_bytes: Option<i64>,
+    pub target_resident_change_bytes: Option<i64>,
+    pub basis: String,
+}
+impl MemoryChange {
+    pub fn new(before: MemoryMeasurement, after: Option<MemoryMeasurement>) -> Self {
+        let diff = |before: Option<u64>, after: Option<u64>| {
+            before
+                .zip(after)
+                .and_then(|(b, a)| i64::try_from(b as i128 - a as i128).ok())
+        };
+        let physical_memory_change_bytes = diff(
+            before.host_used_bytes,
+            after.as_ref().and_then(|a| a.host_used_bytes),
+        );
+        let target_resident_change_bytes = diff(
+            before.target_resident_bytes,
+            after.as_ref().and_then(|a| a.target_resident_bytes),
+        );
+        Self { before, after, physical_memory_change_bytes, target_resident_change_bytes, basis: "before host used - after host used; non-causal observation; RSS estimate includes shared pages".into() }
+    }
 }
 pub struct MacBackend;
 impl Backend for MacBackend {
+    fn measure_memory(&mut self, plan: &KillPlan) -> MemoryMeasurement {
+        measure_memory(plan, self)
+    }
     fn self_pid(&self) -> i32 {
         std::process::id() as i32
     }
@@ -136,6 +239,25 @@ impl Backend for MacBackend {
     }
     fn wait(&mut self, duration: Duration) {
         std::thread::sleep(duration);
+    }
+}
+impl MemoryReader for MacBackend {
+    fn memory_identity(&mut self, pid: i32) -> Result<Option<Identity>, &'static str> {
+        self.identity(pid)
+    }
+    fn resident_bytes(&mut self, pid: i32) -> Result<u64, &'static str> {
+        crate::sample::libproc::resources(pid)
+            .map_err(|_| "resident_unavailable")?
+            .2
+            .ok_or("resident_unavailable")
+    }
+    fn host_used_bytes(&mut self) -> Result<u64, &'static str> {
+        crate::sample::libproc::host()
+            .map(|h| h.mem_used_bytes)
+            .map_err(|_| "host_unavailable")
+    }
+    fn measured_at(&mut self) -> Option<String> {
+        crate::sample::sysctl::now_timestamp().ok()
     }
 }
 pub fn platform_binary(pid: i32) -> Result<bool, &'static str> {
@@ -195,6 +317,30 @@ fn checked(
         return Err((KillStatus::Refused, "identity_changed"));
     }
     Ok(actual)
+}
+/// Read-only safety preview. Never signals/waits; still_alive is an observation.
+pub fn preview(plan: &KillPlan, backend: &mut dyn Backend) -> KillReport {
+    let mut seen = BTreeSet::new();
+    let results = plan
+        .pids
+        .iter()
+        .filter(|item| seen.insert(item.pid))
+        .map(|item| {
+            let (status, reason) = match checked(item, backend) {
+                Ok(_) => (KillStatus::StillAlive, "preview_only"),
+                Err(failure) => failure,
+            };
+            PidResult {
+                pid: item.pid,
+                status,
+                reason: Some(reason.into()),
+            }
+        })
+        .collect();
+    KillReport {
+        results,
+        missing_targets: plan.missing_targets.clone(),
+    }
 }
 pub fn execute(plan: &KillPlan, force: bool, backend: &mut dyn Backend) -> KillReport {
     let mut results = vec![];

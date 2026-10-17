@@ -168,5 +168,6 @@ pub fn builtins() -> Vec<Box<dyn Recognizer>> {
         Box::new(super::docker::Docker),
         Box::new(CodingAgents),
         Box::new(DevRuntimes),
+        Box::new(super::system_services::SystemServices),
     ]
 }

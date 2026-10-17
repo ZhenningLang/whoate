@@ -137,6 +137,9 @@ pub fn write_atomic(path: &Path, cache: &SystemCache) -> SampleResult<()> {
     if cache.rows.is_empty() {
         return Err(SampleError::new("cache", "empty_result"));
     }
+    write_json_atomic(path, cache)
+}
+pub(crate) fn write_json_atomic(path: &Path, cache: &impl Serialize) -> SampleResult<()> {
     let parent = path
         .parent()
         .ok_or_else(|| SampleError::new("cache", "invalid_destination"))?;
@@ -178,6 +181,9 @@ pub fn write_atomic(path: &Path, cache: &SystemCache) -> SampleResult<()> {
 
 pub trait SlowSource: Send + 'static {
     fn capture(&mut self, stop: &AtomicBool) -> SampleResult<SystemCache>;
+    fn capture_memory(&mut self, _: &AtomicBool) -> Option<super::system_memory::MemoryCache> {
+        None
+    }
 }
 
 pub trait Clock: Send + Sync + 'static {
@@ -192,6 +198,7 @@ impl Clock for MonotonicClock {
 
 pub struct Worker {
     state: Arc<Mutex<CacheState>>,
+    memory: Arc<Mutex<super::system_memory::MemoryCache>>,
     signal: Arc<(Mutex<bool>, Condvar)>,
     stop: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
@@ -211,6 +218,11 @@ impl Worker {
         clock: Arc<dyn Clock>,
     ) -> Self {
         let state = Arc::new(Mutex::new(CacheState::load(&path)));
+        let memory_path = path.with_file_name("system-memory.json");
+        let memory = Arc::new(Mutex::new(super::system_memory::MemoryCache::load(
+            &memory_path,
+        )));
+        let memory_copy = memory.clone();
         let signal = Arc::new((Mutex::new(false), Condvar::new()));
         let stop = Arc::new(AtomicBool::new(false));
         let (state_copy, signal_copy, stop_copy) = (state.clone(), signal.clone(), stop.clone());
@@ -228,6 +240,14 @@ impl Worker {
                     let mut next = state_copy.lock().expect("cache state").clone();
                     next.update(result, &path);
                     *state_copy.lock().expect("cache state") = next;
+                    if let Some(result) = source.capture_memory(&stop_copy) {
+                        if stop_copy.load(Ordering::Acquire) {
+                            break;
+                        }
+                        let mut next = memory_copy.lock().expect("memory state").clone();
+                        next.update(result, &memory_path);
+                        *memory_copy.lock().expect("memory state") = next;
+                    }
                 }
                 let (lock, condition) = &*signal_copy;
                 let guard = lock.lock().expect("worker signal");
@@ -247,6 +267,7 @@ impl Worker {
         });
         Self {
             state,
+            memory,
             signal,
             stop,
             thread: Some(thread),
@@ -254,6 +275,9 @@ impl Worker {
     }
     pub fn state(&self) -> CacheState {
         self.state.lock().expect("cache state").clone()
+    }
+    pub fn memory(&self) -> super::system_memory::MemoryCache {
+        self.memory.lock().expect("memory state").clone()
     }
     pub fn clock_changed(&self) {
         let (lock, condition) = &*self.signal;

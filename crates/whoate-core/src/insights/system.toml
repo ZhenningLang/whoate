@@ -1,0 +1,144 @@
+# Thresholds approved in Phase 07 ORCHESTRATOR_RULING, 2026-10-17.
+# Product heuristics, not Apple normal-memory baselines. Sources describe
+# service behavior; they do not purport to establish these product thresholds.
+[kernel_zones]
+watch_bytes = 2147483648
+act_bytes = 4294967296
+source = "man 1 zprint"
+checked = "2026-10-17"
+
+[[entries]]
+id = "system.fseventsd"
+recognizer = "system-services"
+source = "man 1 launchctl"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "fseventsd" }
+cause = { zh = "文件事件服务长期高占用，可能累积内存。", en = "Long-running filesystem event service has high memory; accumulation is possible." }
+advice = { zh = "仅展示管理员重启命令；whoate 不会执行。", en = "Display the administrator restart command only; whoate will not execute it." }
+[entries.system]
+member = "fseventsd"
+watch = { bytes = 1073741824, uptime_seconds = 259200 }
+act = { bytes = 3221225472, uptime_seconds = 604800 }
+restart = "fseventsd"
+baseline = { zh = "Apple 常态基线未知；阈值为产品启发式。", en = "Apple baseline unknown; thresholds are product heuristics." }
+restart_safety = { zh = "可考虑重启，但系统策略可能拒绝。", en = "Restart may be considered, but system policy may deny it." }
+launchd = { zh = "launchd 会自动重新拉起。", en = "launchd automatically starts the service again." }
+permissions = { zh = "需要管理员权限。", en = "Requires administrator privileges." }
+side_effects = { zh = "部分 CLI 文件监听重启后可能不重连，需重开对应工具。", en = "Some CLI file watchers may not reconnect; reopen affected tools." }
+provenance = [{ kind = "local_doc", reference = "man 1 launchctl" }, { kind = "local_doc", reference = "/System/Library/LaunchDaemons/com.apple.fseventsd.plist" }, { kind = "owner_report", date = "2026-10-16", description = "Owner reported fseventsd at 5.6–5.8GB after 17 days and about 6MB after restart; some watchers did not reconnect. Not reproduced by this diagnostic." }]
+
+[[entries]]
+id = "system.mds"
+recognizer = "system-services"
+source = "man 8 mds"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "mds" }
+cause = { zh = "Spotlight 服务高占用，可能正在索引，不等于泄漏。", en = "Spotlight has high memory; active indexing is possible, not proof of a leak." }
+advice = { zh = "先用 mdutil -s / 查看索引状态；仅展示管理员重启命令。", en = "Check indexing with mdutil -s / first; display the administrator restart command only." }
+[entries.system]
+member = "mds"
+watch = { bytes = 1610612736, uptime_seconds = 86400 }
+act = { bytes = 4294967296, uptime_seconds = 259200 }
+restart = "spotlight"
+baseline = { zh = "Apple 常态基线未知；阈值为产品启发式。", en = "Apple baseline unknown; thresholds are product heuristics." }
+restart_safety = { zh = "索引期间优先等待；系统策略可能拒绝重启。", en = "Prefer waiting during indexing; system policy may deny restart." }
+launchd = { zh = "mds 由 launchd 自动拉起。", en = "launchd automatically starts mds again." }
+permissions = { zh = "重启需要管理员权限。", en = "Restart requires administrator privileges." }
+side_effects = { zh = "重启会重新索引，暂时增加磁盘和 CPU 负载。", en = "Restart causes reindexing and temporary disk and CPU load." }
+provenance = [{ kind = "local_doc", reference = "man 8 mds" }, { kind = "local_doc", reference = "/System/Library/LaunchDaemons/com.apple.metadata.mds.plist" }]
+
+[[entries]]
+id = "system.mds_stores"
+recognizer = "system-services"
+source = "man 8 mds"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "mds_stores" }
+cause = { zh = "Spotlight 存储进程高占用，可能正在索引，不等于泄漏。", en = "Spotlight store has high memory; active indexing is possible, not proof of a leak." }
+advice = { zh = "先用 mdutil -s / 查看；重启建议针对 mds 服务，不单杀存储进程。", en = "Check mdutil -s / first; any restart targets the mds service, not an individual store process." }
+[entries.system]
+member = "mds_stores"
+watch = { bytes = 1610612736, uptime_seconds = 86400 }
+act = { bytes = 4294967296, uptime_seconds = 259200 }
+restart = "spotlight"
+baseline = { zh = "Apple 常态基线未知；阈值为产品启发式。", en = "Apple baseline unknown; thresholds are product heuristics." }
+restart_safety = { zh = "索引期间优先等待；系统策略可能拒绝重启。", en = "Prefer waiting during indexing; system policy may deny restart." }
+launchd = { zh = "mds 由 launchd 拉起，存储工作进程由索引服务管理。", en = "launchd restarts mds; the indexing service manages store workers." }
+permissions = { zh = "重启 mds 需要管理员权限。", en = "Restarting mds requires administrator privileges." }
+side_effects = { zh = "重启会重新索引。", en = "Restart causes reindexing." }
+provenance = [{ kind = "local_doc", reference = "man 8 mds" }, { kind = "local_doc", reference = "/System/Library/LaunchDaemons/com.apple.metadata.mds.plist" }]
+
+[[entries]]
+id = "system.mdworker"
+recognizer = "system-services"
+source = "man 8 mdworker"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "mdworker" }
+cause = { zh = "Spotlight 工作进程占用大，通常是短命索引任务。", en = "A Spotlight worker has high memory; indexing workers are usually short-lived." }
+advice = { zh = "等待索引结束，用 mdutil -s / 查看状态。", en = "Wait for indexing to finish; check status with mdutil -s /." }
+[entries.system]
+member = "mdworker"
+watch = { bytes = 1073741824, uptime_seconds = 0 }
+restart = "none"
+baseline = { zh = "Apple 常态基线未知；1 GiB 是产品启发式。", en = "Apple baseline unknown; 1 GiB is a product heuristic." }
+restart_safety = { zh = "不建议手动重启工作进程。", en = "Do not manually restart workers." }
+launchd = { zh = "工作进程按索引需求启动，不保证同一实例重拉。", en = "Workers start on indexing demand; restart of the same instance is not guaranteed." }
+permissions = { zh = "查看状态不需要管理员权限。", en = "Status inspection does not require administrator privileges." }
+side_effects = { zh = "打断任务可能重复索引。", en = "Interrupting work may repeat indexing." }
+provenance = [{ kind = "local_doc", reference = "man 8 mdworker" }]
+
+[[entries]]
+id = "system.mdworker_shared"
+recognizer = "system-services"
+source = "man 8 mdworker"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "mdworker_shared" }
+cause = { zh = "Spotlight 共享工作进程占用大，可能正在索引。", en = "A shared Spotlight worker has high memory; indexing may be active." }
+advice = { zh = "等待索引结束，用 mdutil -s / 查看状态。", en = "Wait for indexing to finish; check status with mdutil -s /." }
+[entries.system]
+member = "mdworker_shared"
+watch = { bytes = 1073741824, uptime_seconds = 0 }
+restart = "none"
+baseline = { zh = "Apple 常态基线未知；1 GiB 是产品启发式。", en = "Apple baseline unknown; 1 GiB is a product heuristic." }
+restart_safety = { zh = "不建议手动重启工作进程。", en = "Do not manually restart workers." }
+launchd = { zh = "工作进程按索引需求启动，不保证同一实例重拉。", en = "Workers start on indexing demand; restart of the same instance is not guaranteed." }
+permissions = { zh = "查看状态不需要管理员权限。", en = "Status inspection does not require administrator privileges." }
+side_effects = { zh = "打断任务可能重复索引。", en = "Interrupting work may repeat indexing." }
+provenance = [{ kind = "local_doc", reference = "man 8 mdworker" }]
+
+[[entries]]
+id = "system.WindowServer"
+recognizer = "system-services"
+source = "man 1 launchctl"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "WindowServer" }
+cause = { zh = "窗口服务占用大，窗口和外接显示器可能增加负载，不等于泄漏。", en = "WindowServer has high memory; windows and external displays may increase load, not proof of a leak." }
+advice = { zh = "减少窗口或外接显示器；必要时注销重新登录。", en = "Reduce windows or external displays; sign out and back in if needed." }
+[entries.system]
+member = "WindowServer"
+watch = { bytes = 2147483648, uptime_seconds = 86400 }
+act = { bytes = 5368709120, uptime_seconds = 259200 }
+restart = "none"
+baseline = { zh = "Apple 常态基线未知；阈值为产品启发式。", en = "Apple baseline unknown; thresholds are product heuristics." }
+restart_safety = { zh = "不提供重启命令，会中断整个图形会话。", en = "No restart command: restarting interrupts the entire graphical session." }
+launchd = { zh = "图形服务由系统管理，不承诺无损重拉。", en = "The system manages the graphical service; lossless restart is not promised." }
+permissions = { zh = "注销由用户自行确认。", en = "The user must confirm signing out." }
+side_effects = { zh = "注销会结束当前图形会话，先保存工作。", en = "Signing out ends the graphical session; save work first." }
+provenance = [{ kind = "local_doc", reference = "man 1 launchctl" }, { kind = "local_doc", reference = "/System/Library/LaunchDaemons/com.apple.WindowServer.plist" }]
+
+[[entries]]
+id = "system.kernel_task"
+recognizer = "system-services"
+source = "man 1 zprint"
+checked = "2026-10-17"
+trigger = { kind = "system_service", member = "kernel_task" }
+cause = { zh = "kernel_task 不是可关闭的普通进程。", en = "kernel_task is not an ordinary process that can be closed." }
+advice = { zh = "内核占用看 host 内核区明细，不按进程大数判断泄漏。", en = "Inspect host kernel zones; a large process number alone does not establish a leak." }
+[entries.system]
+member = "kernel_task"
+restart = "none"
+baseline = { zh = "没有可用于该进程的常态基线。", en = "No process baseline is defined for kernel_task." }
+restart_safety = { zh = "不给 kill 或进程重启命令。", en = "No kill or process restart command." }
+launchd = { zh = "不是 launchd 拉起的普通服务。", en = "Not an ordinary service restarted by launchd." }
+permissions = { zh = "只读内核区数据，不请求管理员权限。", en = "Read-only kernel-zone inspection; no administrator access requested." }
+side_effects = { zh = "不要尝试结束内核任务。", en = "Do not attempt to terminate the kernel task." }
+provenance = [{ kind = "local_doc", reference = "man 1 zprint" }]

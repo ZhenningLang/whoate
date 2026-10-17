@@ -58,6 +58,7 @@ fn scenario(temp: &Temp) -> Snapshot {
         vec![orphan, shell, claude, mcp, open, chrome, helper, root],
     );
     snap.tmux_panes = vec![TmuxPane {
+        pane_title: None,
         pane_id: "%live".into(),
         target: "fixture:1.0".into(),
         window_name: None,
@@ -199,6 +200,7 @@ fn phase02_attribution_edges_pane_weak_wrapper_owns_native_child() {
     let child = process(990002, 990001, 501, "opencode", 20);
     let mut s = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), vec![root, child]);
     s.tmux_panes.push(TmuxPane {
+        pane_title: None,
         pane_id: "%live".into(),
         target: "demo:0.0".into(),
         window_name: None,

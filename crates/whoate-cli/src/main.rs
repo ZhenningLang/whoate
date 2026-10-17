@@ -99,7 +99,12 @@ fn run(args: &cli::Cli) -> io::Result<i32> {
     {
         use std::io::IsTerminal;
         let plan = whoate_core::kill::plan(targets, &report, snapshot);
-        return terminate::run(
+        let terminate = if args.json {
+            terminate::run_json
+        } else {
+            terminate::run
+        };
+        return terminate(
             &plan,
             terminate::Options {
                 yes: *yes,
@@ -169,6 +174,184 @@ mod scenarios {
         fn wait(&mut self, d: Duration) {
             self.0 += d.as_nanos();
         }
+    }
+    #[test]
+    fn phase07_output_top_why_agents_keep_host_and_show_new_fields_without_prompts() {
+        use whoate_core::{
+            sample::system_memory::{KernelZone, MemoryCache},
+            snapshot::TmuxPane,
+        };
+        for language in [locale::Language::En, locale::Language::Zh] {
+            let home = platform::Scratch::new().unwrap();
+            let session = home.0.join(".claude/sessions");
+            fs::create_dir_all(&session).unwrap();
+            fs::write(
+                session.join("940002.json"),
+                r#"{"sessionId":"p07-output","cwd":"/demo","status":"idle"}"#,
+            )
+            .unwrap();
+            let transcript = home.0.join(".claude/projects/-demo");
+            fs::create_dir_all(&transcript).unwrap();
+            fs::write(transcript.join("p07-output.jsonl"),concat!("{\"type\":\"user\",\"timestamp\":\"2026-10-16T00:00:00Z\",\"message\":{\"content\":\"PROMPT_SENTINEL\"}}\n","{\"type\":\"assistant\",\"timestamp\":\"2026-10-16T00:00:01Z\",\"message\":{\"content\":\"REPLY_SENTINEL\"}}\n")).unwrap();
+            let mut system = Proc::identity(940001, 1, 0, Some(1), "fseventsd".into());
+            system.footprint_bytes = Some(6_012_954_214);
+            let mut agent = Proc::identity(940002, 1, 501, Some(1), "claude".into());
+            agent.footprint_bytes = Some(734_003_200);
+            agent.resident_bytes = Some(4096);
+            let mut snap = Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![system, agent]);
+            snap.host = Some(Host {
+                mem_total_bytes: 16_000_000_000,
+                mem_used_bytes: 8_000_000_000,
+                compressed_bytes: 100,
+                wired_bytes: 2048,
+                swap_used_bytes: 0,
+                pressure: Pressure::Normal,
+                kernel_zones: None,
+                gpu_memory: None,
+                memory_diagnostics: None,
+            });
+            let mut memory = MemoryCache::missing("fixture");
+            memory.kernel_zones.status = whoate_core::snapshot::Freshness::Fresh;
+            memory.kernel_zones.as_of = Some("2026-10-17T00:00:00Z".into());
+            memory.kernel_zones.reason = None;
+            memory.kernel_zones.top = vec![KernelZone {
+                name: "data.kalloc.1024".into(),
+                bytes: 4_294_967_296,
+                collectible: Some(false),
+                pageable: Some(false),
+            }];
+            memory.merge(snap.host.as_mut().unwrap(), 1_792_195_200);
+            snap.tmux_panes = vec![TmuxPane {
+                pane_id: "%42".into(),
+                target: "work:0.0".into(),
+                window_name: Some("window 雪".into()),
+                pane_title: Some("pane\tline\n\u{1b}".into()),
+                pane_pid: 940002,
+                cwd: Some("/demo".into()),
+            }];
+            let mut engine = Engine::with_sampler(
+                Replay(VecDeque::from([snap.clone(), snap.clone()])),
+                Time::default(),
+                Context {
+                    cfg: ConfigReader::isolated(home.0.clone()),
+                    uid: 501,
+                    language,
+                    platform_probe: |_| Ok(false),
+                },
+            );
+            let report = engine.sample_once().unwrap();
+            assert_eq!(
+                report
+                    .host
+                    .as_ref()
+                    .unwrap()
+                    .memory_diagnostics
+                    .as_ref()
+                    .unwrap()[0]
+                    .level,
+                Level::Act
+            );
+            for args in [
+                vec!["whoate", "top", "-n", "1", "--json"],
+                vec!["whoate", "why", "940002", "--json"],
+                vec!["whoate", "agents", "--json"],
+            ] {
+                let cli = cli::Cli::try_parse_from(args).unwrap();
+                let (view, _) = public_view(&report, &snap, &cli).unwrap();
+                assert_eq!(view.host, report.host);
+                assert_eq!(view.owners.len(), 1);
+                let text = render::report(&view, engine.catalog.all(), language);
+                assert!(text.contains("wired=2048 bytes"));
+                assert!(text.contains("4294967296 bytes"));
+                assert!(text.contains("GPU=Missing"));
+                assert!(!text.contains("PROMPT_SENTINEL"));
+                assert!(!text.contains("REPLY_SENTINEL"));
+                if let Some(a) = &view.owners[0].agent {
+                    assert_eq!(a.idle_seconds, Some(86_399));
+                    assert_eq!(a.first_prompt, None);
+                    assert_eq!(a.first_reply, None);
+                    assert!(text.contains("2026-10-16T00:00:01Z"));
+                    assert!(text.contains("4096 bytes"));
+                    assert!(text.contains("window 雪"));
+                    assert!(!text.contains('\u{1b}'));
+                    assert!(!text.contains("pane\tline\n"));
+                    let mut redact = cli;
+                    redact.redact = true;
+                    let (redacted, _) = public_view(&report, &snap, &redact).unwrap();
+                    let origin = redacted.owners[0].origin.as_ref().unwrap();
+                    assert_eq!(origin.pane_title.as_deref(), Some("<redacted>"));
+                    assert_eq!(origin.window_name.as_deref(), Some("<redacted>"));
+                }
+            }
+        }
+    }
+    #[test]
+    fn phase07_output_nonroot_platform_restart_keeps_verified_authority_only() {
+        let home = platform::Scratch::new().unwrap();
+        let mut proc = Proc::identity(940001, 1, 89, Some(1), "mds_stores".into());
+        proc.footprint_bytes = Some(5_000_000_000);
+        let snap = Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![proc]);
+        let mut engine = Engine::with_sampler(
+            Replay(VecDeque::from([snap.clone(), snap.clone()])),
+            Time::default(),
+            Context {
+                cfg: ConfigReader::isolated(home.0.clone()),
+                uid: 501,
+                language: locale::Language::En,
+                platform_probe: |_| Ok(true),
+            },
+        );
+        let report = engine.sample_once().unwrap();
+        let cli = cli::Cli::try_parse_from(["whoate", "why", "940001", "--json"]).unwrap();
+        let (view, _) = public_view(&report, &snap, &cli).unwrap();
+        assert_eq!(
+            view.owners[0].verdict.action.as_deref(),
+            Some("sudo launchctl kickstart -k system/com.apple.metadata.mds")
+        );
+        // Exported strings alone must not grant the trusted-action exemption.
+        let untrusted: Report =
+            serde_json::from_value(serde_json::to_value(&report).unwrap()).unwrap();
+        let (view, _) = public_view(&untrusted, &snap, &cli).unwrap();
+        assert_eq!(
+            view.owners[0].verdict.action.as_deref(),
+            Some("whoate kill 940001")
+        );
+    }
+    #[test]
+    fn phase07_output_system_restart_survives_public_view() {
+        let home = platform::Scratch::new().unwrap();
+        let mut proc = Proc::identity(940001, 1, 0, Some(1), "fseventsd".into());
+        proc.footprint_bytes = Some(6_012_954_214);
+        let snap = Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![proc]);
+        let mut engine = Engine::with_sampler(
+            Replay(VecDeque::from([snap.clone(), snap.clone()])),
+            Time::default(),
+            Context {
+                cfg: ConfigReader::isolated(home.0.clone()),
+                uid: 501,
+                language: locale::Language::En,
+                platform_probe: |_| Ok(false),
+            },
+        );
+        let input = engine.sample_once().unwrap();
+        let projected = privacy::project(&input, &snap, privacy::Policy::default());
+        assert_eq!(
+            projected.owners[0].verdict.action.as_deref(),
+            Some("sudo launchctl kickstart -k system/com.apple.fseventsd")
+        );
+        let text = render::report(&projected, engine.catalog.all(), locale::Language::En);
+        assert!(text.contains("administrator"));
+        assert!(text.contains("watchers"));
+        assert!(!text.contains("whoate kill"));
+        let mut forged = input.clone();
+        forged.owners[0].verdict.action = Some("sudo rm -rf /".into());
+        assert_eq!(
+            privacy::project(&forged, &snap, privacy::Policy::default()).owners[0]
+                .verdict
+                .action
+                .as_deref(),
+            Some("whoate kill 940001")
+        );
     }
     #[test]
     fn phase04_render_real_docker_facts_have_units_and_separate_accounting() {
@@ -250,6 +433,9 @@ mod scenarios {
         .unwrap();
         let mut snapshot = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), vec![]);
         snapshot.host = Some(Host {
+            kernel_zones: None,
+            gpu_memory: None,
+            memory_diagnostics: None,
             mem_total_bytes: 2048,
             mem_used_bytes: 1024,
             compressed_bytes: 10,
@@ -479,6 +665,105 @@ mod scenarios {
             if expected == 1 {
                 assert_eq!(groups[0].pids, (940001..940031).collect::<Vec<_>>());
                 assert_eq!(groups[0].parents, vec![940099]);
+            }
+        }
+    }
+
+    #[test]
+    fn phase07_fresh_bypasses_new_memory_cache_without_changing_host_totals() {
+        use whoate_core::sample::system_memory::{BASIS, GpuMemory, KernelZone, KernelZones};
+        let home = platform::Scratch::new().unwrap();
+        let mut own = Proc::identity(940001, 1, 501, Some(1), "shell".into());
+        own.footprint_bytes = Some(123);
+        let mut system = Proc::identity(940002, 1, 0, Some(1), "service".into());
+        system.footprint_bytes = Some(456);
+        system.cpu_pct_sampled = Some(7.0);
+        let mut cached = Snapshot::historical("2026-10-17T00:00:00Z".into(), vec![own, system]);
+        cached.system_procs = SystemProcs {
+            status: Freshness::Fresh,
+            as_of: Some(cached.taken_at.clone()),
+        };
+        cached.host = Some(Host {
+            mem_total_bytes: 16_000,
+            mem_used_bytes: 8_000,
+            wired_bytes: 2_000,
+            compressed_bytes: 300,
+            swap_used_bytes: 400,
+            pressure: Pressure::Warn,
+            kernel_zones: Some(KernelZones {
+                status: Freshness::Fresh,
+                as_of: Some(cached.taken_at.clone()),
+                basis: BASIS.into(),
+                reason: None,
+                top: vec![KernelZone {
+                    name: "CACHE_SENTINEL".into(),
+                    bytes: 4_294_967_296,
+                    collectible: Some(false),
+                    pageable: Some(false),
+                }],
+            }),
+            // Deliberately populated: fresh must remove any cached GPU value too.
+            gpu_memory: Some(GpuMemory {
+                status: Freshness::Fresh,
+                as_of: Some(cached.taken_at.clone()),
+                bytes: Some(777),
+                source: Some("CACHE_SENTINEL".into()),
+                reason: None,
+            }),
+            memory_diagnostics: None,
+        });
+        for fresh in [false, true] {
+            let mut snap = cached.clone();
+            if fresh {
+                platform::without_slow_cache(&mut snap, 501);
+            }
+            let mut engine = Engine::with_sampler(
+                Replay(VecDeque::from([snap.clone(), snap.clone()])),
+                Time::default(),
+                Context {
+                    cfg: ConfigReader::isolated(home.0.clone()),
+                    uid: 501,
+                    language: locale::Language::En,
+                    platform_probe: |_| Ok(false),
+                },
+            );
+            let report = engine.sample_once().unwrap();
+            let args = cli::Cli::try_parse_from(["whoate", "top", "--json"]).unwrap();
+            let (view, _) = public_view(&report, &snap, &args).unwrap();
+            let value = serde_json::to_value(&view).unwrap();
+            let h = &value["host"];
+            assert_eq!(
+                (
+                    h["mem_total_bytes"].as_u64(),
+                    h["mem_used_bytes"].as_u64(),
+                    h["wired_bytes"].as_u64(),
+                    h["compressed_bytes"].as_u64(),
+                    h["swap_used_bytes"].as_u64()
+                ),
+                (Some(16_000), Some(8_000), Some(2_000), Some(300), Some(400))
+            );
+            assert_eq!(h["pressure"], "warn");
+            assert_eq!(snap.procs[0].footprint_bytes, Some(123));
+            if fresh {
+                assert_eq!(h["kernel_zones"]["status"], "missing");
+                assert_eq!(h["kernel_zones"]["reason"], "fresh_requested");
+                assert_eq!(h["kernel_zones"]["top"], serde_json::json!([]));
+                assert_eq!(h["gpu_memory"]["status"], "missing");
+                assert!(h["gpu_memory"]["bytes"].is_null());
+                assert!(
+                    !serde_json::to_string(&view)
+                        .unwrap()
+                        .contains("CACHE_SENTINEL")
+                );
+                assert_eq!(snap.system_procs, SystemProcs::missing());
+                assert_eq!(
+                    (snap.procs[1].footprint_bytes, snap.procs[1].cpu_pct_sampled),
+                    (None, None)
+                );
+            } else {
+                assert_eq!(h["kernel_zones"]["top"][0]["name"], "CACHE_SENTINEL");
+                assert_eq!(h["kernel_zones"]["top"][0]["bytes"], 4_294_967_296_u64);
+                assert_eq!(h["gpu_memory"]["bytes"], 777);
             }
         }
     }

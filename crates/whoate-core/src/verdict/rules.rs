@@ -103,11 +103,7 @@ static RULES: &[Rule] = &[
                     a.status
                         .as_deref()
                         .is_none_or(|s| matches!(s, "idle" | "waiting" | "stopped"))
-                        && a.updated_at_ms.zip(timestamp_us(c.snapshot)).is_some_and(
-                            |(updated, now)| {
-                                updated >= 0 && (now / 1000) as i128 - updated as i128 >= 7_200_000
-                            },
-                        )
+                        && crate::sources::idle_seconds(a, c.snapshot).is_some_and(|s| s >= 7200)
                 })
         }),
         shape: None,
@@ -188,11 +184,8 @@ pub fn owner(
             let seconds = o
                 .agent
                 .as_ref()
-                .and_then(|a| a.updated_at_ms)
-                .zip(timestamp_us(snap))
-                .map(|(u, n)| (n / 1000) as i128 - u as i128)
-                .unwrap_or(0)
-                / 1000;
+                .and_then(|a| crate::sources::idle_seconds(a, snap))
+                .unwrap_or(0);
             if language == Language::Zh {
                 format!("空闲 {seconds} 秒，可关")
             } else {

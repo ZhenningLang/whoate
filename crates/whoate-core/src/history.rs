@@ -152,6 +152,7 @@ mod tests {
         let root = Proc::identity(999001, 1, 501, Some(1), "zsh".into());
         let mut snap = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), vec![root]);
         snap.tmux_panes.push(TmuxPane {
+            pane_title: None,
             pane_id: "%one".into(),
             target: "demo:0.0".into(),
             window_name: None,

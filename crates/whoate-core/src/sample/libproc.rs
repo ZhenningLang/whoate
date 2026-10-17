@@ -136,6 +136,9 @@ fn matches_bsd(proc: &Proc, info: &libc::proc_bsdinfo) -> bool {
 pub trait ProcessReader {
     fn identity(&mut self, pid: i32) -> Option<Proc>;
     fn footprint(&mut self, pid: i32) -> SampleResult<(u64, u64)>;
+    fn resources(&mut self, pid: i32) -> SampleResult<(u64, u64, Option<u64>)> {
+        self.footprint(pid).map(|(mem, cpu)| (mem, cpu, None))
+    }
     fn exe_path(&mut self, pid: i32) -> SampleResult<String>;
     fn cwd(&mut self, pid: i32) -> SampleResult<String>;
     fn args(&mut self, pid: i32) -> SampleResult<sysctl::ProcArgs>;
@@ -158,9 +161,10 @@ pub fn enrich_proc(
     candidate.ppid = before.ppid;
     candidate.responsible_pid = reader.responsible_pid(proc.pid);
     if proc.uid == account_uid {
-        match reader.footprint(proc.pid) {
-            Ok((mem, cpu)) => {
+        match reader.resources(proc.pid) {
+            Ok((mem, cpu, resident)) => {
                 candidate.footprint_bytes = Some(mem);
+                candidate.resident_bytes = resident;
                 candidate.cpu_time_ns = Some(cpu);
             }
             Err(error) => errors.push(error),
@@ -203,6 +207,9 @@ impl ProcessReader for NativeProcessReader<'_> {
     fn footprint(&mut self, pid: i32) -> SampleResult<(u64, u64)> {
         footprint(pid)
     }
+    fn resources(&mut self, pid: i32) -> SampleResult<(u64, u64, Option<u64>)> {
+        resources(pid)
+    }
     fn exe_path(&mut self, pid: i32) -> SampleResult<String> {
         let mut path = [0_i8; libc::PROC_PIDPATHINFO_MAXSIZE as usize];
         let size = unsafe { libc::proc_pidpath(pid, path.as_mut_ptr().cast(), path.len() as u32) };
@@ -240,6 +247,9 @@ impl ProcessReader for NativeProcessReader<'_> {
 }
 
 pub fn footprint(pid: i32) -> SampleResult<(u64, u64)> {
+    resources(pid).map(|(mem, cpu, _)| (mem, cpu))
+}
+pub fn resources(pid: i32) -> SampleResult<(u64, u64, Option<u64>)> {
     let mut usage = unsafe { zeroed::<libc::rusage_info_v4>() };
     let result = unsafe {
         libc::proc_pid_rusage(
@@ -260,7 +270,7 @@ pub fn footprint(pid: i32) -> SampleResult<(u64, u64)> {
         .ri_user_time
         .checked_add(usage.ri_system_time)
         .ok_or_else(|| SampleError::new("rusage_v4", "cpu_time_overflow"))?;
-    Ok((usage.ri_phys_footprint, cpu))
+    Ok((usage.ri_phys_footprint, cpu, Some(usage.ri_resident_size)))
 }
 
 fn read_args(pid: i32, buffer: &mut [u8]) -> SampleResult<sysctl::ProcArgs> {
@@ -406,6 +416,15 @@ impl Sampler for MacSampler {
                 vec![]
             }
         };
+        if tmux_panes
+            .iter()
+            .any(|p| p.pane_title.is_none() || p.window_name.is_none() || p.cwd.is_none())
+        {
+            issue(
+                &mut issues,
+                SampleError::new("tmux", "invalid_pane_metadata"),
+            );
+        }
         let socket_candidates = ports::candidate_pids(&procs, &tmux_panes, uid);
         for proc in procs
             .iter_mut()
@@ -426,7 +445,8 @@ impl Sampler for MacSampler {
                 }
             }
         }
-        let host = host()?;
+        let mut host = host()?;
+        self.worker.memory().merge(&mut host, now);
         let cache = self.worker.state();
         cache.merge(&mut procs, now);
         if let Some(error) = &cache.error {
@@ -466,6 +486,9 @@ impl Sampler for MacSampler {
 
 pub struct PlatformSlowSource;
 impl SlowSource for PlatformSlowSource {
+    fn capture_memory(&mut self, stop: &AtomicBool) -> Option<super::system_memory::MemoryCache> {
+        Some(super::system_memory::capture(stop))
+    }
     fn capture(&mut self, stop: &AtomicBool) -> SampleResult<SystemCache> {
         let as_of = sysctl::unix_now();
         let before: BTreeMap<_, _> = identities()?

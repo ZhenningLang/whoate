@@ -66,6 +66,9 @@ impl NativeSampler {
     }
 }
 pub fn without_slow_cache(snapshot: &mut Snapshot, uid: u32) {
+    if let Some(host) = &mut snapshot.host {
+        whoate_core::sample::system_memory::MemoryCache::missing("fresh_requested").merge(host, 0);
+    }
     for p in &mut snapshot.procs {
         if p.uid != uid {
             p.footprint_bytes = None;

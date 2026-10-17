@@ -16,6 +16,28 @@ pub fn run(
     out: &mut dyn Write,
     err: &mut dyn Write,
 ) -> io::Result<i32> {
+    run_inner(plan, options, backend, input, out, err, false)
+}
+pub fn run_json(
+    plan: &KillPlan,
+    options: Options,
+    backend: &mut dyn Backend,
+    input: &mut dyn BufRead,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+) -> io::Result<i32> {
+    run_inner(plan, options, backend, input, out, err, true)
+}
+fn run_inner(
+    plan: &KillPlan,
+    options: Options,
+    backend: &mut dyn Backend,
+    input: &mut dyn BufRead,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+    json: bool,
+) -> io::Result<i32> {
+    let before = backend.measure_memory(plan);
     let ids: std::collections::BTreeSet<_> = plan.pids.iter().map(|p| p.pid).collect();
     let preview = format!(
         "{}: {ids:?}; {}: {}\n",
@@ -23,39 +45,54 @@ pub fn run(
         options.language.choose("不存在的目标", "missing targets"),
         plan.missing_targets.len()
     );
-    out.write_all(preview.as_bytes())?;
+    if !json {
+        out.write_all(preview.as_bytes())?;
+        writeln!(
+            out,
+            "{}: {} bytes; {}",
+            options
+                .language
+                .choose("预计可腾出物理内存", "Estimated physical reclaim"),
+            before
+                .target_resident_bytes
+                .map(|n| n.to_string())
+                .unwrap_or_else(|| "missing".into()),
+            options.language.choose(
+                "RSS 粗估，非保证；共享页可能重复",
+                "RSS estimate, not guaranteed; shared pages may overlap"
+            )
+        )?;
+    }
     // Flush preview before the first possible signal.
     out.flush()?;
     err.flush()?;
     if options.dry_run || !options.yes {
-        writeln!(
-            out,
-            "{}",
-            options.language.choose(
-                "仅预览；--yes 只确认 SIGTERM，不会自动升级 SIGKILL。",
-                "Preview only; --yes authorizes SIGTERM, never automatic SIGKILL."
-            )
-        )?;
-        return Ok(
-            if plan.pids.iter().any(|p| {
-                p.pid <= 0
-                    || p.pid == backend.self_pid()
-                    || p.expected
-                        .as_ref()
-                        .is_some_and(|id| id.uid == 0 || id.start_time.is_none())
-            }) {
-                4
-            } else if !plan.missing_targets.is_empty()
-                || plan.pids.iter().any(|p| p.expected.is_none())
-            {
-                3
-            } else {
-                0
-            },
-        );
+        if !json {
+            writeln!(
+                out,
+                "{}",
+                options.language.choose(
+                    "仅预览；--yes 只确认 SIGTERM，不会自动升级 SIGKILL。",
+                    "Preview only; --yes authorizes SIGTERM, never automatic SIGKILL."
+                )
+            )?;
+        }
+        let preview = kill::preview(plan, backend);
+        let code = preview.exit_code();
+        if json {
+            write_json(
+                &preview,
+                false,
+                whoate_core::kill::MemoryChange::new(before, None),
+                out,
+            )?;
+        }
+        return Ok(code);
     }
     let mut result = kill::execute(plan, false, backend);
-    write_results(&result, out)?;
+    if !json {
+        write_results(&result, out)?;
+    }
     let still: std::collections::BTreeSet<_> = result
         .results
         .iter()
@@ -96,10 +133,43 @@ pub fn run(
                     *old = item;
                 }
             }
-            write_results(&result, out)?;
+            if !json {
+                write_results(&result, out)?;
+            }
         }
     }
+    let after = backend.measure_memory(plan);
+    let memory = whoate_core::kill::MemoryChange::new(before, Some(after));
+    if json {
+        write_json(&result, true, memory, out)?;
+    } else {
+        writeln!(
+            out,
+            "{}: {:?} bytes; {}: {:?} bytes; {}",
+            options
+                .language
+                .choose("主机已用内存实测变化", "Observed host memory change"),
+            memory.physical_memory_change_bytes,
+            options
+                .language
+                .choose("目标驻留变化", "Target resident change"),
+            memory.target_resident_change_bytes,
+            options.language.choose(
+                "非因果归因，其他软件会影响数值",
+                "Non-causal observation; other software may affect the value"
+            )
+        )?;
+    }
     Ok(result.exit_code())
+}
+fn write_json(
+    result: &KillReport,
+    executed: bool,
+    memory: whoate_core::kill::MemoryChange,
+    out: &mut dyn Write,
+) -> io::Result<()> {
+    serde_json::to_writer(&mut *out, &serde_json::json!({"schema":"whoate/v1","executed":executed,"results":result.results,"missing_targets":result.missing_targets,"memory":memory})).map_err(io::Error::other)?;
+    writeln!(out)
 }
 fn write_results(report: &KillReport, out: &mut dyn Write) -> io::Result<()> {
     for item in &report.results {
@@ -128,6 +198,8 @@ mod tests {
     use std::{collections::BTreeMap, time::Duration};
     use whoate_core::kill::{Identity, PlannedPid};
     struct Fake {
+        memory: std::collections::VecDeque<whoate_core::kill::MemoryMeasurement>,
+        events: Vec<&'static str>,
         reads: usize,
         ids: BTreeMap<i32, Identity>,
         sent: Vec<(i32, i32)>,
@@ -139,6 +211,8 @@ mod tests {
     impl Fake {
         fn new() -> Self {
             Self {
+                memory: Default::default(),
+                events: vec![],
                 reads: 0,
                 ids: BTreeMap::from([(
                     940001,
@@ -157,6 +231,12 @@ mod tests {
         }
     }
     impl Backend for Fake {
+        fn measure_memory(&mut self, _: &KillPlan) -> whoate_core::kill::MemoryMeasurement {
+            self.events.push("measure");
+            self.memory
+                .pop_front()
+                .unwrap_or_else(|| whoate_core::kill::MemoryMeasurement::missing("unavailable"))
+        }
         fn self_pid(&self) -> i32 {
             940099
         }
@@ -178,10 +258,12 @@ mod tests {
             self.platform
         }
         fn signal(&mut self, pid: i32, signal: i32) -> Result<(), &'static str> {
+            self.events.push("signal");
             self.sent.push((pid, signal));
             Ok(())
         }
         fn wait(&mut self, d: Duration) {
+            self.events.push("wait");
             self.waited.push(d);
         }
     }
@@ -197,6 +279,101 @@ mod tests {
             }],
             missing_targets: vec![],
         }
+    }
+    #[test]
+    fn phase07_kill_json_measures_once_before_and_after_preserving_negative_host_delta() {
+        use whoate_core::kill::MemoryMeasurement;
+        let mut backend = Fake::new();
+        backend.memory.extend([
+            MemoryMeasurement {
+                measured_at: Some("2026-10-17T00:00:00Z".into()),
+                host_used_bytes: Some(100),
+                target_resident_bytes: Some(4096),
+                unknown_count: 0,
+                reason: None,
+            },
+            MemoryMeasurement {
+                measured_at: Some("2026-10-17T00:00:05Z".into()),
+                host_used_bytes: Some(130),
+                target_resident_bytes: Some(0),
+                unknown_count: 0,
+                reason: None,
+            },
+        ]);
+        let mut out = vec![];
+        let code = run_json(
+            &plan(),
+            Options {
+                yes: true,
+                dry_run: false,
+                tty: false,
+                language: Language::En,
+            },
+            &mut backend,
+            &mut io::Cursor::new(b""),
+            &mut out,
+            &mut vec![],
+        )
+        .unwrap();
+        assert_eq!(code, 0);
+        let json: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        assert_eq!(json["schema"], "whoate/v1");
+        assert_eq!(json["executed"], true);
+        assert_eq!(json["results"][0]["status"], "still_alive");
+        assert_eq!(json["memory"]["physical_memory_change_bytes"], -30);
+        assert_eq!(json["memory"]["target_resident_change_bytes"], 4096);
+        assert_eq!(backend.events, vec!["measure", "signal", "wait", "measure"]);
+        assert_eq!(backend.sent, vec![(940001, 15)]);
+        assert_eq!(backend.waited, vec![Duration::from_secs(5)]);
+        let mut backend = Fake::new();
+        let mut out = vec![];
+        run_json(
+            &plan(),
+            Options {
+                yes: true,
+                dry_run: true,
+                tty: true,
+                language: Language::En,
+            },
+            &mut backend,
+            &mut io::Cursor::new(b"yes\n"),
+            &mut out,
+            &mut vec![],
+        )
+        .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        assert_eq!(json["executed"], false);
+        assert_eq!(json["memory"]["after"], serde_json::Value::Null);
+        assert_eq!(
+            json["memory"]["physical_memory_change_bytes"],
+            serde_json::Value::Null
+        );
+        assert_eq!(backend.events, vec!["measure"]);
+        assert!(backend.sent.is_empty());
+    }
+    #[test]
+    fn phase07_kill_preview_reports_missing_resident_not_footprint() {
+        let mut fake = Fake::new();
+        let mut out = vec![];
+        run(
+            &plan(),
+            Options {
+                yes: false,
+                dry_run: true,
+                tty: false,
+                language: Language::En,
+            },
+            &mut fake,
+            &mut io::Cursor::new(b""),
+            &mut out,
+            &mut vec![],
+        )
+        .unwrap();
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains("Estimated physical reclaim"));
+        assert!(text.contains("missing"));
+        assert!(text.contains("not guaranteed"));
+        assert!(fake.sent.is_empty());
     }
     #[test]
     fn phase04_kill_confirm_preview_and_dry_run_never_signal() {

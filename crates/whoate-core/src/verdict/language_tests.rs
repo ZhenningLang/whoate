@@ -93,6 +93,7 @@ fn phase02_verdict_language_idle() {
     let mut a = Agent::unknown("claude");
     a.status = Some("idle".into());
     a.updated_at_ms = Some(1791978000000 - 7200000);
+    a.last_activity_at = Some("2026-10-14T09:40:00Z".into());
     o.agent = Some(a);
     let (zh, en) = texts(&o, &s, &History::default(), false);
     assert_eq!(zh, "空闲 7200 秒，可关");

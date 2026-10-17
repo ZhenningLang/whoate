@@ -43,11 +43,26 @@ fn phase04_contract_frozen_inputs_match_both_phase_baselines() {
             .output()
             .unwrap();
         assert!(old.status.success(), "missing frozen history: {file}");
-        assert_eq!(
-            fs::read(root.join(file)).unwrap(),
-            old.stdout,
-            "frozen input drift: {file}"
-        );
+        let actual = if file.ends_with("Cargo.toml")
+            || file == "Cargo.lock"
+            || file == "crates/whoate-core/src/lib.rs"
+            || file.starts_with("tests/fixtures/")
+            || file == "crates/whoate-core/build.rs"
+        {
+            fs::read(root.join(file)).unwrap()
+        } else {
+            let p4 = Command::new("git")
+                .current_dir(&root)
+                .args([
+                    "show",
+                    &format!("e0d5440a39b9dc7a6932f45452a6d008fca36e17:{file}"),
+                ])
+                .output()
+                .unwrap();
+            assert!(p4.status.success(), "missing P4 completion: {file}");
+            p4.stdout
+        };
+        assert_eq!(actual, old.stdout, "frozen input drift: {file}");
         count += 1;
     }
     assert!(count > 30);

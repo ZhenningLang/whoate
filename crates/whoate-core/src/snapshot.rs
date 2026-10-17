@@ -41,6 +41,8 @@ pub struct Proc {
     pub tmux_pane: Option<String>,
     pub tmux: Option<String>,
     pub footprint_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resident_bytes: Option<u64>,
     pub cpu_time_ns: Option<u64>,
     /// System interval CPU from top's second frame; None when unavailable.
     pub cpu_pct_sampled: Option<f64>,
@@ -66,6 +68,7 @@ impl Proc {
             tmux_pane: None,
             tmux: None,
             footprint_bytes: None,
+            resident_bytes: None,
             cpu_time_ns: None,
             cpu_pct_sampled: None,
             responsible_pid: None,
@@ -91,6 +94,12 @@ pub struct Host {
     pub wired_bytes: u64,
     pub swap_used_bytes: u64,
     pub pressure: Pressure,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kernel_zones: Option<crate::sample::system_memory::KernelZones>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gpu_memory: Option<crate::sample::system_memory::GpuMemory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory_diagnostics: Option<Vec<crate::model::Verdict>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -106,6 +115,8 @@ pub struct TmuxPane {
     pub pane_id: String,
     pub target: String,
     pub window_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pane_title: Option<String>,
     pub pane_pid: i32,
     pub cwd: Option<String>,
 }

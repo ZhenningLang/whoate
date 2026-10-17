@@ -36,6 +36,9 @@ fn sampler_mock_replays_full_contract_and_local_timestamp() {
     proc.cpu_pct_sampled = Some(25.5);
     let mut snap = Snapshot::historical(sysctl::timestamp(sysctl::unix_now()).unwrap(), vec![proc]);
     snap.host = Some(Host {
+        kernel_zones: None,
+        gpu_memory: None,
+        memory_diagnostics: None,
         mem_total_bytes: 1024,
         mem_used_bytes: 768,
         compressed_bytes: 64,
@@ -44,6 +47,7 @@ fn sampler_mock_replays_full_contract_and_local_timestamp() {
         pressure: Pressure::Warn,
     });
     snap.tmux_panes.push(TmuxPane {
+        pane_title: None,
         pane_id: "%1".into(),
         target: "a:0.0".into(),
         window_name: Some("a".into()),

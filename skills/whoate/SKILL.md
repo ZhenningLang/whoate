@@ -54,7 +54,8 @@ they are overlapping views of the same processes.
 
 The default top sort is memory, descending; unknown CPU sorts after known values.
 `--by` and `-n` apply only to top. JSON is available on the single-query commands;
-watch uses `--json-lines`. Kill, insights and agent-guide do not accept query flags.
+watch uses `--json-lines`. Kill also accepts `--json` for its separate result envelope;
+other query flags remain unsupported by kill, insights and agent-guide.
 An act diagnosis anywhere in the selected population can produce exit 1 even if
 `-n` hides that row. Only top/orphans/agents use this diagnostic exit status.
 
@@ -85,6 +86,42 @@ Use confidence/evidence, `parts`, `facts`, `insights` and `verdict`, not guesses
 For already attached insight IDs, display the catalog's cause/advice/source/checked.
 Do not re-evaluate triggers using public facts: temporary matching counts are absent.
 Advice is read-only. Never automatically change application settings.
+
+## System services, kernel memory and physical reclaim
+
+System diagnoses use explicit product heuristics, **not Apple normal baselines**.
+Read each system insight's typed provenance, thresholds and safety metadata.
+fseventsd and Spotlight may offer an administrator restart command; it is display-only.
+launchd may restart these services. File watchers may fail to reconnect, and Spotlight
+may reindex. Never execute a displayed command without separate informed authorization.
+WindowServer has no restart command: signing out interrupts the graphical session.
+kernel_task is never diagnosed for termination. An act diagnosis does not relax kill protection.
+
+`host.wired_bytes` remains the host page-count measurement. `host.kernel_zones` is
+an independently cached top five by **element size × current in-use count** from zprint.
+It is not lifetime allocations, wasted space, or extra memory to add to wired/host totals.
+Check status/as_of/reason; an initial query can be missing while watch refreshes the cache.
+Only a zone explicitly reported non-collectible and non-pageable gets the limited
+reboot-only warning. Unknown/collectible zones get no such claim. Absolute thresholds
+do not establish continuous growth. GPU is missing until units and overlapping driver
+counters have a proven contract; missing is never zero. `--fresh` bypasses these caches too.
+
+`owner.reclaimable_physical.bytes` is a coarse unique-PID **RSS sum**, not footprint.
+Shared pages may overlap; this is not guaranteed exclusive physical memory released.
+Any unknown member makes bytes null; inspect unknown_count/reason. Never substitute
+mem_bytes for a missing estimate. Kill previews report the same resident estimate.
+Kill JSON adds a memory object with before/after measurements and signed
+physical_memory_change_bytes = before host used − after host used. Negative changes
+are retained. This observation is **non-causal**: unrelated software can change memory.
+Target resident change is reported separately. Dry-run has no after measurement.
+
+`agent.last_activity_at` comes from message timestamps, not process age, file mtime
+or title/session updates. `idle_seconds` uses the same snapshot time. Unknown, future,
+stale or restricted activity cannot justify closing a session. The new activity path
+uses bounded timestamp metadata only; it does not decode or retain message contents.
+Existing prompt extraction retains its previous consent rules. Restricted first-pair
+capability never reads a tail for activity. Origin adds window_name and pane_title;
+human output escapes control characters and --redact hides both titles.
 
 ## Termination is a separate authorization
 

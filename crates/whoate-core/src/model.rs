@@ -11,6 +11,9 @@ pub struct Report {
     pub owners: Vec<Owner>,
     pub swarms: Vec<Swarm>,
     pub issues: Vec<SampleIssue>,
+    // In-process authority only. JSON cannot mint a platform verification.
+    #[serde(skip)]
+    pub(crate) verified_platform: std::collections::BTreeMap<i32, (u32, Option<u64>)>,
 }
 impl Report {
     pub fn from_snapshot(snap: &Snapshot) -> Self {
@@ -22,7 +25,15 @@ impl Report {
             owners: vec![],
             swarms: vec![],
             issues: snap.issues.clone(),
+            verified_platform: Default::default(),
         }
+    }
+    pub fn verified_platform_pids(&self, snap: &Snapshot) -> std::collections::BTreeSet<i32> {
+        snap.procs
+            .iter()
+            .filter(|p| self.verified_platform.get(&p.pid) == Some(&(p.uid, p.start_time)))
+            .map(|p| p.pid)
+            .collect()
     }
 }
 
@@ -63,6 +74,10 @@ impl Evidence {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Origin {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pane_title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window_name: Option<String>,
     pub tmux_pane: Option<String>,
     pub pane_alive: Option<bool>,
     pub cwd: Option<String>,
@@ -85,6 +100,10 @@ pub struct Agent {
     pub cost_usd: Option<f64>,
     pub confidence: Confidence,
     pub updated_at_ms: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_activity_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub idle_seconds: Option<u64>,
     pub stale: bool,
 }
 impl Agent {
@@ -104,6 +123,8 @@ impl Agent {
             cost_usd: None,
             confidence: Confidence::Weak,
             updated_at_ms: None,
+            last_activity_at: None,
+            idle_seconds: None,
             stale: false,
         }
     }
@@ -116,6 +137,9 @@ pub struct Owner {
     pub label: String,
     /// Sum of known footprints; unknown count is separate, not a fabricated sample.
     pub mem_bytes: u64,
+    /// RSS sum is a coarse estimate, not guaranteed exclusive physical pages.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reclaimable_physical: Option<PhysicalEstimate>,
     pub unknown_mem_count: usize,
     pub cpu_pct: Option<f64>,
     pub pids: Vec<i32>,
@@ -137,6 +161,7 @@ impl Owner {
             kind,
             label,
             mem_bytes: 0,
+            reclaimable_physical: None,
             unknown_mem_count: 0,
             cpu_pct: None,
             pids: vec![],
@@ -148,6 +173,43 @@ impl Owner {
             insights: vec![],
             history: vec![],
             verdict: Verdict::normal(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PhysicalEstimate {
+    pub bytes: Option<u64>,
+    pub unknown_count: usize,
+    pub basis: String,
+    pub reason: Option<String>,
+}
+impl PhysicalEstimate {
+    pub fn from_procs<'a>(procs: impl IntoIterator<Item = &'a crate::snapshot::Proc>) -> Self {
+        let mut seen = std::collections::BTreeSet::new();
+        let mut total = Some(0_u64);
+        let mut unknown_count = 0;
+        for proc in procs {
+            if !seen.insert(proc.pid) {
+                continue;
+            }
+            if let Some(bytes) = proc.resident_bytes {
+                total = total.and_then(|n| n.checked_add(bytes));
+            } else {
+                unknown_count += 1;
+            }
+        }
+        Self {
+            bytes: (unknown_count == 0).then_some(total).flatten(),
+            unknown_count,
+            basis: "RSS sum; includes shared pages; estimate, not guaranteed reclaim".into(),
+            reason: if unknown_count > 0 {
+                Some("resident_measurement_missing".into())
+            } else if total.is_none() {
+                Some("resident_sum_overflow".into())
+            } else {
+                None
+            },
         }
     }
 }
@@ -277,6 +339,9 @@ mod tests {
         use crate::snapshot::{Host, Pressure, Snapshot};
         let mut snap = Snapshot::historical("2026-10-14T19:40:00+08:00".into(), vec![]);
         snap.host = Some(Host {
+            kernel_zones: None,
+            gpu_memory: None,
+            memory_diagnostics: None,
             mem_total_bytes: 17179869184,
             mem_used_bytes: 8589934592,
             compressed_bytes: 1048576,
@@ -354,7 +419,7 @@ mod tests {
         }
         let builtins = crate::recognizers::builtins();
         assert_eq!(
-            builtins.iter().map(|r| r.id()).collect::<Vec<_>>(),
+            builtins.iter().take(6).map(|r| r.id()).collect::<Vec<_>>(),
             vec![
                 "chromium",
                 "webkit-host",

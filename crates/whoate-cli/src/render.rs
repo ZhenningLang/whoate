@@ -66,6 +66,43 @@ pub fn report(report: &Report, catalog: &[Insight], lang: Language) -> String {
             h.pressure
         )
         .unwrap();
+        if let Some(zones) = &h.kernel_zones {
+            writeln!(
+                out,
+                "kernel_zones={:?} as_of={} basis={} reason={}",
+                zones.status,
+                zones.as_of.as_deref().unwrap_or("missing"),
+                safe(&zones.basis),
+                safe(zones.reason.as_deref().unwrap_or("none"))
+            )
+            .unwrap();
+            for z in &zones.top {
+                writeln!(
+                    out,
+                    "  {}: {} bytes; collectible={:?}; pageable={:?}",
+                    safe(&z.name),
+                    z.bytes,
+                    z.collectible,
+                    z.pageable
+                )
+                .unwrap();
+            }
+        }
+        if let Some(gpu) = &h.gpu_memory {
+            writeln!(
+                out,
+                "GPU={:?}; bytes={:?}; reason={}",
+                gpu.status,
+                gpu.bytes,
+                safe(gpu.reason.as_deref().unwrap_or("none"))
+            )
+            .unwrap();
+        }
+        if let Some(diagnostics) = &h.memory_diagnostics {
+            for diagnosis in diagnostics {
+                writeln!(out, "  {:?}: {}", diagnosis.level, safe(&diagnosis.text)).unwrap();
+            }
+        }
     }
     writeln!(
         out,
@@ -97,6 +134,23 @@ pub fn report(report: &Report, catalog: &[Insight], lang: Language) -> String {
         if let Some(action) = &owner.verdict.action {
             writeln!(out, "  {}", safe(action)).unwrap();
         }
+        if let Some(estimate) = &owner.reclaimable_physical {
+            writeln!(
+                out,
+                "  {}: {} bytes; unknown_count={}; {}",
+                lang.choose("预计可腾出物理内存", "Estimated physical reclaim"),
+                estimate
+                    .bytes
+                    .map(|n| n.to_string())
+                    .unwrap_or_else(|| "missing".into()),
+                estimate.unknown_count,
+                lang.choose(
+                    "RSS 粗估，含共享页，非保证",
+                    "RSS estimate, includes shared pages, not guaranteed"
+                )
+            )
+            .unwrap();
+        }
         if let Some(origin) = &owner.origin {
             writeln!(
                 out,
@@ -107,8 +161,24 @@ pub fn report(report: &Report, catalog: &[Insight], lang: Language) -> String {
                 origin.ports
             )
             .unwrap();
+            writeln!(
+                out,
+                "  window_name={} pane_title={}",
+                safe(origin.window_name.as_deref().unwrap_or("missing")),
+                safe(origin.pane_title.as_deref().unwrap_or("missing"))
+            )
+            .unwrap();
         }
         if let Some(a) = &owner.agent {
+            writeln!(
+                out,
+                "  last_activity_at={} idle_seconds={}",
+                safe(a.last_activity_at.as_deref().unwrap_or("missing")),
+                a.idle_seconds
+                    .map(|n| n.to_string())
+                    .unwrap_or_else(|| "missing".into())
+            )
+            .unwrap();
             writeln!(out,"  {}: {} / {}; status={} cwd={} branch={} model={} cost={:?} confidence={:?} stale={}",safe(&a.tool),safe(a.name.as_deref().unwrap_or("unknown")),safe(a.title.as_deref().unwrap_or("unknown")),safe(a.status.as_deref().unwrap_or("unknown")),safe(a.cwd.as_deref().unwrap_or("unknown")),safe(a.branch.as_deref().unwrap_or("unknown")),safe(a.model.as_deref().unwrap_or("unknown")),a.cost_usd,a.confidence,a.stale).unwrap();
             if let Some(s) = &a.first_prompt {
                 writeln!(out, "  first_prompt: {}", safe(s)).unwrap();

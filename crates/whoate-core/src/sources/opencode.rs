@@ -38,6 +38,27 @@ fn model(value: &Value) -> Option<String> {
         .or_else(|| value.as_str())
         .map(str::to_owned)
 }
+
+/// Only message creation metadata, never session modification or part/data.
+pub fn last_activity_ms(conn: &Connection, session: &str) -> rusqlite::Result<Option<i64>> {
+    let has_modern = exists(conn, "session_message")?;
+    let table = if has_modern
+        && (!exists(conn, "message")?
+            || conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM session_message WHERE session_id=?1)",
+                [session],
+                |r| r.get::<_, bool>(0),
+            )?) {
+        "session_message"
+    } else {
+        "message"
+    };
+    conn.query_row(
+        &format!("SELECT MAX(time_created) FROM {table} WHERE session_id=?1"),
+        [session],
+        |r| r.get(0),
+    )
+}
 pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'static str> {
     let Some((cwd, start)) = proc.cwd.as_deref().zip(proc.start_time) else {
         return Ok(None);
@@ -84,6 +105,15 @@ pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'sta
         agent.title = title;
         agent.cwd = Some(cwd.into());
         agent.updated_at_ms = Some(updated);
+        agent.last_activity_at = last_activity_ms(&tx, &id)?
+            .filter(|at| *at >= 0)
+            .and_then(|at| {
+                time::OffsetDateTime::from_unix_timestamp_nanos(at as i128 * 1_000_000).ok()
+            })
+            .and_then(|at| {
+                at.format(&time::format_description::well_known::Rfc3339)
+                    .ok()
+            });
         agent.confidence = Confidence::Inferred;
         agent.cost_usd = stored_cost;
         if let Some(m) = stored_model {

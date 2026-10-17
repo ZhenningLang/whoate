@@ -8,6 +8,7 @@ pub const SOURCES: &[(&str, &str)] = &[
     ("browsers.toml", include_str!("browsers.toml")),
     ("desktop.toml", include_str!("desktop.toml")),
     ("runtimes.toml", include_str!("runtimes.toml")),
+    ("system.toml", include_str!("system.toml")),
 ];
 
 /// Producers: recognizers::registry::prepare (software counts), Chromium and
@@ -45,6 +46,8 @@ pub const CONFIG_SIGNALS: &[&str] = &[
 #[serde(deny_unknown_fields)]
 struct Document {
     entries: Vec<Insight>,
+    #[serde(default)]
+    kernel_zones: Option<super::system_policy::ZonePolicy>,
 }
 
 pub fn load() -> Result<Vec<Insight>, &'static str> {
@@ -59,18 +62,26 @@ pub fn load_sources(sources: &[(&str, &str)]) -> Result<Vec<Insight>, &'static s
     let mut ids = BTreeSet::new();
     for (_, text) in sources {
         let document: Document = toml::from_str(text).map_err(|_| "invalid_insight_toml")?;
+        if let Some(policy) = &document.kernel_zones {
+            policy.validate()?;
+        }
         for entry in document.entries {
             if entry.id.trim().is_empty() || !ids.insert(entry.id.clone()) {
                 return Err("invalid_insight_id");
             }
             if !matches!(
                 entry.recognizer.as_str(),
-                "coding-agents" | "dev-runtimes" | "chromium" | "webkit-host" | "docker" | "ide"
+                "coding-agents"
+                    | "dev-runtimes"
+                    | "chromium"
+                    | "webkit-host"
+                    | "docker"
+                    | "ide"
+                    | "system-services"
             ) {
                 return Err("unknown_insight_recognizer");
             }
-            if !entry.source.starts_with("https://")
-                || entry.source[8..].trim().is_empty()
+            if !super::system_policy::valid_source(&entry)
                 || [
                     &entry.cause.zh,
                     &entry.cause.en,
@@ -87,6 +98,7 @@ pub fn load_sources(sources: &[(&str, &str)]) -> Result<Vec<Insight>, &'static s
             {
                 return Err("invalid_insight_metadata");
             }
+            super::system_policy::validate(&entry)?;
             let mut pending = vec![&entry.trigger];
             while let Some(trigger) = pending.pop() {
                 match trigger {

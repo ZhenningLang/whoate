@@ -5,14 +5,74 @@ use super::{
 use crate::snapshot::TmuxPane;
 use std::{sync::atomic::AtomicBool, time::Duration};
 
-pub const FORMAT: &str = "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{pane_pid}\t#{pane_current_path}";
+pub const FORMAT: &str = "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{q/a:window_name}\t#{pane_pid}\t#{q/a:pane_current_path}\t#{q/a:pane_title}";
+
+fn decode_arg(text: &str) -> SampleResult<String> {
+    // q/a emits bare, double-quoted, or single-quoted vis-escaped tokens.
+    // Decode vis octal as bytes before UTF-8, not as Unicode code points.
+    let (text, single_quoted) = if let Some(text) = text.strip_prefix('\'') {
+        (
+            text.strip_suffix('\'')
+                .filter(|s| !s.contains('\''))
+                .ok_or_else(|| SampleError::new("tmux", "invalid_quoting"))?,
+            true,
+        )
+    } else if let Some(text) = text.strip_prefix('"') {
+        (
+            text.strip_suffix('"')
+                .ok_or_else(|| SampleError::new("tmux", "invalid_quoting"))?,
+            false,
+        )
+    } else {
+        (text, false)
+    };
+    let mut chars = text.bytes();
+    let mut out = Vec::with_capacity(text.len());
+    while let Some(c) = chars.next() {
+        if c == b'"' && !single_quoted {
+            return Err(SampleError::new("tmux", "invalid_quoting"));
+        }
+        if c != b'\\' {
+            out.push(c);
+            continue;
+        }
+        let c = chars
+            .next()
+            .ok_or_else(|| SampleError::new("tmux", "invalid_escape"))?;
+        match c {
+            b'n' => out.push(b'\n'),
+            b't' => out.push(b'\t'),
+            b'r' => out.push(b'\r'),
+            b'e' => out.push(27),
+            b'a' => out.push(7),
+            b'b' => out.push(8),
+            b'f' => out.push(12),
+            b'v' => out.push(11),
+            b'0'..=b'7' => {
+                let mut n = u16::from(c - b'0');
+                for _ in 0..2 {
+                    n = n * 8
+                        + chars
+                            .next()
+                            .filter(|c| (b'0'..=b'7').contains(c))
+                            .map(|c| u16::from(c - b'0'))
+                            .ok_or_else(|| SampleError::new("tmux", "invalid_octal"))?;
+                }
+                out.push(u8::try_from(n).map_err(|_| SampleError::new("tmux", "invalid_octal"))?);
+            }
+            c if c.is_ascii_punctuation() || c == b' ' => out.push(c),
+            _ => return Err(SampleError::new("tmux", "invalid_escape")),
+        }
+    }
+    String::from_utf8(out).map_err(|_| SampleError::new("tmux", "invalid_utf8"))
+}
 
 pub fn parse_panes(text: &str) -> SampleResult<Vec<TmuxPane>> {
     text.lines()
         .filter(|line| !line.is_empty())
         .map(|line| {
-            let fields: Vec<_> = line.splitn(5, '\t').collect();
-            if fields.len() != 5 || !valid_pane(fields[0]) {
+            let fields: Vec<_> = line.split('\t').collect();
+            if !matches!(fields.len(), 5 | 6) || !valid_pane(fields[0]) {
                 return Err(SampleError::new("tmux", "invalid_columns"));
             }
             let pid = fields[3]
@@ -23,9 +83,24 @@ pub fn parse_panes(text: &str) -> SampleResult<Vec<TmuxPane>> {
             Ok(TmuxPane {
                 pane_id: fields[0].into(),
                 target: fields[1].into(),
-                window_name: Some(fields[2].into()),
+                // Metadata failure is local: retain the validated pane/PID.
+                // The native sampler reports missing metadata as a safe issue.
+                window_name: if fields.len() == 6 {
+                    decode_arg(fields[2]).ok()
+                } else {
+                    Some(fields[2].into())
+                },
+                pane_title: if fields.len() == 6 {
+                    decode_arg(fields[5]).ok()
+                } else {
+                    None
+                },
                 pane_pid: pid,
-                cwd: Some(fields[4].into()),
+                cwd: if fields.len() == 6 {
+                    decode_arg(fields[4]).ok()
+                } else {
+                    Some(fields[4].into())
+                },
             })
         })
         .collect()
@@ -41,7 +116,9 @@ pub fn capture() -> SampleResult<Vec<TmuxPane>> {
     capture_with(|| {
         read_command(
             "tmux",
-            &["list-panes", "-a", "-F", FORMAT],
+            // read_command pins LC_ALL=C for numeric tools. Force tmux's UTF-8
+            // client mode or it replaces tabs/Unicode with underscores.
+            &["-u", "list-panes", "-a", "-F", FORMAT],
             &AtomicBool::new(false),
             Duration::from_secs(super::cache::FRESH_SECONDS as u64),
             (super::top::MAX_PROCESSES + 1) * libc::PATH_MAX as usize,

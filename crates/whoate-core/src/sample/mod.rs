@@ -36,6 +36,7 @@ pub mod fixture;
 pub mod libproc;
 pub mod ports;
 pub mod sysctl;
+pub mod system_memory;
 pub mod tmux;
 pub mod top;
 

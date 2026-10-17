@@ -229,6 +229,7 @@ mod tests {
             vec![shell, runtime, agent],
         );
         first.tmux_panes = vec![TmuxPane {
+            pane_title: None,
             pane_id: "%42".into(),
             target: "work:0.0".into(),
             window_name: None,
