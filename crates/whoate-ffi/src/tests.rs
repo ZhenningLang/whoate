@@ -112,6 +112,84 @@ fn replay(snapshot: Snapshot, home: &Path) -> *mut WhoateEngine {
 }
 
 #[test]
+fn phase09_host_uses_only_injected_host_and_preserves_full_snapshot() {
+    let _serial = SERIAL.lock().unwrap();
+    let mut snapshot = capture_snapshot();
+    snapshot.host = Some(
+        serde_json::from_value(json!({"mem_total_bytes":16384,"mem_used_bytes":8192,
+        "compressed_bytes":1024,"wired_bytes":2048,"swap_used_bytes":4096,"pressure":"warn"}))
+        .unwrap(),
+    );
+    let previous = lock().snapshot.replace(snapshot.clone());
+    let expected = serde_json::to_value(snapshot.host.clone().unwrap()).unwrap();
+    let mut calls = 0;
+    let value = super::host_json(|| {
+        calls += 1;
+        Ok(snapshot.host.clone().unwrap())
+    });
+    assert_eq!(calls, 1);
+    assert_eq!(value["schema"], "whoate/host-v1");
+    assert_eq!(value["host"], expected);
+    assert!(value["taken_at"].is_string());
+    assert!(value.get("owners").is_none());
+    assert_eq!(lock().snapshot, Some(snapshot));
+    let failure = super::host_json(|| Err(SampleError::new("host", "unavailable")));
+    assert_eq!(failure["error"]["code"], 1);
+    assert_eq!(failure["error"]["message"], "host: unavailable");
+    lock().snapshot = previous;
+}
+
+#[test]
+fn phase09_control_reaches_sampler_without_replacing_history_or_kill_identity() {
+    let _serial = SERIAL.lock().unwrap();
+    use std::sync::Arc;
+    struct Observed {
+        frame: Snapshot,
+        activity: Arc<Mutex<Vec<bool>>>,
+    }
+    impl Sampler for Observed {
+        fn sample(&mut self) -> SampleResult<Snapshot> {
+            Ok(self.frame.clone())
+        }
+        fn set_active(&mut self, active: bool) {
+            self.activity.lock().unwrap().push(active);
+        }
+    }
+    let home = Temp::new();
+    let activity = Arc::new(Mutex::new(vec![]));
+    let engine = Engine::with_sampler(
+        Observed {
+            frame: capture_snapshot(),
+            activity: activity.clone(),
+        },
+        SystemClock::default(),
+        context(&home.0),
+    );
+    let engine = boxed(WhoateEngine::live(engine, false));
+    let before = take(whoate_engine_tick(engine));
+    let pid = before["owners"][0]["pids"][0].as_i64().unwrap() as i32;
+    let why = take(whoate_why(engine, pid));
+    for active in [0, 1] {
+        let response = take(unsafe { super::whoate_engine_set_active(engine, active) });
+        assert_eq!(response["schema"], "whoate/control-v1");
+        assert_eq!(response["active"], active == 1);
+        let host = take(super::whoate_host_json());
+        assert_eq!(host["schema"], "whoate/host-v1");
+        assert_eq!(take(whoate_why(engine, pid)), why);
+    }
+    assert_eq!(*activity.lock().unwrap(), vec![false, true]);
+    assert_eq!(
+        take(unsafe { super::whoate_engine_set_active(std::ptr::null_mut(), 0) })["error"]["code"],
+        2
+    );
+    assert_eq!(
+        take(unsafe { super::whoate_engine_set_active(engine, 2) })["error"]["code"],
+        2
+    );
+    whoate_engine_free(engine);
+}
+
+#[test]
 fn phase05_ffi_tick_and_why_contract() {
     let home = Temp::new();
     let engine = replay(capture_snapshot(), &home.0);

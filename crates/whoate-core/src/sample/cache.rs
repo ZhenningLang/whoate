@@ -202,9 +202,32 @@ pub struct Worker {
     signal: Arc<(Mutex<bool>, Condvar)>,
     stop: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
+    source: Arc<Mutex<Box<dyn SlowSource>>>,
+    path: PathBuf,
+    clock: Arc<dyn Clock>,
 }
 
 impl Worker {
+    pub fn set_active(&mut self, active: bool) {
+        if !active {
+            self.stop.store(true, Ordering::Release);
+            let (lock, condition) = &*self.signal;
+            *lock.lock().expect("worker signal") = true;
+            condition.notify_all();
+            if let Some(thread) = self.thread.take()
+                && thread.join().is_err()
+            {
+                eprintln!("whoate sample: slow_worker_panicked");
+            }
+            return;
+        }
+        if self.thread.is_some() {
+            return;
+        }
+        self.stop = Arc::new(AtomicBool::new(false));
+        self.signal = Arc::new((Mutex::new(false), Condvar::new()));
+        self.spawn();
+    }
     pub fn start(path: PathBuf, source: impl SlowSource) -> Self {
         Self::start_with_clock(
             path,
@@ -212,21 +235,35 @@ impl Worker {
             Arc::new(MonotonicClock(std::time::Instant::now())),
         )
     }
-    pub fn start_with_clock(
-        path: PathBuf,
-        mut source: impl SlowSource,
-        clock: Arc<dyn Clock>,
-    ) -> Self {
+    pub fn start_with_clock(path: PathBuf, source: impl SlowSource, clock: Arc<dyn Clock>) -> Self {
         let state = Arc::new(Mutex::new(CacheState::load(&path)));
         let memory_path = path.with_file_name("system-memory.json");
         let memory = Arc::new(Mutex::new(super::system_memory::MemoryCache::load(
             &memory_path,
         )));
-        let memory_copy = memory.clone();
         let signal = Arc::new((Mutex::new(false), Condvar::new()));
         let stop = Arc::new(AtomicBool::new(false));
-        let (state_copy, signal_copy, stop_copy) = (state.clone(), signal.clone(), stop.clone());
+        let mut worker = Self {
+            state,
+            memory,
+            signal,
+            stop,
+            thread: None,
+            source: Arc::new(Mutex::new(Box::new(source))),
+            path,
+            clock,
+        };
+        worker.set_active(true);
+        worker
+    }
+    fn spawn(&mut self) {
+        let (state_copy, signal_copy, stop_copy) =
+            (self.state.clone(), self.signal.clone(), self.stop.clone());
+        let memory_copy = self.memory.clone();
+        let memory_path = self.path.with_file_name("system-memory.json");
+        let (path, clock, source) = (self.path.clone(), self.clock.clone(), self.source.clone());
         let thread = thread::spawn(move || {
+            let mut source = source.lock().expect("slow source");
             let mut previous = None;
             while !stop_copy.load(Ordering::Acquire) {
                 let now = clock.now();
@@ -265,13 +302,7 @@ impl Worker {
                     .expect("worker wait");
             }
         });
-        Self {
-            state,
-            memory,
-            signal,
-            stop,
-            thread: Some(thread),
-        }
+        self.thread = Some(thread);
     }
     pub fn state(&self) -> CacheState {
         self.state.lock().expect("cache state").clone()
@@ -288,15 +319,7 @@ impl Worker {
 
 impl Drop for Worker {
     fn drop(&mut self) {
-        self.stop.store(true, Ordering::Release);
-        let (lock, condition) = &*self.signal;
-        *lock.lock().expect("worker signal") = true;
-        condition.notify_all();
-        if let Some(thread) = self.thread.take() {
-            // Source implementations must honour stop; the platform runner kills its own child.
-            if thread.join().is_err() {
-                eprintln!("whoate sample: slow_worker_panicked");
-            }
-        }
+        // Sources honour stop; only commands owned by this worker are cancelled.
+        self.set_active(false);
     }
 }

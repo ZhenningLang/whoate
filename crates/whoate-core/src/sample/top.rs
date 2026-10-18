@@ -5,6 +5,55 @@ use std::{collections::BTreeMap, sync::atomic::AtomicBool, time::Duration};
 pub const TOP_ARGS: &[&str] = &["-l", "2", "-s", "1", "-stats", "pid,mem,cpu", "-n", "10000"];
 pub const MAX_PROCESSES: usize = 10_000;
 
+/// Independent top cadence; the enclosing worker still samples kernel memory
+/// every six seconds. Cached results retain their original capture timestamp.
+pub struct Scheduled<S> {
+    source: S,
+    started: std::time::Instant,
+    previous: Option<(Duration, SampleResult<super::cache::SystemCache>)>,
+}
+impl<S: super::cache::SlowSource> Scheduled<S> {
+    pub fn new(source: S) -> Self {
+        Self {
+            source,
+            started: std::time::Instant::now(),
+            previous: None,
+        }
+    }
+    pub fn capture_at(
+        &mut self,
+        now: Duration,
+        stop: &AtomicBool,
+    ) -> SampleResult<super::cache::SystemCache> {
+        if stop.load(std::sync::atomic::Ordering::Acquire) {
+            return Err(SampleError::new("top", "cancelled"));
+        }
+        if let Some((at, result)) = &self.previous
+            && now >= *at
+            && now < at.saturating_add(Duration::from_secs(24))
+        {
+            return result.clone();
+        }
+        let result = self.source.capture(stop);
+        if result.is_ok() && !stop.load(std::sync::atomic::Ordering::Acquire) {
+            self.previous = Some((now, result.clone()));
+        } else {
+            // Errors retain CacheState's stale/as_of semantics, but must retry
+            // at the worker's next 6s tick rather than memoizing failure for 24s.
+            self.previous = None;
+        }
+        result
+    }
+}
+impl<S: super::cache::SlowSource> super::cache::SlowSource for Scheduled<S> {
+    fn capture(&mut self, stop: &AtomicBool) -> SampleResult<super::cache::SystemCache> {
+        self.capture_at(self.started.elapsed(), stop)
+    }
+    fn capture_memory(&mut self, stop: &AtomicBool) -> Option<super::system_memory::MemoryCache> {
+        self.source.capture_memory(stop)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TopRow {
     pub footprint_bytes: u64,

@@ -73,5 +73,20 @@ for (name, check) in checks where filter.map({ name.contains($0) }) ?? true {
         failures.forEach { print("    \($0)") }
     }
 }
+let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
+    ("RefreshTests.hiddenIsHostOnlyAndVisibleUsesOneEngine", RefreshTests.hiddenIsHostOnlyAndVisibleUsesOneEngine),
+    ("RefreshTests.failuresPreserveBothGoodValuesAndIndependentErrors", RefreshTests.failuresPreserveBothGoodValuesAndIndependentErrors),
+    ("RefreshTests.stopDropsLateTickAndRestartKeepsOneEngine", RefreshTests.stopDropsLateTickAndRestartKeepsOneEngine),
+    ("RefreshTests.realWindowAdapterPublishesShowOrderOutAndClose", RefreshTests.realWindowAdapterPublishesShowOrderOutAndClose),
+    ("RefreshTests.nativeHostDecodesTheNewAbi", RefreshTests.nativeHostDecodesTheNewAbi),
+    ("RefreshTests.oldCloseCannotOverwriteAReattachedVisibleWindow", RefreshTests.oldCloseCannotOverwriteAReattachedVisibleWindow),
+    ("RefreshTests.visibleCadenceIncludesWorkRatherThanAddingTwoSeconds", RefreshTests.visibleCadenceIncludesWorkRatherThanAddingTwoSeconds),
+]
+for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
+    failures = []
+    do { try await check() } catch { fail("threw \(error)") }
+    if failures.isEmpty { passed += 1; print("✔ \(name)") }
+    else { failed += 1; print("✘ \(name)"); failures.forEach { print("    \($0)") } }
+}
 print("WHOATE_CHECKS passed=\(passed) failed=\(failed) skipped=\(skipped)")
 exit(failed == 0 && passed > 0 ? 0 : 1)

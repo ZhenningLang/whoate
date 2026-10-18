@@ -249,6 +249,28 @@ impl ProcessReader for NativeProcessReader<'_> {
 pub fn footprint(pid: i32) -> SampleResult<(u64, u64)> {
     resources(pid).map(|(mem, cpu, _)| (mem, cpu))
 }
+fn cpu_nanoseconds(ticks: u64, numer: u32, denom: u32) -> SampleResult<u64> {
+    if numer == 0 || denom == 0 {
+        return Err(SampleError::new("rusage_v4", "timebase_unavailable"));
+    }
+    u64::try_from(u128::from(ticks) * u128::from(numer) / u128::from(denom))
+        .map_err(|_| SampleError::new("rusage_v4", "cpu_time_overflow"))
+}
+// The locked libc exposes this SDK ABI but deprecates it in favour of a new
+// dependency. Keep the existing dependency contract; no alternate conversion.
+#[allow(deprecated)]
+fn timebase() -> SampleResult<(u32, u32)> {
+    static TIMEBASE: OnceLock<Option<(u32, u32)>> = OnceLock::new();
+    TIMEBASE
+        .get_or_init(|| {
+            let mut info = unsafe { zeroed::<libc::mach_timebase_info>() };
+            (unsafe { libc::mach_timebase_info(&mut info) } == 0
+                && info.numer > 0
+                && info.denom > 0)
+                .then_some((info.numer, info.denom))
+        })
+        .ok_or_else(|| SampleError::new("rusage_v4", "timebase_unavailable"))
+}
 pub fn resources(pid: i32) -> SampleResult<(u64, u64, Option<u64>)> {
     let mut usage = unsafe { zeroed::<libc::rusage_info_v4>() };
     let result = unsafe {
@@ -270,7 +292,14 @@ pub fn resources(pid: i32) -> SampleResult<(u64, u64, Option<u64>)> {
         .ri_user_time
         .checked_add(usage.ri_system_time)
         .ok_or_else(|| SampleError::new("rusage_v4", "cpu_time_overflow"))?;
-    Ok((usage.ri_phys_footprint, cpu, Some(usage.ri_resident_size)))
+    // rusage_info CPU counters are Mach ticks, not ns on Apple Silicon.
+    // Convert only here; injected samplers and fixtures already supply ns.
+    let (numer, denom) = timebase()?;
+    Ok((
+        usage.ri_phys_footprint,
+        cpu_nanoseconds(cpu, numer, denom)?,
+        Some(usage.ri_resident_size),
+    ))
 }
 
 fn read_args(pid: i32, buffer: &mut [u8]) -> SampleResult<sysctl::ProcArgs> {
@@ -374,13 +403,13 @@ pub struct MacSampler {
 }
 impl MacSampler {
     pub fn new() -> SampleResult<Self> {
-        Self::with_source(PlatformSlowSource)
+        Self::with_source(top::Scheduled::new(PlatformSlowSource))
     }
     pub fn with_source(source: impl SlowSource) -> SampleResult<Self> {
         Self::with_source_at(cache::cache_path()?, source)
     }
     pub fn with_cache_path(path: PathBuf) -> SampleResult<Self> {
-        Self::with_source_at(path, PlatformSlowSource)
+        Self::with_source_at(path, top::Scheduled::new(PlatformSlowSource))
     }
     pub fn with_source_at(path: PathBuf, source: impl SlowSource) -> SampleResult<Self> {
         let arguments = vec![0; argmax()?];
@@ -395,6 +424,9 @@ impl MacSampler {
 }
 
 impl Sampler for MacSampler {
+    fn set_active(&mut self, active: bool) {
+        self.worker.set_active(active);
+    }
     fn sample(&mut self) -> SampleResult<Snapshot> {
         let taken_at = sysctl::now_timestamp()?;
         let now = sysctl::unix_now();
@@ -530,5 +562,18 @@ impl SlowSource for PlatformSlowSource {
             rows,
             cpu_issue: data.cpu_issue,
         })
+    }
+}
+
+#[cfg(test)]
+mod phase09_tests {
+    #[test]
+    fn phase09_cpu_timebase_converts_once_without_intermediate_overflow() {
+        assert_eq!(super::cpu_nanoseconds(3, 125, 3).unwrap(), 125);
+        assert_eq!(super::cpu_nanoseconds(17, 1, 1).unwrap(), 17);
+        assert_eq!(super::cpu_nanoseconds(u64::MAX, 2, 2).unwrap(), u64::MAX);
+        assert!(super::cpu_nanoseconds(1, 1, 0).is_err());
+        assert!(super::cpu_nanoseconds(1, 0, 1).is_err());
+        assert!(super::cpu_nanoseconds(u64::MAX, 2, 1).is_err());
     }
 }

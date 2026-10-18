@@ -159,12 +159,13 @@ struct Shared {
 }
 struct Worker {
     stop: Arc<AtomicBool>,
-    join: JoinHandle<()>,
+    join: JoinHandle<Box<dyn DockerSource>>,
 }
 pub struct Monitor {
     shared: Arc<Shared>,
     source: Mutex<Option<Box<dyn DockerSource>>>,
     worker: Mutex<Option<Worker>>,
+    enabled: AtomicBool,
 }
 impl std::fmt::Debug for Monitor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -172,11 +173,24 @@ impl std::fmt::Debug for Monitor {
     }
 }
 impl Monitor {
+    pub fn set_active(&self, active: bool) {
+        let mut worker = self.worker.lock().expect("docker worker lock");
+        self.enabled.store(active, Ordering::Release);
+        if !active && let Some(worker) = worker.take() {
+            worker.stop.store(true, Ordering::Release);
+            worker.join.thread().unpark();
+            match worker.join.join() {
+                Ok(source) => *self.source.lock().expect("docker source lock") = Some(source),
+                Err(_) => eprintln!("whoate docker: worker_panicked"),
+            }
+        }
+    }
     pub fn new(source: impl DockerSource) -> Self {
         Self {
             shared: Arc::default(),
             source: Mutex::new(Some(Box::new(source))),
             worker: Mutex::new(None),
+            enabled: AtomicBool::new(true),
         }
     }
     pub(crate) fn native(home: PathBuf) -> Self {
@@ -184,7 +198,7 @@ impl Monitor {
     }
     fn request(&self) {
         let mut worker = self.worker.lock().expect("docker worker lock");
-        if worker.is_some() {
+        if worker.is_some() || !self.enabled.load(Ordering::Acquire) {
             return;
         }
         let Some(mut source) = self.source.lock().expect("docker source lock").take() else {
@@ -200,6 +214,9 @@ impl Monitor {
                     .format(&time::format_description::well_known::Rfc3339)
                     .expect("timestamp format");
                 let result = source.capture(&cancel);
+                if cancel.load(Ordering::Acquire) {
+                    break;
+                }
                 {
                     let mut state = shared.state.lock().expect("docker state lock");
                     state.generation += 1;
@@ -233,6 +250,7 @@ impl Monitor {
                     Duration::from_secs(INTERVAL_SECONDS as u64).saturating_sub(started.elapsed()),
                 );
             }
+            source
         });
         *worker = Some(Worker { stop, join });
     }
@@ -249,14 +267,8 @@ impl Monitor {
 }
 impl Drop for Monitor {
     fn drop(&mut self) {
-        if let Some(worker) = self.worker.get_mut().expect("docker worker lock").take() {
-            worker.stop.store(true, Ordering::Release);
-            worker.join.thread().unpark();
-            // Join owns cancellation of the read_command child, not any daemon.
-            let Worker { stop, join } = worker;
-            drop(stop);
-            let _ = join.join();
-        }
+        // Join cancels only the read_command child, never a daemon.
+        self.set_active(false);
     }
 }
 
@@ -473,6 +485,39 @@ mod tests {
         model::{FactValue, OwnerKind},
         sources::testing::Temp,
     };
+    #[test]
+    fn phase09_docker_pause_cancels_own_source_and_resumes_lazily_once() {
+        use std::sync::mpsc;
+        struct Blocking(mpsc::Sender<&'static str>);
+        impl DockerSource for Blocking {
+            fn capture(&mut self, stop: &AtomicBool) -> Result<Vec<ContainerStats>, &'static str> {
+                self.0.send("start").unwrap();
+                while !stop.load(Ordering::Acquire) {
+                    thread::park_timeout(Duration::from_millis(1));
+                }
+                self.0.send("cancel").unwrap();
+                Err("cancelled")
+            }
+        }
+        let (tx, rx) = mpsc::channel();
+        let monitor = Monitor::new(Blocking(tx));
+        monitor.request();
+        assert_eq!(rx.recv_timeout(Duration::from_secs(1)).unwrap(), "start");
+        monitor.set_active(false);
+        assert_eq!(
+            rx.recv_timeout(Duration::from_millis(100)).unwrap(),
+            "cancel"
+        );
+        monitor.request();
+        assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+        monitor.set_active(true);
+        monitor.request();
+        assert_eq!(rx.recv_timeout(Duration::from_secs(1)).unwrap(), "start");
+        monitor.request();
+        assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+        drop(monitor);
+        assert_eq!(rx.recv_timeout(Duration::from_secs(1)).unwrap(), "cancel");
+    }
     struct Empty;
     impl DockerSource for Empty {
         fn capture(&mut self, _: &AtomicBool) -> Result<Vec<ContainerStats>, &'static str> {

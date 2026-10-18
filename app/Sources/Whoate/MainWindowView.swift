@@ -29,5 +29,6 @@ struct MainWindowView: View {
             }
         }
         .frame(minWidth: 520, minHeight: 360)
+        .background(RefreshVisibility { model.setVisible(main: $0) }.frame(width: 0, height: 0))
     }
 }

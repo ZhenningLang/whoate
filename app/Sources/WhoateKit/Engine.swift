@@ -29,7 +29,7 @@ func take(_ pointer: UnsafeMutablePointer<CChar>?) -> Data {
     return Data(bytes: pointer, count: strlen(pointer))
 }
 
-public final class Engine: @unchecked Sendable {
+public final class Engine: RefreshEngine, @unchecked Sendable {
     private let handle: OpaquePointer
     private let queue = DispatchQueue(label: "whoate.engine", qos: .utility)
 
@@ -51,6 +51,12 @@ public final class Engine: @unchecked Sendable {
     public func whyData(pid: Int32) -> Data { queue.sync { take(whoate_why(handle, pid)) } }
     public func tick() -> Decoded<Report> { decode(Report.self, from: tickData()) }
     public func why(pid: Int32) -> Decoded<Report> { decode(Report.self, from: whyData(pid: pid)) }
+    public func setActive(_ active: Bool) -> Decoded<RefreshControl> {
+        queue.sync { decode(RefreshControl.self, from: take(whoate_engine_set_active(handle, active ? 1 : 0))) }
+    }
+    public static func host() -> Decoded<HostSample> {
+        decode(HostSample.self, from: take(whoate_host_json()))
+    }
 
     /// Blocks up to five seconds when force is false. Call off the main thread.
     public static func kill(pids: [Int32], force: Bool) -> (code: Int32, result: Decoded<KillResult>) {

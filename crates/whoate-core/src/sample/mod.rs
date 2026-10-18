@@ -28,6 +28,8 @@ impl std::error::Error for SampleError {}
 
 pub trait Sampler {
     fn sample(&mut self) -> SampleResult<Snapshot>;
+    /// GUI suspension is opt-in; CLI and injected samplers stay active by default.
+    fn set_active(&mut self, _active: bool) {}
 }
 
 pub mod cache;

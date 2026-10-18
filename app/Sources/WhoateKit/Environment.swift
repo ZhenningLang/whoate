@@ -32,6 +32,8 @@ public struct Automation: Equatable, Sendable {
     public var windowFile: String?
     /// Debug Rust library only: fixture replayed instead of the live engine.
     public var fixture: String?
+    public var scheduleLog: String?
+    public var panelCloseAfter: Double?
 
     public static let off = Automation()
 
@@ -46,6 +48,9 @@ public struct Automation: Equatable, Sendable {
         confirm = environment["WHOATE_UI_CONFIRM"]
         windowFile = environment["WHOATE_UI_WINDOW_FILE"]
         fixture = environment["WHOATE_UI_FIXTURE"]
+        scheduleLog = environment["WHOATE_UI_SCHEDULE_LOG"]
+        panelCloseAfter = environment["WHOATE_UI_PANEL_CLOSE_AFTER"].flatMap(Double.init)
+            .flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
     }
     public var isActive: Bool { self != .off }
 }

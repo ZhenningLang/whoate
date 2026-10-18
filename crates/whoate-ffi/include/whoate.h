@@ -21,6 +21,15 @@ WhoateEngine *whoate_engine_new(void);
  * points ending at the newest one. */
 char *whoate_engine_tick(WhoateEngine *engine);
 
+/* Independent host projection: {"schema":"whoate/host-v1","taken_at", "host"}.
+ * No engine, process enumeration, session reads or worker creation. */
+char *whoate_host_json(void);
+
+/* active=0 cancels/joins owned workers; 1 permits restart. Retains report/history.
+ * Returns {"schema":"whoate/control-v1","active":bool}, or the standard error.
+ * Uses the same exclusive-engine threading rule as tick. */
+char *whoate_engine_set_active(WhoateEngine *engine, int32_t active);
+
 /* Report holding only the owner(s) containing pid, with full history.
  * Ticks once first if the engine has not ticked yet. */
 char *whoate_why(WhoateEngine *engine, int32_t pid);

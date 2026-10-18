@@ -35,10 +35,14 @@ enum Source {
 }
 trait Tick {
     fn tick(&mut self) -> Result<(Report, Option<Snapshot>), SampleError>;
+    fn set_active(&mut self, active: bool);
     #[cfg(test)]
     fn series(&self, id: &str) -> Vec<HistoryPoint>;
 }
 impl<S: Sampler, C: Clock> Tick for (Engine<S, C>, bool) {
+    fn set_active(&mut self, active: bool) {
+        self.0.set_active(active);
+    }
     fn tick(&mut self) -> Result<(Report, Option<Snapshot>), SampleError> {
         let report = self.0.tick()?;
         // Only the native sampler's identities may authorize a later kill.
@@ -114,6 +118,20 @@ fn error(code: i32, message: &str) -> Value {
 }
 fn guarded(f: impl FnOnce() -> Value) -> *mut c_char {
     raw(&catch_unwind(AssertUnwindSafe(f)).unwrap_or_else(|_| error(1, "panic")))
+}
+fn host_json(sample: impl FnOnce() -> Result<whoate_core::snapshot::Host, SampleError>) -> Value {
+    match sample()
+        .and_then(|host| whoate_core::sample::sysctl::now_timestamp().map(|at| (host, at)))
+    {
+        Ok((host, at)) => json!({"schema":"whoate/host-v1", "taken_at":at, "host":host}),
+        Err(e) => error(1, &e.to_string()),
+    }
+}
+
+/// Independent lightweight projection; never constructs an Engine or sampler.
+#[unsafe(no_mangle)]
+pub extern "C" fn whoate_host_json() -> *mut c_char {
+    guarded(|| host_json(whoate_core::sample::libproc::host))
 }
 
 /// Equal spacing over the series, always ending at the newest point.
@@ -302,6 +320,30 @@ pub unsafe extern "C" fn whoate_engine_tick(engine: *mut WhoateEngine) -> *mut c
     guarded(|| match unsafe { engine.as_mut() } {
         Some(engine) => tick_json(engine),
         None => error(2, "null_engine"),
+    })
+}
+
+/// Suspend/resume owned workers without resetting report/history/kill state.
+/// # Safety
+/// `engine` is NULL or an exclusively used live engine pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn whoate_engine_set_active(
+    engine: *mut WhoateEngine,
+    active: i32,
+) -> *mut c_char {
+    guarded(|| {
+        if !matches!(active, 0 | 1) {
+            return error(2, "invalid_active");
+        }
+        let Some(engine) = (unsafe { engine.as_mut() }) else {
+            return error(2, "null_engine");
+        };
+        match &mut engine.source {
+            Source::Live(engine) => engine.set_active(active != 0),
+            #[cfg(debug_assertions)]
+            Source::Report(_) => {}
+        }
+        json!({"schema":"whoate/control-v1","active":active != 0})
     })
 }
 

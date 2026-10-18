@@ -67,13 +67,22 @@ pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'sta
     let end = start.checked_add(10_000).ok_or("process_time_invalid")?;
     let mut conn = open_read_only(path)?;
     let tx = conn.transaction().map_err(|_| "database_busy")?;
+    read_transaction(&tx, cwd, start, end, tool)
+}
+fn read_transaction(
+    tx: &Connection,
+    cwd: &str,
+    start: i64,
+    end: i64,
+    tool: &str,
+) -> Result<Option<Agent>, &'static str> {
     let result = (|| -> rusqlite::Result<Option<Agent>> {
-        let table = if exists(&tx, "session_v2")? {
+        let table = if exists(tx, "session_v2")? {
             "session_v2"
         } else {
             "session"
         };
-        let cols = columns(&tx, table)?;
+        let cols = columns(tx, table)?;
         let optional = |name: &str| {
             if cols.contains(name) {
                 name.to_owned()
@@ -105,7 +114,7 @@ pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'sta
         agent.title = title;
         agent.cwd = Some(cwd.into());
         agent.updated_at_ms = Some(updated);
-        agent.last_activity_at = last_activity_ms(&tx, &id)?
+        agent.last_activity_at = last_activity_ms(tx, &id)?
             .filter(|at| *at >= 0)
             .and_then(|at| {
                 time::OffsetDateTime::from_unix_timestamp_nanos(at as i128 * 1_000_000).ok()
@@ -122,7 +131,7 @@ pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'sta
                 .and_then(|v| model(&v))
                 .or(Some(m));
         }
-        let modern = exists(&tx, "session_message")?
+        let modern = exists(tx, "session_message")?
             && tx.query_row(
                 "SELECT EXISTS(SELECT 1 FROM session_message WHERE session_id=?1)",
                 [&id],
@@ -192,6 +201,95 @@ pub fn read(path: &Path, proc: &Proc, tool: &str) -> Result<Option<Agent>, &'sta
         Ok(Some(agent))
     })();
     result.map_err(|_| "database_read_failed")
+}
+
+/// One read-only connection per active source, with one parsed result per full
+/// process identity. SQLite's read lock and data_version are checked even on hits.
+#[derive(Default)]
+pub(super) struct Cached {
+    databases: std::collections::BTreeMap<std::path::PathBuf, Database>,
+}
+struct Database {
+    conn: Connection,
+    stamp: super::cache::Stamp,
+    version: Option<i64>,
+    wal: Option<super::cache::Stamp>,
+    memo: std::collections::BTreeMap<super::SessionKey, Agent>,
+}
+impl Cached {
+    pub(super) fn retain(&mut self, active: &std::collections::BTreeSet<super::SessionKey>) {
+        self.databases.retain(|_, database| {
+            database.memo.retain(|key, _| active.contains(key));
+            !database.memo.is_empty()
+        });
+    }
+    pub(super) fn read(
+        &mut self,
+        path: &Path,
+        proc: &Proc,
+        tool: &str,
+        key: Option<&super::SessionKey>,
+        reads: &mut usize,
+    ) -> Result<Option<Agent>, &'static str> {
+        let Some((cwd, start)) = proc.cwd.as_deref().zip(proc.start_time) else {
+            return Ok(None);
+        };
+        let start = i64::try_from(start / 1000).map_err(|_| "process_time_invalid")?;
+        let end = start.checked_add(10_000).ok_or("process_time_invalid")?;
+        let stamp = super::cache::Stamp::read(path).ok_or("database_open_failed")?;
+        if !self.databases.get(path).is_some_and(|db| db.stamp == stamp) {
+            self.databases.remove(path);
+            self.databases.insert(
+                path.into(),
+                Database {
+                    conn: open_read_only(path)?,
+                    stamp,
+                    version: None,
+                    wal: None,
+                    memo: Default::default(),
+                },
+            );
+        }
+        let db = self.databases.get_mut(path).expect("opened database");
+        let tx = db
+            .conn
+            .unchecked_transaction()
+            .map_err(|_| "database_busy")?;
+        // This real table read acquires SQLite's shared lock; PRAGMA alone can
+        // otherwise return a cached version while an EXCLUSIVE writer owns it.
+        tx.query_row("SELECT COUNT(*) FROM sqlite_master", [], |r| {
+            r.get::<_, i64>(0)
+        })
+        .map_err(|_| "database_read_failed")?;
+        let version = tx
+            .query_row("PRAGMA data_version", [], |r| r.get::<_, i64>(0))
+            .map_err(|_| "database_read_failed")?;
+        let wal = super::cache::Stamp::read(Path::new(&format!("{}-wal", path.display())));
+        if db.version != Some(version) || db.wal != wal {
+            db.memo.clear();
+            db.version = Some(version);
+            db.wal = wal;
+        }
+        if let Some(agent) = key.and_then(|key| db.memo.get(key)) {
+            if super::cache::Stamp::read(path).as_ref() != Some(&db.stamp) {
+                return Err("database_changed_during_read");
+            }
+            return Ok(Some(agent.clone()));
+        }
+        *reads += 1;
+        let result = read_transaction(&tx, cwd, start, end, tool)?;
+        if super::cache::Stamp::read(path).as_ref() != Some(&db.stamp)
+            || super::cache::Stamp::read(Path::new(&format!("{}-wal", path.display()))) != db.wal
+        {
+            return Err("database_changed_during_read");
+        }
+        if let Some(key) = key
+            && let Some(agent) = &result
+        {
+            db.memo.insert(key.clone(), agent.clone());
+        }
+        Ok(result)
+    }
 }
 
 #[cfg(test)]

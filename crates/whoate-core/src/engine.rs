@@ -68,6 +68,14 @@ impl Engine<MacSampler, SystemClock> {
     }
 }
 impl<S: Sampler, C: Clock> Engine<S, C> {
+    /// Retain history and parsed sources while stopping owned background work.
+    pub fn set_active(&mut self, active: bool) {
+        self.sampler.set_active(active);
+        self.context.cfg.docker_monitor().set_active(active);
+        if !active {
+            self.previous = None;
+        }
+    }
     pub fn with_sampler(sampler: S, clock: C, context: Context) -> Self {
         Self::try_with_sampler(sampler, clock, context)
             .expect("embedded insight library must pass full validation")

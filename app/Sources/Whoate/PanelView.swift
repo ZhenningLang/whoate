@@ -19,6 +19,7 @@ struct PanelView: View {
         }
         .frame(width: 420)
         .overlay { CloseFlowView(model: model) }
+        .background(RefreshVisibility { model.setVisible(panel: $0) }.frame(width: 0, height: 0))
     }
 
     private var header: some View {
@@ -92,7 +93,7 @@ struct PanelView: View {
     }
 
     private var footerText: String {
-        Panel.footer(model.report, lastError: model.lastError, interval: AppModel.refreshInterval, language: language)
+        Panel.footer(model.report, lastError: model.refreshError, interval: AppModel.refreshInterval, language: language)
     }
 }
 

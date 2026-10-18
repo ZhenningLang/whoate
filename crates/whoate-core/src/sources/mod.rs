@@ -1,3 +1,4 @@
+mod cache;
 pub mod claude_code;
 pub mod kilo;
 pub mod opencode;
@@ -25,7 +26,10 @@ use crate::{
     recognizers::ConfigReader,
     snapshot::{Proc, SampleIssue},
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    os::unix::fs::MetadataExt,
+};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct SessionKey {
@@ -35,6 +39,7 @@ struct SessionKey {
     start: u64,
     cwd: Option<String>,
     home: std::path::PathBuf,
+    home_identity: Option<(std::path::PathBuf, u64, u64)>,
     session_pid: Option<i32>,
 }
 
@@ -83,8 +88,15 @@ pub fn tool(proc: &Proc) -> Option<&'static str> {
 #[derive(Default)]
 pub struct Sessions {
     cache: BTreeMap<SessionKey, Agent>,
+    source_reads: usize,
+    memo: BTreeMap<SessionKey, cache::Memo>,
+    databases: opencode::Cached,
 }
 impl Sessions {
+    /// Successful memo hits do not increment this source-parser counter.
+    pub fn source_reads(&self) -> usize {
+        self.source_reads
+    }
     pub fn collect(
         &mut self,
         procs: &[Proc],
@@ -93,6 +105,13 @@ impl Sessions {
         let mut agents = BTreeMap::new();
         let mut issues = vec![];
         let mut active = BTreeSet::new();
+        // A symlink/root replacement must not authorize a stale value from the
+        // previous physical home, even if its configured spelling is unchanged.
+        let home_identity = cfg.home.canonicalize().ok().and_then(|path| {
+            std::fs::metadata(&path)
+                .ok()
+                .map(|meta| (path, meta.dev(), meta.ino()))
+        });
         for proc in procs {
             // Capability check precedes every source open, including SQLite.
             if cfg.session_pid().is_some_and(|pid| proc.pid != pid) {
@@ -113,28 +132,55 @@ impl Sessions {
                 start,
                 cwd: proc.cwd.clone(),
                 home: cfg.home.clone(),
+                home_identity: home_identity.clone(),
                 session_pid: cfg.session_pid(),
             });
             if let Some(key) = &key {
                 active.insert(key.clone());
             }
+            if let Some(memo) = key.as_ref().and_then(|k| self.memo.get(k))
+                && memo.sources.iter().all(|stamp| stamp.unchanged(cfg))
+            {
+                agents.insert(proc.pid, memo.agent.clone());
+                continue;
+            }
+            if let Some(key) = &key {
+                self.memo.remove(key);
+            }
             let result = match tool {
-                "claude" => claude_code::read(proc, cfg).map(|read| {
-                    for code in read.issues {
-                        issues.push(SampleIssue {
-                            stage: "claude".into(),
-                            pid: Some(proc.pid),
-                            code: code.into(),
-                        });
+                "claude" => {
+                    self.source_reads += 1;
+                    claude_code::read(proc, cfg).map(|read| {
+                        if let Some(key) = &key
+                            && let Some(sources) = read.sources
+                        {
+                            self.memo.insert(
+                                key.clone(),
+                                cache::Memo {
+                                    agent: read.agent.clone(),
+                                    sources,
+                                },
+                            );
+                        }
+                        for code in read.issues {
+                            issues.push(SampleIssue {
+                                stage: "claude".into(),
+                                pid: Some(proc.pid),
+                                code: code.into(),
+                            });
+                        }
+                        Some(read.agent)
+                    })
+                }
+                "opencode" | "kilo" => {
+                    let path = cfg.home.join(format!(".local/share/{tool}/{tool}.db"));
+                    if !cfg.allows(&path) {
+                        Err("outside_fixture_root")
+                    } else {
+                        self.databases
+                            .read(&path, proc, tool, key.as_ref(), &mut self.source_reads)
                     }
-                    Some(read.agent)
-                }),
-                "opencode" => opencode::read(
-                    &cfg.home.join(".local/share/opencode/opencode.db"),
-                    proc,
-                    tool,
-                ),
-                "kilo" => kilo::read(&cfg.home.join(".local/share/kilo/kilo.db"), proc),
+                }
                 _ => unreachable!(),
             };
             let agent = match result {
@@ -171,6 +217,8 @@ impl Sessions {
             agents.insert(proc.pid, agent);
         }
         self.cache.retain(|key, _| active.contains(key));
+        self.memo.retain(|key, _| active.contains(key));
+        self.databases.retain(&active);
         (agents, issues)
     }
 }

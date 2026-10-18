@@ -140,6 +140,9 @@ impl ConfigReader {
     pub fn disk_reads(&self) -> usize {
         self.files.lock().expect("config cache lock").reads
     }
+    pub fn plist_parses(&self) -> usize {
+        self.files.lock().expect("config cache lock").plist_parses
+    }
     pub fn project_file(&self, cwd: &Path, name: &str) -> Option<PathBuf> {
         for ancestor in cwd.ancestors() {
             if self.isolated && !ancestor.starts_with(&self.home) {
@@ -156,13 +159,8 @@ impl ConfigReader {
         if !self.allows(path) {
             return Err("outside_fixture_root");
         }
-        let bytes = self
-            .files
-            .lock()
-            .map_err(|_| "config_cache_poisoned")?
-            .read_bytes(path)?;
-        plist::Value::from_reader(std::io::Cursor::new(bytes))
-            .map_err(|_| "app_metadata_unavailable")
+        let mut files = self.files.lock().map_err(|_| "config_cache_poisoned")?;
+        files.read_plist(path)
     }
 }
 

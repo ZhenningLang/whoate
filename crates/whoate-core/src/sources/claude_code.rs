@@ -120,10 +120,17 @@ pub fn clean_text(value: &Value, limit: usize) -> Option<String> {
     (!output.is_empty()).then_some(output)
 }
 
-#[derive(Debug)]
 pub struct ClaudeRead {
     pub agent: Agent,
     pub issues: Vec<&'static str>,
+    pub(super) sources: Option<Vec<super::cache::Stamp>>,
+}
+impl std::fmt::Debug for ClaudeRead {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ClaudeRead")
+            .field("issues", &self.issues)
+            .finish_non_exhaustive()
+    }
 }
 
 fn string(value: &Value, key: &str) -> Option<String> {
@@ -135,6 +142,7 @@ pub fn read(proc: &Proc, cfg: &ConfigReader) -> Result<ClaudeRead, &'static str>
         return Err("session_read_restricted");
     }
     let session = cfg.home.join(format!(".claude/sessions/{}.json", proc.pid));
+    let session_stamp = super::cache::Stamp::read(&session);
     let value = cfg.read_json(&session)?;
     let mut agent = Agent::unknown("claude");
     agent.session_id = string(&value, "sessionId");
@@ -175,9 +183,11 @@ pub fn read(proc: &Proc, cfg: &ConfigReader) -> Result<ClaudeRead, &'static str>
         .join(".claude/projects")
         .join(slug)
         .join(format!("{id}.jsonl"));
+    let mut transcript_stamp = None;
     if !cfg.allows(&transcript) {
         issues.push("transcript_unavailable");
     } else {
+        transcript_stamp = super::cache::Stamp::read(&transcript);
         let result = if cfg.session_pid().is_some() {
             // Titles after the first pair are not authorized by this capability.
             // Only the separate session metadata may supply a title here.
@@ -193,7 +203,17 @@ pub fn read(proc: &Proc, cfg: &ConfigReader) -> Result<ClaudeRead, &'static str>
     if !issues.is_empty() {
         agent.confidence = Confidence::Weak;
     }
-    Ok(ClaudeRead { agent, issues })
+    let sources = session_stamp
+        .zip(transcript_stamp)
+        .filter(|(session, transcript)| {
+            issues.is_empty() && session.unchanged(cfg) && transcript.unchanged(cfg)
+        })
+        .map(|(session, transcript)| vec![session, transcript]);
+    Ok(ClaudeRead {
+        agent,
+        issues,
+        sources,
+    })
 }
 
 fn read_limited_transcript(

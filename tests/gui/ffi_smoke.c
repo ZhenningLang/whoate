@@ -70,6 +70,11 @@ int main(int argc, char **argv) {
     if (insights) save(insights_out, insights);
     whoate_string_free(insights);
 
+    char *host = whoate_host_json();
+    CHECK(host && strstr(host, "\"schema\":\"whoate/host-v1\"") && strstr(host, "\"mem_total_bytes\":"), "host_without_engine");
+    CHECK(host && !strstr(host, "\"owners\""), "host_is_not_a_report");
+    whoate_string_free(host);
+
     WhoateEngine *engine = NULL;
 #ifdef WHOATE_DEBUG
     if (fixture) {
@@ -83,6 +88,12 @@ int main(int argc, char **argv) {
     if (!engine) engine = whoate_engine_new();
     CHECK(engine != NULL, "engine_new");
     if (!engine) return 1;
+    char *paused = whoate_engine_set_active(engine, 0);
+    CHECK(paused && strstr(paused, "\"active\":false"), "engine_pause");
+    whoate_string_free(paused);
+    char *resumed = whoate_engine_set_active(engine, 1);
+    CHECK(resumed && strstr(resumed, "\"active\":true"), "engine_resume");
+    whoate_string_free(resumed);
 
     char *tick = whoate_engine_tick(engine);
     CHECK(tick && !strncmp(tick, "{", 1) && strstr(tick, "\"schema\":\"whoate/v1\"") && strstr(tick, "\"owners\":["),
@@ -102,7 +113,11 @@ int main(int argc, char **argv) {
 
     if (bench > 0) {
         double begin = cpu_seconds();
-        for (int i = 0; i < bench; i++) whoate_string_free(whoate_engine_tick(engine));
+        for (int i = 0; i < bench; i++) {
+            char *sample = whoate_engine_tick(engine);
+            CHECK(sample && strstr(sample, "\"owners\":[") && !strstr(sample, "\"error\":"), "bench_tick_is_report");
+            whoate_string_free(sample);
+        }
         double per = (cpu_seconds() - begin) / bench;
         printf("BENCH ticks=%d cpu_ms_per_tick=%.1f pct_at_1s=%.1f pct_at_2s=%.1f\n", bench, per * 1000,
                per * 100, per * 50);

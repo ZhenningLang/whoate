@@ -43,7 +43,7 @@ struct WhoateApp: App {
         MenuBarExtra {
             PanelView(model: delegate.model, openMain: open)
         } label: {
-            MenuBarLabel(host: delegate.model.report?.host)
+            MenuBarLabel(host: delegate.model.host)
         }
         .menuBarExtraStyle(.window)
 
@@ -67,7 +67,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         let automation = WhoateApp.automation
-        model = AppModel(language: .system(), makeEngine: { Main.makeEngine(automation) })
+        model = AppModel(language: .system(), makeEngine: { Main.makeEngine(automation) }, trace: { mode in
+            guard let path = automation.scheduleLog else { return }
+            let line = "\(Date().timeIntervalSince1970)\t\(mode)\n"
+            // Opt-in safe event log; no process, argv or session source content.
+            if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
+            do {
+                let file = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
+                defer { try? file.close() }
+                try file.seekToEnd()
+                try file.write(contentsOf: Data(line.utf8))
+            } catch { FileHandle.standardError.write(Data("schedule_log_failed\n".utf8)) }
+        })
         super.init()
     }
 
@@ -111,6 +122,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let line = "panel\t\(window.windowNumber)\t\(Int(size.width))\t\(Int(size.height))\t"
                 + "\(window.backingScaleFactor)\t\(ProcessInfo.processInfo.processIdentifier)\t\(target)\n"
             try? line.write(toFile: path, atomically: true, encoding: .utf8)
+        }
+        if let after = automation.panelCloseAfter {
+            try? await Task.sleep(for: .seconds(after))
+            window.orderOut(nil)
         }
     }
 }
