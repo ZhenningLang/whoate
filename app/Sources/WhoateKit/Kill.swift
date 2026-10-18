@@ -1,0 +1,88 @@
+// Close confirmation and result models (U-BEH-1). The estimate only ever comes
+// from reclaimable_physical.bytes; mem_bytes (footprint) is never shown as it.
+import Foundation
+
+public struct KillConfirmation: Equatable, Sendable {
+    public var ownerID: String
+    public var title: String
+    public var pids: [Int32]
+    public var estimateBytes: UInt64?
+    public var estimate: String
+    public var isProtected: Bool
+
+    public init(owner: Owner, language: Language) {
+        ownerID = owner.id
+        title = L10n.format(.confirmTitle, language, owner.label)
+        pids = owner.pids
+        estimateBytes = owner.reclaimablePhysical?.bytes
+        if let bytes = estimateBytes {
+            estimate = Format.bytes(bytes)
+        } else {
+            let unknown = owner.reclaimablePhysical?.unknownCount ?? owner.pids.count
+            estimate = L10n.format(.estimateUnknown, language, "\(unknown)")
+        }
+        isProtected = Panel.isProtected(owner)
+    }
+}
+
+public struct KillOutcome: Equatable, Sendable {
+    public struct Line: Equatable, Sendable {
+        public var pid: Int32
+        public var status: KillStatus
+        public var text: String
+    }
+    public var exitCode: Int32
+    public var lines: [Line]
+    public var stillAlive: [Int32]
+    /// Observed host change in bytes (before − after); may be negative.
+    public var changeBytes: Int64?
+    public var change: String
+
+    public init(code: Int32, result: KillResult, language: Language) {
+        exitCode = code
+        lines = result.results.map { Line(pid: $0.pid, status: $0.status, text: KillOutcome.label($0, language)) }
+        stillAlive = result.results.filter { $0.status == .stillAlive }.map(\.pid)
+        changeBytes = result.memory.physicalMemoryChangeBytes
+        change = KillOutcome.describe(changeBytes, language)
+    }
+
+    /// Applies the force step: its lines replace the same pids, and the two
+    /// observed changes add up (each is that step's own before − after).
+    public func merging(code: Int32, force: KillResult, language: Language) -> KillOutcome {
+        var merged = self
+        let second = KillOutcome(code: code, result: force, language: language)
+        for line in second.lines {
+            if let i = merged.lines.firstIndex(where: { $0.pid == line.pid }) { merged.lines[i] = line }
+        }
+        merged.stillAlive = merged.lines.filter { $0.status == .stillAlive }.map(\.pid)
+        merged.exitCode = max(code, exitCode)
+        merged.changeBytes = changeBytes.flatMap { a in second.changeBytes.map { a + $0 } }
+        merged.change = KillOutcome.describe(merged.changeBytes, language)
+        return merged
+    }
+
+    static func describe(_ bytes: Int64?, _ language: Language) -> String {
+        bytes.map(Format.signedBytes) ?? L10n.text(.notMeasured, language)
+    }
+
+    static func label(_ item: KillResult.Item, _ language: Language) -> String {
+        let status: L10nKey = switch item.status {
+        case .terminated: .terminated
+        case .stillAlive: .stillAlive
+        case .refused: .refused
+        case .missing: .missing
+        case .unknown: .unknownStatus
+        }
+        let text = L10n.text(status, language)
+        // Known core/FFI reason codes are translated; an unknown one stays as sent.
+        let reason = item.reason.map { code in reasons[code].map { L10n.text($0, language) } ?? code }
+        return reason.map { "\(text) (\($0))" } ?? text
+    }
+
+    static let reasons: [String: L10nKey] = [
+        "protected_pid": .reasonProtectedPid, "not_in_snapshot": .reasonNotInSnapshot,
+        "protected_or_unknown_identity": .reasonProtectedOrUnknown, "process_missing": .reasonProcessMissing,
+        "identity_changed": .reasonIdentityChanged, "apple_platform_binary": .reasonPlatformBinary,
+        "platform_probe_failed": .reasonPlatformProbeFailed, "no_confirmed_plan": .reasonNoConfirmedPlan,
+    ]
+}
