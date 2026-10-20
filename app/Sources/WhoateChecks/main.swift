@@ -4,9 +4,22 @@
 // check ran.
 import AppKit
 import Foundation
+import WhoateKit
 
 // Some checks create real NSWindows; never show up as a foreground app.
 NSApplication.shared.setActivationPolicy(.accessory)
+
+// QA14 integration (tests/gui/tmux_jump.py): one real jump through WhoateKit's
+// executor against the tmux server in TMUX_TMPDIR, then exit.
+if let pane = ProcessInfo.processInfo.environment["WHOATE_TMUX_JUMP"] {
+    let run = TmuxJump.processRunner()
+    let (status, clients) = run(TmuxJump.listClients)
+    let outcome = TmuxJump.jump(pane: pane, run: run)
+    print("TMUX_JUMP \(outcome) list_clients_status=\(status) clients=\(TmuxJump.clients(clients).count) "
+        + "tmpdir_set=\(ProcessInfo.processInfo.environment["TMUX_TMPDIR"] != nil)")
+    if case .jumped = outcome { exit(0) }
+    exit(1)
+}
 
 nonisolated(unsafe) var failures: [String] = []
 nonisolated(unsafe) var skipReason: String?
@@ -63,6 +76,22 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase08Tests.englishTextHasNoCJK", Phase08Tests.englishTextHasNoCJK),
     ("Phase08Round3Tests.cpuAverageUsesOnlyTheLastTenSeconds", Phase08Round3Tests.cpuAverageUsesOnlyTheLastTenSeconds),
     ("Phase08Round3Tests.curveGapIsFortyFiveSecondsAndWindowThirtyMinutes", Phase08Round3Tests.curveGapIsFortyFiveSecondsAndWindowThirtyMinutes),
+    ("Phase10DesignTests.sameNamedAppsGetDistinctTitlesAndAKindWord", Phase10DesignTests.sameNamedAppsGetDistinctTitlesAndAKindWord),
+    ("Phase10DesignTests.swarmSubtitleNamesItsMainOwners", Phase10DesignTests.swarmSubtitleNamesItsMainOwners),
+    ("Phase10DesignTests.menuBarItemIsNeverColoured", Phase10DesignTests.menuBarItemIsNeverColoured),
+    ("Phase10DesignTests.mainWindowCategoriesAndAutomationSelection", Phase10DesignTests.mainWindowCategoriesAndAutomationSelection),
+    ("Phase10DesignTests.detailCurveLeavesGapsAndCpuModeDrawsCpu", Phase10DesignTests.detailCurveLeavesGapsAndCpuModeDrawsCpu),
+    ("Phase10Tests.partlyUnreadableCurvesDrawAndCarryOneN", Phase10Tests.partlyUnreadableCurvesDrawAndCarryOneN),
+    ("Phase10Tests.sidebarFiltersAndCpuOrder", Phase10Tests.sidebarFiltersAndCpuOrder),
+    ("Phase10Tests.cardsAppearOnlyWithData", Phase10Tests.cardsAppearOnlyWithData),
+    ("Phase10Tests.systemServiceCardIsDisplayOnly", Phase10Tests.systemServiceCardIsDisplayOnly),
+    ("Phase10Tests.overviewNamesWiredZonesAndGpuReason", Phase10Tests.overviewNamesWiredZonesAndGpuReason),
+    ("Phase10Tests.detailsShowEverythingThePanelRowShows", Phase10Tests.detailsShowEverythingThePanelRowShows),
+    ("Phase10Tests.toolbarUsesThePanelHeader", Phase10Tests.toolbarUsesThePanelHeader),
+    ("Phase10Tests.tmuxJumpValidatesAndChoosesTheLatestClient", Phase10Tests.tmuxJumpValidatesAndChoosesTheLatestClient),
+    ("Phase10Tests.titlesStayUniqueForThreeOrMoreAndSuffixCollisions", Phase10Tests.titlesStayUniqueForThreeOrMoreAndSuffixCollisions),
+    ("Phase10Tests.allTotalCountsOwnersOnce", Phase10Tests.allTotalCountsOwnersOnce),
+    ("Phase10Tests.cpuCurveBreaksWhereCpuIsMissing", Phase10Tests.cpuCurveBreaksWhereCpuIsMissing),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))
@@ -102,6 +131,11 @@ let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
     ("Phase08Round3Tests.cpuOrderLetsARealJumpThrough", Phase08Round3Tests.cpuOrderLetsARealJumpThrough),
     ("Phase08Round3Tests.hoverFreezesCpuOrderOnly", Phase08Round3Tests.hoverFreezesCpuOrderOnly),
     ("Phase08Round3Tests.hiddenFullTicksEvery30SecondsPaused", Phase08Round3Tests.hiddenFullTicksEvery30SecondsPaused),
+    ("Phase10Tests.menuBarImageIsAlwaysATemplate", { try Phase10Tests.menuBarImageIsAlwaysATemplate() }),
+    ("Phase10Tests.openingTheMainWindowPutsThePanelAway", { try Phase10Tests.openingTheMainWindowPutsThePanelAway() }),
+    ("Phase10Tests.mainWindowRowsGetHistories", Phase10Tests.mainWindowRowsGetHistories),
+    ("Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow", { try Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow() }),
+    ("Phase10Tests.scrolledIntoViewRowsGetHistories", Phase10Tests.scrolledIntoViewRowsGetHistories),
 ]
 for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
     failures = []

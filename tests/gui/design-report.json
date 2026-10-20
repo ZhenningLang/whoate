@@ -1,0 +1,5565 @@
+{
+ "schema": "whoate/v1",
+ "taken_at": "2026-10-21T00:20:00+08:00",
+ "host": {
+  "mem_total_bytes": 51539607552,
+  "mem_used_bytes": 44237000000,
+  "compressed_bytes": 9663676416,
+  "wired_bytes": 5368709120,
+  "swap_used_bytes": 6442450944,
+  "pressure": "warn",
+  "kernel_zones": {
+   "status": "fresh",
+   "as_of": "2026-10-21T00:20:00+08:00",
+   "basis": "zprint",
+   "top": [
+    {
+     "name": "VM.object",
+     "bytes": 639631360,
+     "collectible": null,
+     "pageable": false
+    },
+    {
+     "name": "kalloc.type.var4.256",
+     "bytes": 440401920,
+     "collectible": true,
+     "pageable": false
+    },
+    {
+     "name": "vnode",
+     "bytes": 325058560,
+     "collectible": null,
+     "pageable": false
+    },
+    {
+     "name": "kalloc.data.4096",
+     "bytes": 214958080,
+     "collectible": true,
+     "pageable": false
+    },
+    {
+     "name": "ipc.ports",
+     "bytes": 100663296,
+     "collectible": null,
+     "pageable": false
+    }
+   ],
+   "reason": null
+  },
+  "gpu_memory": {
+   "status": "fresh",
+   "as_of": "2026-10-21T00:20:00+08:00",
+   "bytes": 2254857830,
+   "source": "IOAccelerator",
+   "reason": null
+  },
+  "memory_diagnostics": [
+   {
+    "level": "watch",
+    "rule": "swap-high",
+    "text": "swap 已用 6.0G。内存偏紧时，先关闲置会话和孤儿进程收益最大。"
+   }
+  ],
+  "cpu": {
+   "status": "fresh",
+   "usage_pct": 37.5,
+   "load_1m": 6.2,
+   "logical_cores": 12,
+   "reason": null
+  }
+ },
+ "system_procs": {
+  "status": "fresh",
+  "as_of": "2026-10-21T00:20:00+08:00"
+ },
+ "owners": [
+  {
+   "id": "orphan:948211",
+   "kind": "orphan",
+   "label": "wrangler (node)",
+   "mem_bytes": 10415295692,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.1,
+   "pids": [
+    948211,
+    948214,
+    948215,
+    948219
+   ],
+   "origin": {
+    "tmux_pane": "%266",
+    "pane_alive": false,
+    "cwd": "/Users/demo/src/site/worker",
+    "ports": [
+     8799
+    ]
+   },
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "tmux_environment",
+     "detail": "%266",
+     "confidence": "certain"
+    },
+    {
+     "kind": "runtime_home",
+     "detail": "runtime in HOME; launchd ancestry",
+     "confidence": "weak"
+    }
+   ],
+   "parts": [
+    {
+     "name": "node",
+     "mem_bytes": 10200547328,
+     "process_count": 3,
+     "pids": [
+      948211,
+      948212,
+      948213
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "esbuild",
+     "mem_bytes": 214748364,
+     "process_count": 1,
+     "pids": [
+      948219
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 5728412631,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 5884642066,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 6040871501,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 6197100937,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 6353330372,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 6509559808,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 6665789243,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 6822018678,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 6978248114,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 7134477549,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 7290706984,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 7446936420,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 7603165855,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 7759395291,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 7915624726,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 8071854161,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 8228083597,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 8384313032,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 8540542468,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 8696771903,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 8853001338,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 9009230774,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 9165460209,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 9321689645,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 9477919080,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 9634148515,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 9790377951,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 9946607386,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 10102836822,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 10259066257,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 10415295692,
+     "cpu_pct": 0.1
+    }
+   ],
+   "verdict": {
+    "level": "act",
+    "rule": "orphan-dev-server",
+    "text": "启动它的 tmux pane %266 已关闭，端口 8799 当前 0 个连接；启动后 10 分钟内涨到 9.7G，之后不再变化。",
+    "action": "whoate kill 948211 948214 948215 948219"
+   }
+  },
+  {
+   "id": "app:com.brave.Browser",
+   "kind": "app",
+   "label": "Brave Browser",
+   "mem_bytes": 4509715660,
+   "unknown_mem_count": 3,
+   "cpu_pct": 6.4,
+   "pids": [
+    951000,
+    951001,
+    951002,
+    951003,
+    951004,
+    951005,
+    951006,
+    951007,
+    951008,
+    951009,
+    951010,
+    951011,
+    951012,
+    951013,
+    951014,
+    951015,
+    951016,
+    951017,
+    951018
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.brave.Browser",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "Brave Browser Helper (Renderer)",
+     "mem_bytes": 3328599654,
+     "process_count": 14,
+     "pids": [
+      951004,
+      951005,
+      951006,
+      951007,
+      951008,
+      951009,
+      951010,
+      951011,
+      951012,
+      951013,
+      951014,
+      951015,
+      951016,
+      951017
+     ],
+     "unknown_mem_count": 3
+    },
+    {
+     "name": "Brave Browser Helper (GPU)",
+     "mem_bytes": 644245094,
+     "process_count": 1,
+     "pids": [
+      951002
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "Brave Browser",
+     "mem_bytes": 536870912,
+     "process_count": 1,
+     "pids": [
+      951000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [
+    "brave.memory-saver-off",
+    "brave.extensions"
+   ],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 3865470566,
+     "cpu_pct": 4.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 3872628845,
+     "cpu_pct": 4.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 3879787124,
+     "cpu_pct": 4.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 3886945402,
+     "cpu_pct": 4.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 3894103681,
+     "cpu_pct": 4.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 3901261960,
+     "cpu_pct": 4.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 3908420239,
+     "cpu_pct": 5.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 3915578518,
+     "cpu_pct": 5.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 3922736797,
+     "cpu_pct": 5.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 3929895075,
+     "cpu_pct": 5.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 3937053354,
+     "cpu_pct": 5.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 3944211633,
+     "cpu_pct": 5.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 3951369912,
+     "cpu_pct": 5.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 3958528191,
+     "cpu_pct": 5.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 3965686469,
+     "cpu_pct": 5.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 3972844748,
+     "cpu_pct": 5.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 3980003027,
+     "cpu_pct": 5.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 3987161306,
+     "cpu_pct": 5.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 3994319585,
+     "cpu_pct": 5.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 4001477864,
+     "cpu_pct": 5.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 4008636142,
+     "cpu_pct": 5.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 4015794421,
+     "cpu_pct": 5.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 4022952700,
+     "cpu_pct": 5.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 4030110979,
+     "cpu_pct": 5.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 4037269258,
+     "cpu_pct": 5.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 4044427537,
+     "cpu_pct": 5.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 4051585815,
+     "cpu_pct": 5.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 4058744094,
+     "cpu_pct": 5.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 4065902373,
+     "cpu_pct": 5.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 4073060652,
+     "cpu_pct": 5.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 4080218931,
+     "cpu_pct": 5.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 4087377210,
+     "cpu_pct": 5.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 4094535488,
+     "cpu_pct": 5.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 4101693767,
+     "cpu_pct": 5.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 4108852046,
+     "cpu_pct": 5.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 4116010325,
+     "cpu_pct": 5.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 4123168604,
+     "cpu_pct": 5.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 4130326882,
+     "cpu_pct": 5.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 4137485161,
+     "cpu_pct": 5.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 4144643440,
+     "cpu_pct": 5.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 4151801719,
+     "cpu_pct": 5.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 4158959998,
+     "cpu_pct": 5.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 4166118277,
+     "cpu_pct": 5.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 4173276555,
+     "cpu_pct": 5.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 4180434834,
+     "cpu_pct": 6.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 4187593113,
+     "cpu_pct": 6.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 4194751392,
+     "cpu_pct": 6.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 4201909671,
+     "cpu_pct": 6.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 4209067950,
+     "cpu_pct": 6.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 4216226228,
+     "cpu_pct": 6.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 4223384507,
+     "cpu_pct": 6.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 4230542786,
+     "cpu_pct": 6.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 4237701065,
+     "cpu_pct": 6.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 4244859344,
+     "cpu_pct": 6.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 4252017623,
+     "cpu_pct": 6.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 4259175901,
+     "cpu_pct": 6.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 4266334180,
+     "cpu_pct": 6.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 4273492459,
+     "cpu_pct": 6.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 4280650738,
+     "cpu_pct": 6.3,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 4287809017,
+     "cpu_pct": 6.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 4294967296,
+     "cpu_pct": 6.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 4302125574,
+     "cpu_pct": 6.4,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 4309283853,
+     "cpu_pct": 6.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 4316442132,
+     "cpu_pct": 6.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 4323600411,
+     "cpu_pct": 6.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 4330758690,
+     "cpu_pct": 6.5,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 4337916968,
+     "cpu_pct": 6.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 4345075247,
+     "cpu_pct": 6.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 4352233526,
+     "cpu_pct": 6.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 4359391805,
+     "cpu_pct": 6.6,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 4366550084,
+     "cpu_pct": 6.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 4373708363,
+     "cpu_pct": 6.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 4380866641,
+     "cpu_pct": 6.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 4388024920,
+     "cpu_pct": 6.7,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 4395183199,
+     "cpu_pct": 6.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 4402341478,
+     "cpu_pct": 6.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 4409499757,
+     "cpu_pct": 6.8,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 4416658036,
+     "cpu_pct": 6.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 4423816314,
+     "cpu_pct": 6.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 4430974593,
+     "cpu_pct": 6.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 4438132872,
+     "cpu_pct": 6.9,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 4445291151,
+     "cpu_pct": 7.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 4452449430,
+     "cpu_pct": 7.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 4459607709,
+     "cpu_pct": 7.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 4466765987,
+     "cpu_pct": 7.0,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 4473924266,
+     "cpu_pct": 7.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 4481082545,
+     "cpu_pct": 7.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 4488240824,
+     "cpu_pct": 7.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 4495399103,
+     "cpu_pct": 7.1,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 4502557381,
+     "cpu_pct": 7.2,
+     "unknown_mem_count": 3
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 4509715660,
+     "cpu_pct": 7.2,
+     "unknown_mem_count": 3
+    }
+   ],
+   "verdict": {
+    "level": "watch",
+    "rule": "fast-growth",
+    "text": "近 30 分钟 +600M，渲染进程 14 个。"
+   }
+  },
+  {
+   "id": "app:com.openai.codex",
+   "kind": "app",
+   "label": "ChatGPT",
+   "mem_bytes": 3328599654,
+   "unknown_mem_count": 0,
+   "cpu_pct": 4.2,
+   "pids": [
+    960000,
+    960001,
+    960002,
+    960003,
+    960004,
+    960005,
+    960006,
+    960007,
+    960008,
+    960009,
+    960010,
+    960011,
+    960012,
+    960013,
+    960014,
+    960015,
+    960016,
+    960017,
+    960018,
+    960019
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.openai.codex",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "ChatGPT Helper (Renderer)",
+     "mem_bytes": 1288490188,
+     "process_count": 6,
+     "pids": [
+      960002,
+      960003,
+      960004,
+      960005,
+      960006,
+      960007
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "node",
+     "mem_bytes": 1181116006,
+     "process_count": 12,
+     "pids": [
+      960008,
+      960009,
+      960010,
+      960011,
+      960012,
+      960013,
+      960014,
+      960015,
+      960016,
+      960017,
+      960018,
+      960019
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "ChatGPT",
+     "mem_bytes": 536870912,
+     "process_count": 1,
+     "pids": [
+      960000
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "codex",
+     "mem_bytes": 322122547,
+     "process_count": 1,
+     "pids": [
+      960001
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 3221225472,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 3222418518,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 3223611564,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 3224804611,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 3225997657,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 3227190704,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 3228383750,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 3229576797,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 3230769843,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 3231962890,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 3233155936,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 3234348983,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 3235542029,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 3236735076,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 3237928122,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 3239121169,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 3240314215,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 3241507262,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 3242700308,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 3243893354,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 3245086401,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 3246279447,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 3247472494,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 3248665540,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 3249858587,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 3251051633,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 3252244680,
+     "cpu_pct": 3.7
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 3253437726,
+     "cpu_pct": 3.7
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 3254630773,
+     "cpu_pct": 3.7
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 3255823819,
+     "cpu_pct": 3.7
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 3257016866,
+     "cpu_pct": 3.7
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 3258209912,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 3259402959,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 3260596005,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 3261789052,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 3262982098,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 3264175144,
+     "cpu_pct": 3.8
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 3265368191,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 3266561237,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 3267754284,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 3268947330,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 3270140377,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 3271333423,
+     "cpu_pct": 3.9
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 3272526470,
+     "cpu_pct": 4.0
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 3273719516,
+     "cpu_pct": 4.0
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 3274912563,
+     "cpu_pct": 4.0
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 3276105609,
+     "cpu_pct": 4.0
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 3277298656,
+     "cpu_pct": 4.0
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 3278491702,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 3279684749,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 3280877795,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 3282070842,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 3283263888,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 3284456934,
+     "cpu_pct": 4.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 3285649981,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 3286843027,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 3288036074,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 3289229120,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 3290422167,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 3291615213,
+     "cpu_pct": 4.2
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 3292808260,
+     "cpu_pct": 4.3
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 3294001306,
+     "cpu_pct": 4.3
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 3295194353,
+     "cpu_pct": 4.3
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 3296387399,
+     "cpu_pct": 4.3
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 3297580446,
+     "cpu_pct": 4.3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 3298773492,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 3299966539,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 3301159585,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 3302352632,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 3303545678,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 3304738724,
+     "cpu_pct": 4.4
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 3305931771,
+     "cpu_pct": 4.5
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 3307124817,
+     "cpu_pct": 4.5
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 3308317864,
+     "cpu_pct": 4.5
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 3309510910,
+     "cpu_pct": 4.5
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 3310703957,
+     "cpu_pct": 4.5
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 3311897003,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 3313090050,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 3314283096,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 3315476143,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 3316669189,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 3317862236,
+     "cpu_pct": 4.6
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 3319055282,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 3320248329,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 3321441375,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 3322634422,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 3323827468,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 3325020514,
+     "cpu_pct": 4.7
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 3326213561,
+     "cpu_pct": 4.8
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 3327406607,
+     "cpu_pct": 4.8
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 3328599654,
+     "cpu_pct": 4.8
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "app:com.openai.codex.cli",
+   "kind": "app",
+   "label": "ChatGPT",
+   "mem_bytes": 429496729,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.3,
+   "pids": [
+    961000,
+    961001
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.openai.codex.cli",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "codex",
+     "mem_bytes": 429496729,
+     "process_count": 2,
+     "pids": [
+      961000,
+      961001
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.4
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "app:com.anthropic.claudefordesktop",
+   "kind": "app",
+   "label": "Claude",
+   "mem_bytes": 1717986918,
+   "unknown_mem_count": 0,
+   "cpu_pct": 2.1,
+   "pids": [
+    962000,
+    962001,
+    962002,
+    962003,
+    962004,
+    962005,
+    962006
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.anthropic.claudefordesktop",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "Claude Helper (Renderer)",
+     "mem_bytes": 1073741824,
+     "process_count": 5,
+     "pids": [
+      962002,
+      962003,
+      962004,
+      962005,
+      962006
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "Claude",
+     "mem_bytes": 644245094,
+     "process_count": 1,
+     "pids": [
+      962000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 1610612736,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 1611805782,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 1612998828,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 1614191875,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 1615384921,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 1616577968,
+     "cpu_pct": 1.6
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 1617771014,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 1618964061,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 1620157107,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 1621350154,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 1622543200,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 1623736247,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 1624929293,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 1626122340,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 1627315386,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 1628508433,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 1629701479,
+     "cpu_pct": 1.7
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 1630894526,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 1632087572,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 1633280618,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 1634473665,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 1635666711,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 1636859758,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 1638052804,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 1639245851,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 1640438897,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 1641631944,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 1642824990,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 1644018037,
+     "cpu_pct": 1.8
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 1645211083,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 1646404130,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 1647597176,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 1648790223,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 1649983269,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 1651176316,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 1652369362,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 1653562408,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 1654755455,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 1655948501,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 1657141548,
+     "cpu_pct": 1.9
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 1658334594,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 1659527641,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 1660720687,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 1661913734,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 1663106780,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 1664299827,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 1665492873,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 1666685920,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 1667878966,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 1669072013,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 1670265059,
+     "cpu_pct": 2.0
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 1671458106,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 1672651152,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 1673844198,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 1675037245,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 1676230291,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 1677423338,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 1678616384,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 1679809431,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 1681002477,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 1682195524,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 1683388570,
+     "cpu_pct": 2.1
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 1684581617,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 1685774663,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 1686967710,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 1688160756,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 1689353803,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 1690546849,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 1691739896,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 1692932942,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 1694125988,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 1695319035,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 1696512081,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 1697705128,
+     "cpu_pct": 2.2
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 1698898174,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 1700091221,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 1701284267,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 1702477314,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 1703670360,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 1704863407,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 1706056453,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 1707249500,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 1708442546,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 1709635593,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 1710828639,
+     "cpu_pct": 2.3
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 1712021686,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 1713214732,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 1714407778,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 1715600825,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 1716793871,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 1717986918,
+     "cpu_pct": 2.4
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4",
+   "kind": "agent_session",
+   "label": "给归属规则补回归测试",
+   "mem_bytes": 2791728742,
+   "unknown_mem_count": 0,
+   "cpu_pct": 31.0,
+   "pids": [
+    970000,
+    970001,
+    970002,
+    970003,
+    970004,
+    970005,
+    970006,
+    970007
+   ],
+   "origin": {
+    "tmux_pane": "%15",
+    "pane_alive": true,
+    "cwd": "/Users/demo/src/atlas",
+    "ports": [
+     5173
+    ],
+    "window_name": "main",
+    "pane_title": "claude"
+   },
+   "agent": {
+    "tool": "claude",
+    "session_id": "9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4",
+    "name": "7-74",
+    "name_source": "derived",
+    "title": "给归属规则补回归测试",
+    "first_prompt": "孤儿判定把应用的子进程也算进去了，帮我查一下原因",
+    "first_reply": "先读 attribute 模块的分支顺序。runtime_home 排在 .app 检查前面，所以挂在应用下面的 node 也被当成了孤儿……",
+    "status": "working",
+    "cwd": "/Users/demo/src/atlas",
+    "branch": "fix/orphan-chain",
+    "model": null,
+    "cost_usd": null,
+    "confidence": "certain",
+    "updated_at_ms": 1792652360000,
+    "last_activity_at": null,
+    "idle_seconds": 40,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%15",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "claude",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "node",
+     "mem_bytes": 1288490188,
+     "process_count": 3,
+     "pids": [
+      970002,
+      970003,
+      970004
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "claude",
+     "mem_bytes": 644245094,
+     "process_count": 1,
+     "pids": [
+      970000
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "python3.13",
+     "mem_bytes": 322122547,
+     "process_count": 2,
+     "pids": [
+      970005,
+      970006
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "zsh",
+     "mem_bytes": 107374182,
+     "process_count": 2,
+     "pids": [
+      970001,
+      970002
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [
+    "claude.mcp"
+   ],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 2147483648,
+     "cpu_pct": 22.4
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 2154641926,
+     "cpu_pct": 22.5
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 2161800205,
+     "cpu_pct": 22.6
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 2168958484,
+     "cpu_pct": 22.8
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 2176116763,
+     "cpu_pct": 22.9
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 2183275042,
+     "cpu_pct": 23.0
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 2190433320,
+     "cpu_pct": 23.1
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 2197591599,
+     "cpu_pct": 23.3
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 2204749878,
+     "cpu_pct": 23.4
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 2211908157,
+     "cpu_pct": 23.5
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 2219066436,
+     "cpu_pct": 23.6
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 2226224715,
+     "cpu_pct": 23.8
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 2233382993,
+     "cpu_pct": 23.9
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 2240541272,
+     "cpu_pct": 24.0
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 2247699551,
+     "cpu_pct": 24.1
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 2254857830,
+     "cpu_pct": 24.3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 2262016109,
+     "cpu_pct": 24.4
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 2269174388,
+     "cpu_pct": 24.5
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 2276332666,
+     "cpu_pct": 24.6
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 2283490945,
+     "cpu_pct": 24.8
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 2290649224,
+     "cpu_pct": 24.9
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 2297807503,
+     "cpu_pct": 25.0
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 2304965782,
+     "cpu_pct": 25.1
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 2312124061,
+     "cpu_pct": 25.3
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 2319282339,
+     "cpu_pct": 25.4
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 2326440618,
+     "cpu_pct": 25.5
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 2333598897,
+     "cpu_pct": 25.6
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 2340757176,
+     "cpu_pct": 25.8
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 2347915455,
+     "cpu_pct": 25.9
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 2355073733,
+     "cpu_pct": 26.0
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 2362232012,
+     "cpu_pct": 26.1
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 2369390291,
+     "cpu_pct": 26.3
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 2376548570,
+     "cpu_pct": 26.4
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 2383706849,
+     "cpu_pct": 26.5
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 2390865128,
+     "cpu_pct": 26.6
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 2398023406,
+     "cpu_pct": 26.8
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 2405181685,
+     "cpu_pct": 26.9
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 2412339964,
+     "cpu_pct": 27.0
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 2419498243,
+     "cpu_pct": 27.1
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 2426656522,
+     "cpu_pct": 27.3
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 2433814801,
+     "cpu_pct": 27.4
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 2440973079,
+     "cpu_pct": 27.5
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 2448131358,
+     "cpu_pct": 27.6
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 2455289637,
+     "cpu_pct": 27.8
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 2462447916,
+     "cpu_pct": 27.9
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 2469606195,
+     "cpu_pct": 28.0
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 2512555868,
+     "cpu_pct": 28.7
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 2519714146,
+     "cpu_pct": 28.9
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 2526872425,
+     "cpu_pct": 29.0
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 2534030704,
+     "cpu_pct": 29.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 2541188983,
+     "cpu_pct": 29.2
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 2548347262,
+     "cpu_pct": 29.4
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 2555505541,
+     "cpu_pct": 29.5
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 2562663819,
+     "cpu_pct": 29.6
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 2569822098,
+     "cpu_pct": 29.7
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 2576980377,
+     "cpu_pct": 29.9
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 2584138656,
+     "cpu_pct": 30.0
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 2591296935,
+     "cpu_pct": 30.1
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 2598455214,
+     "cpu_pct": 30.2
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 2605613492,
+     "cpu_pct": 30.4
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 2612771771,
+     "cpu_pct": 30.5
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 2619930050,
+     "cpu_pct": 30.6
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 2627088329,
+     "cpu_pct": 30.7
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 2634246608,
+     "cpu_pct": 30.9
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 2641404887,
+     "cpu_pct": 31.0
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 2648563165,
+     "cpu_pct": 31.1
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 2655721444,
+     "cpu_pct": 31.2
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 2662879723,
+     "cpu_pct": 31.4
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 2670038002,
+     "cpu_pct": 31.5
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 2677196281,
+     "cpu_pct": 31.6
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 2684354560,
+     "cpu_pct": 31.7
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 2691512838,
+     "cpu_pct": 31.9
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 2698671117,
+     "cpu_pct": 32.0
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 2705829396,
+     "cpu_pct": 32.1
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 2712987675,
+     "cpu_pct": 32.2
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 2720145954,
+     "cpu_pct": 32.4
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 2727304232,
+     "cpu_pct": 32.5
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 2734462511,
+     "cpu_pct": 32.6
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 2741620790,
+     "cpu_pct": 32.7
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 2748779069,
+     "cpu_pct": 32.9
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 2755937348,
+     "cpu_pct": 33.0
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 2763095627,
+     "cpu_pct": 33.1
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 2770253905,
+     "cpu_pct": 33.2
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 2777412184,
+     "cpu_pct": 33.4
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 2784570463,
+     "cpu_pct": 33.5
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 2791728742,
+     "cpu_pct": 33.6
+    }
+   ],
+   "verdict": {
+    "level": "watch",
+    "rule": "fast-growth",
+    "text": "近 10 分钟 +400M，还在涨。"
+   }
+  },
+  {
+   "id": "agent:opencode:ses_7Hq2kV",
+   "kind": "agent_session",
+   "label": "整理发布说明",
+   "mem_bytes": 966367641,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.4,
+   "pids": [
+    971000,
+    971001,
+    971002
+   ],
+   "origin": {
+    "tmux_pane": "%7",
+    "pane_alive": true,
+    "cwd": "/Users/demo/src/notes",
+    "ports": null,
+    "window_name": "main",
+    "pane_title": "opencode"
+   },
+   "agent": {
+    "tool": "opencode",
+    "session_id": "ses_7Hq2kV",
+    "name": "整理发布说明",
+    "name_source": "manual",
+    "title": "整理发布说明",
+    "first_prompt": "把这周的改动整理成发布说明",
+    "first_reply": "好的，先列出合并过的提交……",
+    "status": "idle",
+    "cwd": "/Users/demo/src/notes",
+    "branch": "main",
+    "model": null,
+    "cost_usd": null,
+    "confidence": "certain",
+    "updated_at_ms": 1792640880000,
+    "last_activity_at": null,
+    "idle_seconds": 11520,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%7",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "opencode",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "opencode",
+     "mem_bytes": 858993459,
+     "process_count": 1,
+     "pids": [
+      971000
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "node",
+     "mem_bytes": 107374182,
+     "process_count": 2,
+     "pids": [
+      971001,
+      971002
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 966367641,
+     "cpu_pct": 0.5
+    }
+   ],
+   "verdict": {
+    "level": "watch",
+    "rule": "idle-agent",
+    "text": "空闲 3 小时，可以关掉。"
+   }
+  },
+  {
+   "id": "system:312",
+   "kind": "system",
+   "label": "WindowServer",
+   "mem_bytes": 1181116006,
+   "unknown_mem_count": 0,
+   "cpu_pct": 9.5,
+   "pids": [
+    312
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "other_uid",
+     "detail": "88",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [],
+   "facts": [],
+   "insights": [
+    "system.WindowServer"
+   ],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.3
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.3
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.4
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.4
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.4
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.5
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.5
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.6
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.6
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.6
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.7
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.7
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.8
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.8
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.8
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.9
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 7.9
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.0
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.0
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.0
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.1
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.1
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.2
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.2
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.2
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.3
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.3
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.4
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.4
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.4
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.5
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.5
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.6
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.6
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.6
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.7
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.7
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.8
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.8
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.8
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.9
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 8.9
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.0
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.0
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.0
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.1
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.1
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.2
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.2
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.2
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.3
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.3
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.4
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.4
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.4
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.5
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.5
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.6
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.6
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.6
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.7
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.7
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.8
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.8
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.8
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.9
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 9.9
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.0
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.0
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.0
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.1
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.1
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.2
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.2
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.2
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.4
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.4
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.4
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.5
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.5
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.6
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.6
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.6
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.7
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.7
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.8
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 1181116006,
+     "cpu_pct": 10.8
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "system.WindowServer",
+    "text": "macOS 图形合成进程"
+   }
+  },
+  {
+   "id": "service:com.apple.mds_stores",
+   "kind": "service",
+   "label": "mds_stores",
+   "mem_bytes": 644245094,
+   "unknown_mem_count": 0,
+   "cpu_pct": 1.2,
+   "pids": [
+    418
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "service_fallback",
+     "detail": "launchd ancestry",
+     "confidence": "weak"
+    }
+   ],
+   "parts": [],
+   "facts": [],
+   "insights": [
+    "system.mds_stores"
+   ],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.8
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 644245094,
+     "cpu_pct": 0.9
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.1
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 644245094,
+     "cpu_pct": 1.2
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "system.mds_stores",
+    "text": "Spotlight 索引服务"
+   }
+  },
+  {
+   "id": "pane:%22",
+   "kind": "tmux_pane",
+   "label": "main:3.1",
+   "mem_bytes": 322122547,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.2,
+   "pids": [
+    972000,
+    972001
+   ],
+   "origin": {
+    "tmux_pane": "%22",
+    "pane_alive": true,
+    "cwd": "/Users/demo/src/atlas",
+    "ports": null,
+    "window_name": "main",
+    "pane_title": "zsh"
+   },
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%22",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "cargo",
+     "mem_bytes": 214748364,
+     "process_count": 1,
+     "pids": [
+      972001
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "zsh",
+     "mem_bytes": 107374182,
+     "process_count": 1,
+     "pids": [
+      972000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 322122547,
+     "cpu_pct": 0.2
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  }
+ ],
+ "swarms": [
+  {
+   "signature": "exe:python3.13",
+   "label": "python3.13",
+   "count": 74,
+   "mem_bytes": 3103784960,
+   "unknown_mem_count": 0,
+   "cpu_pct": 3.2,
+   "shape": "spread",
+   "owners": [
+    {
+     "id": "agent:claude:session-01",
+     "count": 6
+    },
+    {
+     "id": "agent:claude:session-02",
+     "count": 5
+    },
+    {
+     "id": "agent:claude:session-03",
+     "count": 5
+    },
+    {
+     "id": "agent:claude:session-04",
+     "count": 4
+    },
+    {
+     "id": "agent:claude:session-05",
+     "count": 4
+    },
+    {
+     "id": "agent:claude:session-06",
+     "count": 4
+    },
+    {
+     "id": "agent:claude:session-07",
+     "count": 4
+    },
+    {
+     "id": "agent:claude:session-08",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-09",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-10",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-11",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-12",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-13",
+     "count": 3
+    },
+    {
+     "id": "agent:claude:session-14",
+     "count": 2
+    },
+    {
+     "id": "agent:claude:session-15",
+     "count": 2
+    },
+    {
+     "id": "agent:opencode:ses_1",
+     "count": 3
+    },
+    {
+     "id": "agent:opencode:ses_2",
+     "count": 3
+    },
+    {
+     "id": "agent:opencode:ses_3",
+     "count": 2
+    },
+    {
+     "id": "agent:opencode:ses_4",
+     "count": 2
+    },
+    {
+     "id": "app:com.anthropic.claude-code",
+     "count": 8
+    },
+    {
+     "id": "orphan:980001",
+     "count": 1
+    },
+    {
+     "id": "orphan:980002",
+     "count": 1
+    }
+   ],
+   "parents": [
+    970000,
+    971000
+   ],
+   "started_span_s": 5400.0,
+   "pids": [
+    990000,
+    990001,
+    990002,
+    990003,
+    990004,
+    990005,
+    990006,
+    990007,
+    990008,
+    990009,
+    990010,
+    990011,
+    990012,
+    990013,
+    990014,
+    990015,
+    990016,
+    990017,
+    990018,
+    990019,
+    990020,
+    990021,
+    990022,
+    990023,
+    990024,
+    990025,
+    990026,
+    990027,
+    990028,
+    990029,
+    990030,
+    990031,
+    990032,
+    990033,
+    990034,
+    990035,
+    990036,
+    990037,
+    990038,
+    990039,
+    990040,
+    990041,
+    990042,
+    990043,
+    990044,
+    990045,
+    990046,
+    990047,
+    990048,
+    990049,
+    990050,
+    990051,
+    990052,
+    990053,
+    990054,
+    990055,
+    990056,
+    990057,
+    990058,
+    990059,
+    990060,
+    990061,
+    990062,
+    990063,
+    990064,
+    990065,
+    990066,
+    990067,
+    990068,
+    990069,
+    990070,
+    990071,
+    990072,
+    990073
+   ],
+   "evidence": [
+    {
+     "kind": "same_executable",
+     "detail": "可执行文件相同：python3.13",
+     "confidence": "certain"
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "swarm-spread",
+    "text": "分散在多个归属里，各自 1–6 份。"
+   }
+  }
+ ],
+ "issues": []
+}

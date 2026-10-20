@@ -318,6 +318,7 @@ fn phase05_ffi_downsample_even_spacing_keeps_last() {
             timestamp_s: i,
             mem_bytes: i as u64,
             cpu_pct: None,
+            unknown_mem_count: None,
         })
         .collect();
     let short = downsample(&points, 60);
@@ -643,5 +644,32 @@ fn phase05_ffi_kill_without_tick_is_missing() {
     assert_eq!(
         status(&value, 999_999),
         ("missing".into(), Some("not_in_snapshot".into()))
+    );
+}
+
+#[test]
+fn phase10_ffi_downsample_keeps_the_largest_unreadable_count_per_segment() {
+    let points: Vec<_> = (0..1800)
+        .map(|i| HistoryPoint {
+            timestamp_s: i,
+            mem_bytes: 1,
+            cpu_pct: None,
+            unknown_mem_count: match i {
+                5 => Some(3),
+                6 => Some(1),
+                _ => None,
+            },
+        })
+        .collect();
+    let short = downsample(&points, 60);
+    // Points 1..=30 fall into the second kept point (index 30).
+    assert_eq!(short[1].timestamp_s, 30);
+    assert_eq!(short[1].unknown_mem_count, Some(3));
+    assert_eq!(short[0].unknown_mem_count, None);
+    assert!(short[2..].iter().all(|p| p.unknown_mem_count.is_none()));
+    let json = serde_json::to_value(&short[0]).unwrap();
+    assert!(
+        json.get("unknown_mem_count").is_none(),
+        "absent, not null, when all were read"
     );
 }

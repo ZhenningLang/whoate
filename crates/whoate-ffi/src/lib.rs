@@ -148,14 +148,25 @@ pub extern "C" fn whoate_host_json() -> *mut c_char {
     })
 }
 
-/// Equal spacing over the series, always ending at the newest point.
+/// Equal spacing over the series, always ending at the newest point. Each kept
+/// point carries the largest unreadable-process count of the points it stands for.
 pub fn downsample(points: &[HistoryPoint], max: usize) -> Vec<HistoryPoint> {
     if points.len() <= max || max < 2 {
         return points.iter().rev().take(max).rev().cloned().collect();
     }
     let last = points.len() - 1;
-    (0..max)
-        .map(|i| points[i * last / (max - 1)].clone())
+    let kept: Vec<_> = (0..max).map(|i| i * last / (max - 1)).collect();
+    kept.iter()
+        .enumerate()
+        .map(|(k, &i)| {
+            let from = if k == 0 { 0 } else { kept[k - 1] + 1 };
+            let mut point = points[i].clone();
+            point.unknown_mem_count = points[from..=i]
+                .iter()
+                .filter_map(|p| p.unknown_mem_count)
+                .max();
+            point
+        })
         .collect()
 }
 fn tick_json(engine: &mut WhoateEngine) -> Value {

@@ -307,9 +307,11 @@ mod tests {
                 .iter()
                 .any(|e| e["kind"] == "pane_status_unknown" && e["confidence"] == "weak")
         );
+        // Phase 10 feedback 1: one of the two processes is unreadable; the point
+        // is still recorded over the readable one and says how many were not.
         assert_eq!(
             select(1, "service:940010")["history"],
-            serde_json::json!([])
+            serde_json::json!([{"timestamp_s":1791978002_i64,"mem_bytes":10,"cpu_pct":0.0,"unknown_mem_count":1}])
         );
         assert_eq!(select(2, "pane:%42")["cpu_pct"], serde_json::Value::Null);
         assert_eq!(

@@ -32,7 +32,21 @@ public final class AppModel {
         return errors.isEmpty ? nil : errors.joined(separator: "; ")
     }
     public var close: CloseFlow = .idle
-    public var selectedOwnerID: String?
+    /// A jump message belongs to the owner it was for: a new selection clears it.
+    public var selectedOwnerID: String? { didSet { if selectedOwnerID != oldValue { notice = nil } } }
+    /// Main window sidebar selection.
+    public var category: MainCategory = .all
+    /// Last tmux jump message in the main window (no client, no terminal, failure); nil after success.
+    public private(set) var notice: String?
+    /// Main window list rows on screen now (onAppear/onDisappear); they get full histories.
+    @ObservationIgnored private var visibleMainRows = Set<String>()
+    /// ceiling: one whoate_why per visible row per visible tick; a tall window shows
+    /// about 30 rows, so at most this many are fetched beyond the first rows.
+    public static let visibleHistoryRows = 40
+    /// Main window rows that get a full history while it is open (design round 1, finding 2).
+    /// ceiling: one whoate_why per row per visible tick (P08-PANEL-WHY-COST); with the
+    /// visible rows below, at most 60 per tick. Batch the FFI call if QA26 (recorded) grows.
+    public static let mainHistoryRows = 20
     /// Panel row whose advice text is expanded.
     public var expandedAdvice: String?
     /// Raw (not downsampled) history of the owners the panel can show, by owner id.
@@ -85,12 +99,22 @@ public final class AppModel {
 
     public var rows: [PanelRow] { rows(limit: Panel.rowLimit) }
 
+    public func setMainRow(_ id: String, visible: Bool) {
+        if visible { visibleMainRows.insert(id) } else { visibleMainRows.remove(id) }
+    }
+
+    /// A tmux jump finished: its message shows only if its owner is still the selected one.
+    public func finishJump(_ message: String?, for ownerID: String) {
+        if selectedOwnerID == ownerID { notice = message }
+    }
+
     /// Panel and main window rows. Memory order is Panel.rows' own; CPU order is `cpuOrder`.
+    /// Names are made unique over the whole list, then cut to `limit`.
     public func rows(limit: Int) -> [PanelRow] {
         guard let report else { return [] }
-        guard sort == .cpu else { return Panel.rows(report, sort: sort, language: language, limit: limit, histories: histories) }
-        let all = Panel.rows(report, sort: .cpu, language: language, limit: .max, histories: histories)
-        return Array(cpuOrder.arrange(all).prefix(limit))
+        let all = Panel.rows(report, sort: sort, language: language, limit: .max, histories: histories)
+        let ordered = sort == .cpu ? cpuOrder.arrange(all) : all
+        return Array(RowNames.apply(ordered, report: report, language: language).prefix(limit))
     }
 
     /// The pointer is over the panel list: CPU order holds still, values keep updating.
@@ -199,7 +223,15 @@ public final class AppModel {
             var order = cpuOrder
             order.record(Self.cpuValues(report), at: at)
             // Either sort can be shown next; fetch both top lists (at most 2 × rowLimit owners).
-            let wanted = Set(Panel.rows(report, sort: .memory, language: language).map(\.id) + order.order.prefix(Panel.rowLimit))
+            // Plus, with the main window open, its selected owner and its first rows
+            // in the current category, so their curves are drawn there too.
+            var wanted = Set(Panel.rows(report, sort: .memory, language: language).map(\.id) + order.order.prefix(Panel.rowLimit))
+            if mainVisible {
+                let all = Panel.rows(report, sort: sort, language: language, limit: .max)
+                let listed = (sort == .cpu ? order.arrange(all) : all).filter { MainWindowModel.matches($0, category) }
+                wanted.formUnion(listed.prefix(Self.mainHistoryRows).map(\.id) + [selectedOwnerID].compactMap { $0 })
+                wanted.formUnion(visibleMainRows.sorted().prefix(Self.visibleHistoryRows))
+            }
             let targets = report.owners.filter { wanted.contains($0.id) }.compactMap { o in o.pids.first.map { (o.id, $0) } }
             let full = await Task.detached(priority: .utility) {
                 Dictionary(uniqueKeysWithValues: targets.compactMap { id, pid in engine.history(pid: pid, owner: id).map { (id, $0) } })

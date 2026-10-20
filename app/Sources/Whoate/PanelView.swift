@@ -8,21 +8,24 @@ struct PanelView: View {
     let mainWindows: MainWindows
     var openMain: (String?) -> Void
     let quit: QuitAction
+    /// Receives the panel's window once it has one (to put it away after opening the main window).
+    var foundWindow: ((NSWindow) -> Void)?
 
     private var language: Language { model.language }
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider().overlay(Palette.line)
+            Divider()
             content
-            Divider().overlay(Palette.line)
+            Divider()
             footer
         }
         .frame(width: 420)
         .coordinateSpace(.named(RowFrames.space))
         .overlay { CloseFlowView(model: model) }
         .background(RefreshVisibility { model.setVisible(panel: $0) }.frame(width: 0, height: 0))
+        .background(WindowReporter { window in foundWindow?(window) }.frame(width: 0, height: 0))
         .onPreferenceChange(RowFrames.self) { frames in
             if let path = WhoateApp.automation.layoutFile { RowFrames.write(frames, to: path) }
         }
@@ -32,21 +35,21 @@ struct PanelView: View {
         let header = Panel.header(model.report?.host, sort: model.sort, language)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(header.headline).font(.system(size: 15, weight: .semibold))
+                Text(header.headline).font(.title3.weight(.semibold))
                 Spacer()
                 if let host = model.report?.host {
                     Text("\(Format.bytes(host.memUsedBytes)) / \(Format.bytes(host.memTotalBytes)) · \(L10n.text(.swap, language)) \(Format.bytes(host.swapUsedBytes))")
-                        .monospacedDigit().foregroundStyle(.secondary)
+                        .font(.callout).monospacedDigit().foregroundStyle(.secondary)
                 }
             }
             if let detail = header.detail {
-                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                Text(detail).font(.callout).foregroundStyle(.secondary).monospacedDigit()
             }
             if let host = model.report?.host { PressureBar(host: host) }
             HStack(spacing: 12) {
                 legend(L10n.text(.used, language), Palette.used)
                 legend(L10n.text(.compressed, language), Palette.compressed)
-                legend(L10n.text(.swap, language), Palette.watch)
+                legend(L10n.text(.swap, language), Palette.swap)
                 Spacer()
                 Picker("", selection: $model.sort) {
                     Text(L10n.text(.sortMemory, language)).tag(SortKey.memory)
@@ -55,7 +58,7 @@ struct PanelView: View {
                 .pickerStyle(.segmented).labelsHidden().fixedSize().controlSize(.small)
             }
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
     private func legend(_ text: String, _ color: Color) -> some View {
@@ -63,7 +66,7 @@ struct PanelView: View {
             RoundedRectangle(cornerRadius: 1.5).fill(color).frame(width: 8, height: 8)
             Text(text)
         }
-        .font(.system(size: 11)).foregroundStyle(.secondary)
+        .font(.subheadline).foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var content: some View {
@@ -77,7 +80,7 @@ struct PanelView: View {
         } else {
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    if index > 0 { Divider().overlay(Palette.line.opacity(0.6)) }
+                    if index > 0 { Divider().padding(.leading, 16) }
                     PanelRowView(row: row, language: language, sort: model.sort,
                                  openMain: openMain, close: { model.requestClose(row.id) },
                                  expanded: Binding(get: { model.expandedAdvice == row.id },
@@ -91,21 +94,27 @@ struct PanelView: View {
 
     private func message(_ title: String, detail: String?) -> some View {
         VStack(spacing: 4) {
-            Text(title).font(.system(size: 13, weight: .medium))
-            if let detail { Text(detail).font(.system(size: 12)).foregroundStyle(.secondary) }
+            Text(title).font(.headline)
+            if let detail { Text(detail).font(.callout).foregroundStyle(.secondary) }
         }
         .frame(maxWidth: .infinity).padding(.vertical, 28)
     }
 
+    /// Owner design gate 2026-10-21: quit stays a button, alone at the far left
+    /// and borderless; the bordered main-window button is at the far right, with
+    /// the status line between them (feedback 3; app/DESIGN.md §5).
     private var footer: some View {
-        HStack {
-            Text(footerText).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
-            Spacer()
-            Button(L10n.text(.quit, language)) { quit() }.controlSize(.regular).keyboardShortcut("q")
+        HStack(spacing: 12) {
+            Button(L10n.text(.quit, language)) { quit() }.keyboardShortcut("q")
+                .buttonStyle(.borderless).foregroundStyle(.secondary).fixedSize()
+                .rowFrame("footer", "quit")
+            Text(footerText).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .center)
             Button(WindowPolicy.openLabel(mainWindowExists: mainWindows.exists, language)) { openMain(nil) }
-                .controlSize(.regular)
+                .buttonStyle(.bordered).fixedSize()
+                .rowFrame("footer", "showMain")
         }
-        .padding(.horizontal, 16).padding(.vertical, 10)
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
     private var footerText: String {
@@ -121,11 +130,11 @@ struct PressureBar: View {
             HStack(spacing: 0) {
                 Palette.used.frame(width: geo.size.width * s.used)
                 Palette.compressed.frame(width: geo.size.width * s.compressed)
-                Palette.watch.frame(width: geo.size.width * s.swap)
+                Palette.swap.frame(width: geo.size.width * s.swap)
                 Spacer(minLength: 0)
             }
         }
-        .frame(height: 8).background(Palette.track).clipShape(RoundedRectangle(cornerRadius: 4))
+        .frame(height: 8).background(.quaternary).clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
 
@@ -141,36 +150,34 @@ struct PanelRowView: View {
     // curve can never cover them.
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(row.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
-                    Text(row.subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
-                        .lineLimit(1).truncationMode(.middle)
+            HStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(row.title).font(.headline).lineLimit(1).truncationMode(.middle)
+                    Text(row.subtitle).font(.callout).foregroundStyle(.secondary)
+                        .lineLimit(1).truncationMode(row.source == .swarm ? .tail : .middle)
                 }
                 Spacer(minLength: 0)
-                Sparkline(points: row.history, color: row.level == .ok ? Palette.flat : Palette.tint(row.level),
-                          language: language)
+                Sparkline(points: row.history, color: Palette.tint(row.level), language: language, metric: sort,
+                          hasHistory: row.source == .owner)
                     .frame(width: 64, height: 18).clipped()
                     .rowFrame(row.id, "trend")
                     .background { if WhoateApp.automation.layoutFile != nil { CurveKind(row: row) } }
-                Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
-                    .font(.system(size: 13, weight: .semibold)).monospacedDigit()
-                    .frame(minWidth: 44, alignment: .trailing)
+                ValueText(row: row, sort: sort, language: language)
+                    .frame(minWidth: 52, alignment: .trailing)
             }
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 AdvicePill(row: row, language: language, expanded: expanded)
                 Spacer()
                 if row.closable {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         Button(L10n.text(.details, language)) { openMain(row.id) }.controlSize(.small)
-                        Button(L10n.text(.close, language), action: close)
-                            .controlSize(.small).buttonStyle(.borderedProminent).tint(Palette.act)
+                        Button(L10n.text(.close, language), role: .destructive, action: close).controlSize(.small)
                     }
                     .rowFrame(row.id, "buttons")
                 }
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 }
 
@@ -182,7 +189,7 @@ struct AdvicePill: View {
     @Binding var expanded: Bool
 
     var body: some View {
-        let pill = Pill(text: row.pill, level: row.pillLevel)
+        let pill = Pill(row: row)
         if row.insights.isEmpty {
             pill
         } else {
@@ -191,7 +198,7 @@ struct AdvicePill: View {
                 .buttonStyle(.plain)
                 .help(text)
                 .popover(isPresented: $expanded, arrowEdge: .bottom) {
-                    Text(text).font(.system(size: 12)).textSelection(.enabled)
+                    Text(text).font(.callout).textSelection(.enabled)
                         .frame(width: 320, alignment: .leading).fixedSize(horizontal: false, vertical: true)
                         .padding(12)
                 }
@@ -199,15 +206,55 @@ struct AdvicePill: View {
     }
 }
 
+/// One pill for panel rows, main-window rows and details (feedback 4): symbol
+/// and text in the level's system colour on a 15% tint of it; ok rows are plain.
 struct Pill: View {
     let text: String
     let level: Level
+    var symbol: String?
+
+    init(text: String, level: Level, symbol: String? = nil) {
+        self.text = text
+        self.level = level
+        self.symbol = symbol
+    }
+    init(row: PanelRow) { self.init(text: row.pill, level: row.pillLevel, symbol: Palette.symbol(row)) }
+
     var body: some View {
-        Text(text)
-            .font(.system(size: 11, weight: .semibold)).lineLimit(1)
-            .foregroundStyle(Palette.tint(level))
-            .padding(.horizontal, 8).padding(.vertical, 2)
-            .background(Palette.background(level), in: Capsule())
+        HStack(spacing: 4) {
+            if let symbol { Image(systemName: symbol).foregroundStyle(Palette.tint(level)) }
+            Text(text).foregroundStyle(level == .act || level == .watch ? Color.primary : Color.secondary)
+        }
+        .font(.subheadline.weight(.medium)).lineLimit(1)
+        .padding(.horizontal, 8).padding(.vertical, 2)
+        .background(level == .act || level == .watch ? AnyShapeStyle(Palette.tint(level).opacity(0.15))
+                                                      : AnyShapeStyle(.quaternary), in: Capsule())
+    }
+}
+
+/// Number with the unreadable-memory mark in front (feedback 1).
+struct ValueText: View {
+    let row: PanelRow
+    let sort: SortKey
+    let language: Language
+    var body: some View {
+        let unreadable = Format.unreadable(row.history, current: row.unknownMemCount)
+        HStack(spacing: 4) {
+            if sort == .memory, unreadable > 0 { UnknownMemMark(count: unreadable, language: language) }
+            Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
+                .font(.headline).monospacedDigit()
+        }
+    }
+}
+
+/// Small secondary mark; hover explains it.
+struct UnknownMemMark: View {
+    let count: Int
+    let language: Language
+    var body: some View {
+        Image(systemName: "questionmark.circle").font(.caption).foregroundStyle(.secondary)
+            .help(L10n.format(.unknownMem, language, "\(count)"))
+            .accessibilityLabel(L10n.format(.unknownMem, language, "\(count)"))
     }
 }
 
@@ -217,12 +264,18 @@ struct Sparkline: View {
     let points: [HistoryPoint]
     let color: Color
     let language: Language
+    var metric: SortKey = .memory
+    /// Process groups keep no history: no curve and no "not enough samples" either.
+    var hasHistory = true
     var body: some View {
+        if hasHistory { curve }
+    }
+    private var curve: some View {
         GeometryReader { geo in
-            switch Format.trend(points, width: geo.size.width, height: geo.size.height - 2) {
+            switch Format.trend(points, width: geo.size.width, height: geo.size.height - 2, metric: metric) {
             case .insufficient:
                 Text(L10n.text(.notEnoughSamples, language))
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.6)
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .trailing)
             case .line(let line):
@@ -230,7 +283,7 @@ struct Sparkline: View {
                     path.move(to: CGPoint(x: line[0].x, y: line[0].y + 1))
                     for p in line.dropFirst() { path.addLine(to: CGPoint(x: p.x, y: p.y + 1)) }
                 }
-                .stroke(color, lineWidth: 1.6)
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
             }
         }
     }

@@ -25,7 +25,7 @@ struct CloseFlowView: View {
             case .result(let outcome): result(outcome)
             case .forcing(let outcome): forcing(outcome)
             case .failed(let message):
-                Text(message).font(.system(size: 13))
+                Text(message).font(.body)
                 HStack { Spacer(); Button(L10n.text(.done, language)) { model.cancelClose() } }
             case .idle: EmptyView()
             }
@@ -33,7 +33,7 @@ struct CloseFlowView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.line))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.separator))
         .shadow(color: .black.opacity(0.2), radius: 16, y: 6)
     }
 
@@ -41,7 +41,7 @@ struct CloseFlowView: View {
     private func pidList(_ pids: [Int32]) -> some View {
         scrollIfTall {
             Text(pids.map(String.init).joined(separator: "  "))
-                .font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                .font(.callout.monospaced()).foregroundStyle(.secondary)
         }
     }
 
@@ -56,79 +56,79 @@ struct CloseFlowView: View {
     }
 
     @ViewBuilder private func confirm(_ c: KillConfirmation) -> some View {
-        Text(c.title).font(.system(size: 14, weight: .semibold)).lineLimit(2)
+        Text(c.title).font(.title3.weight(.semibold)).lineLimit(2)
         if c.isProtected {
             Label(L10n.text(.protectedHint, language), systemImage: "lock.fill")
-                .font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.watch)
+                .font(.callout.weight(.medium)).foregroundStyle(.secondary)
         }
         VStack(alignment: .leading, spacing: 4) {
-            Text(L10n.text(.confirmPIDs, language)).font(.system(size: 12))
+            Text(L10n.text(.confirmPIDs, language)).font(.callout)
             pidList(c.pids)
         }
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(L10n.text(.estimateLabel, language)).font(.system(size: 12))
+                Text(L10n.text(.estimateLabel, language)).font(.callout)
                 Spacer()
-                Text(c.estimate).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                Text(c.estimate).font(.headline).monospacedDigit()
             }
-            Text(L10n.text(.estimateBasis, language)).font(.system(size: 11)).foregroundStyle(.tertiary)
+            Text(L10n.text(.estimateBasis, language)).font(.subheadline).foregroundStyle(.tertiary)
         }
         HStack {
             Spacer()
             Button(L10n.text(.cancel, language)) { model.cancelClose() }.keyboardShortcut(.cancelAction)
-            Button(L10n.text(.confirmButton, language)) { Task { await model.confirmClose() } }
-                .buttonStyle(.borderedProminent).tint(Palette.act).disabled(c.isProtected)
+            // Destructive, so never the default (primary) button: HIG Buttons.
+            Button(L10n.text(.confirmButton, language), role: .destructive) { Task { await model.confirmClose() } }
+                .disabled(c.isProtected)
         }
     }
 
     @ViewBuilder private func running(_ c: KillConfirmation) -> some View {
-        Text(c.title).font(.system(size: 14, weight: .semibold)).lineLimit(2)
+        Text(c.title).font(.title3.weight(.semibold)).lineLimit(2)
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)
-            Text(L10n.text(.terminating, language)).font(.system(size: 12))
+            Text(L10n.text(.terminating, language)).font(.callout)
         }
     }
 
     @ViewBuilder private func forcing(_ outcome: KillOutcome) -> some View {
-        Text(L10n.text(.resultTitle, language)).font(.system(size: 14, weight: .semibold))
+        Text(L10n.text(.resultTitle, language)).font(.title3.weight(.semibold))
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)
-            Text(L10n.text(.forcing, language)).font(.system(size: 12))
+            Text(L10n.text(.forcing, language)).font(.callout)
         }
     }
 
     @ViewBuilder private func result(_ outcome: KillOutcome) -> some View {
-        Text(L10n.text(.resultTitle, language)).font(.system(size: 14, weight: .semibold))
+        Text(L10n.text(.resultTitle, language)).font(.title3.weight(.semibold))
         scrollIfTall {
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(outcome.lines, id: \.pid) { line in
                     HStack {
-                        Text(String(line.pid)).font(.system(size: 12, design: .monospaced))
+                        Text(String(line.pid)).font(.callout.monospaced())
                         Spacer()
-                        Text(line.text).font(.system(size: 12))
-                            .foregroundStyle(line.status == .terminated ? Color.secondary : Palette.watch)
+                        Text(line.text).font(.callout)
+                            .foregroundStyle(line.status == .terminated ? Color.secondary : Color.orange)
                     }
                 }
             }
         }
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(L10n.text(.observedChange, language)).font(.system(size: 12))
+                Text(L10n.text(.observedChange, language)).font(.callout)
                 Spacer()
-                Text(outcome.change).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                Text(outcome.change).font(.headline).monospacedDigit()
             }
-            Text(L10n.text(.observedBasis, language)).font(.system(size: 11)).foregroundStyle(.tertiary)
+            Text(L10n.text(.observedBasis, language)).font(.subheadline).foregroundStyle(.tertiary)
         }
         if !outcome.stillAlive.isEmpty {
             Text(L10n.format(.stillAliveQuestion, language, "\(outcome.stillAlive.count)"))
-                .font(.system(size: 12, weight: .medium))
+                .font(.callout.weight(.medium))
         }
         HStack {
             Spacer()
             Button(L10n.text(.done, language)) { model.cancelClose() }
             if !outcome.stillAlive.isEmpty {
-                Button(L10n.text(.forceButton, language)) { Task { await model.confirmClose(force: true) } }
-                    .buttonStyle(.borderedProminent).tint(Palette.act)
+                Button(L10n.text(.forceButton, language), role: .destructive) { Task { await model.confirmClose(force: true) } }
             }
         }
     }

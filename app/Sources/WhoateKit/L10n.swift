@@ -48,6 +48,15 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case cpuHeadline, cpuMissing, cpuLoad, cpuIdle, cpuModerate, cpuBusy
     case cpuReasonFirst, cpuReasonReset, cpuReasonRead, cpuReasonNoTicks, cpuReasonAbsent
     case notEnoughSamples, adviceCause, adviceAdvice, adviceSource
+    case kindApp, kindOrphan, kindService, kindSystem, ownedBy, sessionsOf
+    case categoryAll, categoryAgents, categoryApps, categoryOrphans, categorySystem, filterNeedsAction, filterGrowing
+    case sectionOwners, sectionFilters, ownersCount, sortedBy, last30Minutes, unknownMem, menuTight, menuCritical
+    case kindPane, overview, memoryUsed, wired, kernelZones, gpuMemory, diagnostics, notFresh
+    case session, sessionName, autoNamed, conversation, status, location, project, confidence
+    case whyHere, curve30, parts, advice, processesInSession, jumpToPane, copyCommand, revealInFinder
+    case notInTmux, closeProcesses, systemDoNotClose, swarmOwners, noSelection
+    case noSession, idle, unavailable, gpuMissing, noTerminalApp, noTmuxClient, jumpFailed
+    case systemCard, restartNotRun, facts, linuxNote
 }
 
 public enum L10n {
@@ -139,6 +148,67 @@ public enum L10n {
         .adviceCause: ("原因：%@", "Cause: %@"),
         .adviceAdvice: ("建议：%@", "Advice: %@"),
         .adviceSource: ("出处：%@", "Source: %@"),
+        .kindApp: ("桌面应用", "App"),
+        .kindOrphan: ("孤儿进程", "Orphan"),
+        .kindService: ("后台服务", "Background service"),
+        .kindSystem: ("系统", "System"),
+        .ownedBy: ("分属 %@ 个归属：%@", "across %@ owners: %@"),
+        .sessionsOf: ("%@ 会话", "%@ sessions"),
+        .categoryAll: ("全部", "All"),
+        .categoryAgents: ("助手会话", "Agent sessions"),
+        .categoryApps: ("应用", "Apps"),
+        .categoryOrphans: ("孤儿", "Orphans"),
+        .categorySystem: ("系统", "System"),
+        .filterNeedsAction: ("需要处理", "Needs attention"),
+        .filterGrowing: ("在涨", "Growing"),
+        .sectionOwners: ("归属", "Owners"),
+        .sectionFilters: ("筛选", "Filters"),
+        .ownersCount: ("%@ 个归属", "%@ owners"),
+        .sortedBy: ("按%@", "by %@"),
+        .last30Minutes: ("最近 30 分钟", "Last 30 minutes"),
+        .unknownMem: ("%@ 个进程读不到内存，数字和曲线只计读得到的部分", "%@ processes unreadable; number and curve count the rest"),
+        .menuTight: ("偏紧", "tight"),
+        .menuCritical: ("紧张", "critical"),
+        .kindPane: ("tmux pane", "tmux pane"),
+        .overview: ("系统概览", "Overview"),
+        .memoryUsed: ("已用", "Used"),
+        .wired: ("联动内存", "Wired"),
+        .kernelZones: ("内核内存区（前 5）", "Kernel zones (top 5)"),
+        .gpuMemory: ("显存", "GPU memory"),
+        .diagnostics: ("诊断", "Diagnostics"),
+        .notFresh: ("不是最新", "not fresh"),
+        .session: ("会话", "Session"),
+        .sessionName: ("会话名", "Name"),
+        .autoNamed: ("自动命名", "auto-named"),
+        .conversation: ("对话", "Conversation"),
+        .status: ("状态", "Status"),
+        .location: ("位置", "Location"),
+        .project: ("项目", "Project"),
+        .confidence: ("可信度", "Confidence"),
+        .whyHere: ("为什么归到这里", "Why it is grouped here"),
+        .curve30: ("内存 · 最近 30 分钟", "Memory · last 30 minutes"),
+        .parts: ("组成", "Parts"),
+        .advice: ("建议", "Suggestions"),
+        .processesInSession: ("这个会话下的进程", "Processes in this session"),
+        .jumpToPane: ("跳到这个 pane", "Go to pane"),
+        .copyCommand: ("复制命令", "Copy command"),
+        .revealInFinder: ("在 Finder 中显示目录", "Show folder in Finder"),
+        .notInTmux: ("不在 tmux 里", "Not in tmux"),
+        .closeProcesses: ("关闭 %@ 个进程…", "Close %@ processes…"),
+        .systemDoNotClose: ("系统进程，勿关", "System process; do not close"),
+        .swarmOwners: ("分布", "Distribution"),
+        .noSelection: ("在中间列表选一行查看详情", "Select a row to see details"),
+        .noSession: ("无会话", "no session"),
+        .idle: ("空闲", "Idle"),
+        .unavailable: ("暂缺", "Unavailable"),
+        .gpuMissing: ("读不到：%@", "Unavailable: %@"),
+        .noTerminalApp: ("已切到 pane，未找到终端应用", "Switched the pane; no terminal app found"),
+        .noTmuxClient: ("没有连着的 tmux 客户端，先在终端里 attach", "No attached tmux client; attach in a terminal first"),
+        .jumpFailed: ("跳转失败：%@", "Jump failed: %@"),
+        .systemCard: ("怎么重启（whoate 不会执行）", "How to restart (whoate never runs it)"),
+        .restartNotRun: ("没有可用的重启命令", "No restart command"),
+        .facts: ("实测数据", "Measured facts"),
+        .linuxNote: ("Docker 数字按 Linux 口径统计", "Docker figures use Linux accounting"),
     ]
 
     public static func text(_ key: L10nKey, _ language: Language) -> String {

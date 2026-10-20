@@ -19,12 +19,14 @@ public func repairProcessPath() {
 
 /// Only active when WHOATE_UI_AUTOMATION is set; otherwise every field is nil.
 /// WHOATE_UI_AUTOMATION is a comma list of: dump-tick, panel-window,
-/// main-window, no-path-repair, menubar (no extra window; for the timers below).
+/// main-window, design-gallery (menu bar item states in a window),
+/// no-path-repair, menubar (no extra window; for the timers below).
 public struct Automation: Equatable, Sendable {
     public enum Appearance: String, Sendable { case light, dark }
     public var dumpTick = false
     public var panelWindow = false
     public var mainWindow = false
+    public var designGallery = false
     public var noPathRepair = false
     public var appearance: Appearance?
     /// Owner id to open the close confirmation for, or "first" for the first row.
@@ -47,6 +49,16 @@ public struct Automation: Equatable, Sendable {
     public var showMainAfter: Double?
     /// panel-window only: stay hidden this many seconds after start, then open the panel window.
     public var panelOpenAfter: Double?
+    /// Second (re)show of the main window, for close → reopen → regular (P08-REOPEN-POLICY).
+    public var showMainAgainAfter: Double?
+    /// panel-window only: press the panel's own "show main window" action at this time.
+    public var panelShowMainAfter: Double?
+    /// Main window selection once data arrives: owner id, kind:orphan|agent|browser, or overview.
+    public var select: String?
+    /// panel-window and main-window: start in this sort (memory|cpu).
+    public var sort: SortKey?
+    /// Template PDF for the menu bar logo when the app bundle has none (launch.py wrappers).
+    public var menuBarIcon: String?
 
     public static let off = Automation()
 
@@ -57,6 +69,7 @@ public struct Automation: Equatable, Sendable {
         dumpTick = set.contains("dump-tick")
         panelWindow = set.contains("panel-window")
         mainWindow = set.contains("main-window")
+        designGallery = set.contains("design-gallery")
         noPathRepair = set.contains("no-path-repair")
         appearance = environment["WHOATE_UI_APPEARANCE"].flatMap(Appearance.init(rawValue:))
         confirm = environment["WHOATE_UI_CONFIRM"]
@@ -73,6 +86,11 @@ public struct Automation: Equatable, Sendable {
         mainCloseAfter = seconds("WHOATE_UI_MAIN_CLOSE_AFTER")
         showMainAfter = seconds("WHOATE_UI_SHOW_MAIN_AFTER")
         panelOpenAfter = seconds("WHOATE_UI_PANEL_OPEN_AFTER")
+        showMainAgainAfter = seconds("WHOATE_UI_SHOW_MAIN_AGAIN_AFTER")
+        panelShowMainAfter = seconds("WHOATE_UI_PANEL_SHOW_MAIN_AFTER")
+        select = environment["WHOATE_UI_SELECT"]
+        sort = environment["WHOATE_UI_SORT"].flatMap(SortKey.init(rawValue:))
+        menuBarIcon = environment["WHOATE_UI_MENUBAR_ICON"]
     }
     public var isActive: Bool { self != .off }
 }

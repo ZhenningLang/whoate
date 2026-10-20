@@ -23,6 +23,14 @@ public enum WindowPolicy {
     }
 }
 
+/// Panel actions that open the main window also put the panel away (feedback 2).
+public enum PanelActions {
+    @MainActor public static func showMain(_ ownerID: String?, open: (String?) -> Void, dismiss: () -> Void) {
+        open(ownerID)
+        dismiss()
+    }
+}
+
 /// The one quit path for the panel button, ⌘Q and automation.
 public struct QuitAction: Sendable {
     private let terminate: @MainActor @Sendable () -> Void
@@ -38,6 +46,9 @@ public struct QuitAction: Sendable {
 public final class MainWindows {
     public private(set) var count = 0
     @ObservationIgnored private var windows: [ObjectIdentifier: (window: NSWindow, token: NSObjectProtocol)] = [:]
+    /// SwiftUI may show the same NSWindow again after it was closed, without the
+    /// reporter view moving to a window again (P08-REOPEN-POLICY, measured in Phase 10).
+    @ObservationIgnored private weak var closedWindow: NSWindow?
     @ObservationIgnored private let apply: @MainActor (NSApplication.ActivationPolicy) -> Void
 
     public init(apply: @escaping @MainActor (NSApplication.ActivationPolicy) -> Void = MainWindows.applyToApp) {
@@ -69,6 +80,7 @@ public final class MainWindows {
 
     func closed(_ id: ObjectIdentifier) {
         guard let entry = windows.removeValue(forKey: id) else { return }
+        closedWindow = entry.window
         NotificationCenter.default.removeObserver(entry.token)
         changed()
     }
@@ -84,6 +96,13 @@ public final class MainWindows {
     }
 
     public func closeAll() { all.forEach { $0.close() } }
+
+    /// After an open: a closed main window that is visible again is tracked again.
+    @discardableResult public func reattach() -> Bool {
+        guard let window = closedWindow, window.isVisible, windows[ObjectIdentifier(window)] == nil else { return false }
+        register(window)
+        return true
+    }
 
     private func changed() {
         count = windows.count

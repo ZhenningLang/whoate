@@ -72,10 +72,12 @@ impl History {
             s.points.clear();
         }
         s.anchor = anchor;
-        // Missing measurements leave a gap, not a fabricated zero or erased past.
-        if owner.unknown_mem_count > 0 {
+        // With nothing readable there is no measurement: a gap, never a fabricated zero.
+        // Partly readable owners still get a point over the readable part (feedback 1).
+        if owner.unknown_mem_count > 0 && owner.unknown_mem_count >= owner.pids.len() {
             return;
         }
+        let unknown = (owner.unknown_mem_count > 0).then_some(owner.unknown_mem_count);
         if s.points
             .back()
             .is_some_and(|p| p.sample.timestamp_s > time_s)
@@ -88,10 +90,12 @@ impl History {
         {
             s.points.pop_back();
         }
+        // A change in how many processes are unreadable changes what mem_bytes
+        // covers: no delta there, so window() never sees a fake rise or fall.
         let delta = s
             .points
             .back()
-            .filter(|p| p.sample.timestamp_s + 1 == time_s)
+            .filter(|p| p.sample.timestamp_s + 1 == time_s && p.sample.unknown_mem_count == unknown)
             .map(|p| owner.mem_bytes as i128 - p.sample.mem_bytes as i128);
         // Each retained point carries its preceding one-second interval delta.
         // This measures a real 1800-second window without retaining an 1801st point.
@@ -100,6 +104,7 @@ impl History {
                 timestamp_s: time_s,
                 mem_bytes: owner.mem_bytes,
                 cpu_pct: owner.cpu_pct,
+                unknown_mem_count: unknown,
             },
             delta,
         });
@@ -170,7 +175,9 @@ mod tests {
         owner.mem_bytes = 20;
         h.record_snapshot_at(&owner, &snap, 1);
         assert_eq!(h.series(&owner.id).len(), 2);
-        owner.unknown_mem_count = 1;
+        // Phase 10 feedback 1: only a fully unreadable owner leaves the gap now
+        // (partly readable owners are recorded; see tests/phase10_history.rs).
+        owner.unknown_mem_count = 2;
         h.record_snapshot_at(&owner, &snap, 2);
         assert_eq!(h.series(&owner.id).len(), 2);
         owner.unknown_mem_count = 0;

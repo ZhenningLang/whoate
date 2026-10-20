@@ -149,6 +149,16 @@ public struct Owner: Decodable, Sendable, Equatable, Identifiable {
     }
 }
 
+extension Owner {
+    /// The app's bundle id (`app:<id>`); nil for other kinds.
+    public var bundleID: String? { kind == .app && id.hasPrefix("app:") ? String(id.dropFirst("app:".count)) : nil }
+}
+
+extension Part {
+    /// "node ×3", or the name alone for one process.
+    public var displayName: String { processCount > 1 ? "\(name) ×\(processCount)" : name }
+}
+
 public struct PhysicalEstimate: Decodable, Sendable, Equatable {
     public var bytes: UInt64?
     public var unknownCount: Int
@@ -235,8 +245,11 @@ public struct HistoryPoint: Decodable, Sendable, Equatable {
     public var timestampS: Int64
     public var memBytes: UInt64
     public var cpuPct: Double?
+    /// Processes whose memory could not be read; memBytes counts the rest.
+    public var unknownMemCount: Int?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case timestampS = "timestamp_s", memBytes = "mem_bytes", cpuPct = "cpu_pct"
+        case unknownMemCount = "unknown_mem_count"
     }
 }
 
@@ -319,12 +332,35 @@ public struct Insight: Decodable, Sendable, Equatable, Identifiable {
         public var en: String
         public func text(_ language: Language) -> String { language == .zh ? zh : en }
     }
+    /// System service policy (system.toml `[entries.system]`); display fields only.
+    public struct System: Decodable, Sendable, Equatable {
+        public var member: String
+        /// fseventsd | spotlight | none (core `Restart`).
+        public var restart: String
+        public var restartSafety: Localized
+        public var launchd: Localized
+        public var permissions: Localized
+        public var sideEffects: Localized
+        enum CodingKeys: String, CodingKey {
+            case member, restart, launchd, permissions
+            case restartSafety = "restart_safety", sideEffects = "side_effects"
+        }
+        /// Same strings as core `Restart::command`; whoate never runs them.
+        public var command: String? {
+            switch restart {
+            case "fseventsd": "sudo launchctl kickstart -k system/com.apple.fseventsd"
+            case "spotlight": "sudo launchctl kickstart -k system/com.apple.metadata.mds"
+            default: nil
+            }
+        }
+    }
     public var id: String
     public var recognizer: String
     public var cause: Localized
     public var advice: Localized
     public var source: String
     public var checked: String
+    public var system: System?
 }
 
 /// `{"schema":"whoate/v1","error":{"code","message"}}` from any FFI call.

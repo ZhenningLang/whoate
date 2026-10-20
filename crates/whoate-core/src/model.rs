@@ -219,6 +219,10 @@ pub struct HistoryPoint {
     pub timestamp_s: i64,
     pub mem_bytes: u64,
     pub cpu_pct: Option<f64>,
+    /// Processes whose memory could not be read; `mem_bytes` counts the rest.
+    /// Absent when every process was read, so older output is byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unknown_mem_count: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

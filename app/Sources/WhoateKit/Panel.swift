@@ -21,6 +21,11 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var closable: Bool
     /// Knowledge-base ids; their text comes from `Advice.lines`.
     public var insights: [String] = []
+    /// Processes whose memory could not be read; number and curve count the rest.
+    public var unknownMemCount = 0
+    /// Owner kind and verdict rule (nil for process groups), for main window filters.
+    public var kind: OwnerKind?
+    public var rule: String?
 }
 
 /// The panel and main-window header: memory pressure, or whole-machine CPU.
@@ -46,13 +51,15 @@ public enum Panel {
                 subtitle: subtitle(o, language), level: o.verdict.level, pill: pill(o, language),
                 pillLevel: o.verdict.level == .ok && !o.insights.isEmpty && !isProtected(o) ? .watch : o.verdict.level,
                 history: histories.map { $0[o.id] ?? [] } ?? o.history,
-                closable: o.verdict.level == .act && !isProtected(o), insights: o.insights)
+                closable: o.verdict.level == .act && !isProtected(o), insights: o.insights,
+                unknownMemCount: o.unknownMemCount, kind: o.kind, rule: o.verdict.rule)
         }
         let swarms = report.swarms.map { s in
             PanelRow(
                 id: s.id, source: .swarm, title: "\(s.label) × \(s.count)", memBytes: s.memBytes,
                 cpuPct: s.cpuPct, subtitle: subtitle(s, language), level: s.verdict.level,
-                pill: pill(s, language), pillLevel: s.verdict.level, history: [], closable: false)
+                pill: pill(s, language), pillLevel: s.verdict.level, history: [], closable: false,
+                unknownMemCount: s.unknownMemCount)
         }
         return Array((owners + swarms).sorted { a, b in
             switch sort {
@@ -125,7 +132,7 @@ public enum Panel {
         if o.origin?.paneAlive == false {
             parts.append(L10n.text(.paneClosed, language))
         } else if let origin = o.origin, let window = origin.windowName ?? origin.tmuxPane {
-            parts.append(origin.paneTitle.map { "\(window) (\($0))" } ?? window)
+            parts.append(windowLabel(window, origin))
         }
         if let cwd = o.origin?.cwd ?? agent.cwd, cwd != "/" {
             parts.append(URL(fileURLWithPath: cwd).lastPathComponent)
@@ -152,7 +159,7 @@ public enum Panel {
         // An app's working directory says nothing; its largest parts do.
         if o.kind == .app {
             parts += o.parts.sorted { $0.memBytes > $1.memBytes }.prefix(2)
-                .map { $0.processCount > 1 ? "\($0.name) ×\($0.processCount)" : $0.name }
+                .map(\.displayName)
         } else if let cwd = o.origin?.cwd ?? o.agent?.cwd, cwd != "/" {
             parts.append(abbreviate(cwd))
         }
@@ -164,6 +171,11 @@ public enum Panel {
         var parts = [L10n.format(.copies, language, "\(s.count)")]
         if s.count > 0 { parts.append(L10n.format(.eachAbout, language, Format.bytes(s.memBytes / UInt64(s.count)))) }
         return parts.joined(separator: " · ")
+    }
+
+    /// tmux window name with the pane title in parentheses when there is one.
+    public static func windowLabel(_ window: String, _ origin: Origin) -> String {
+        origin.paneTitle.map { "\(window) (\($0))" } ?? window
     }
 
     public static func abbreviate(_ path: String, home: String = NSHomeDirectory()) -> String {

@@ -9,6 +9,8 @@ use std::{
     path::Path,
 };
 
+mod terminals;
+
 fn ancestors<'a>(proc: &'a Proc, index: &BTreeMap<i32, &'a Proc>) -> (Vec<&'a Proc>, bool) {
     // ceiling: one cycle-guarded walk per process for desktop snapshots; memoize
     // ancestry if measured tick cost grows beyond the one-second refresh budget.
@@ -29,11 +31,21 @@ fn ancestors<'a>(proc: &'a Proc, index: &BTreeMap<i32, &'a Proc>) -> (Vec<&'a Pr
         current = parent;
     }
 }
+/// The outermost bundle in an executable path: `X.app`, or `X.app.bundle`
+/// (Chrome's code-sign clone runs from one; owner ruling D3).
+fn bundle_root(exe: &str) -> Option<&str> {
+    [".app/Contents/", ".app.bundle/Contents/"]
+        .iter()
+        .filter_map(|marker| {
+            exe.find(marker)
+                .map(|i| &exe[..i + marker.len() - "/Contents/".len()])
+        })
+        .min_by_key(|root| root.len())
+}
 pub fn app(exe: &str, cfg: &ConfigReader) -> Result<Option<(String, String)>, &'static str> {
-    let Some(end) = exe.find(".app/Contents/") else {
+    let Some(root) = bundle_root(exe) else {
         return Ok(None);
     };
-    let root = &exe[..end + 4];
     let value = cfg.read_plist(&Path::new(root).join("Contents/Info.plist"))?;
     let dict = value.as_dictionary().ok_or("app_metadata_invalid")?;
     let id = dict
@@ -72,6 +84,184 @@ pub fn agent_label(agent: &Agent) -> String {
         .clone()
         .or_else(|| agent.title.clone())
         .unwrap_or_else(|| agent.tool.clone())
+}
+
+fn agent_owner(
+    agent_proc: &Proc,
+    agent: &Agent,
+    origin: &mut Origin,
+    evidence: &mut Vec<Evidence>,
+) -> (String, OwnerKind, String, Option<Agent>) {
+    if origin.cwd.is_none() {
+        origin.cwd = agent.cwd.clone();
+    }
+    let key = agent
+        .session_id
+        .clone()
+        .unwrap_or_else(|| format!("pid:{}", agent_proc.pid));
+    evidence.push(Evidence::new(
+        "agent_source",
+        agent.tool.clone(),
+        agent.confidence,
+    ));
+    (
+        format!("agent:{}:{key}", agent.tool),
+        OwnerKind::AgentSession,
+        agent_label(agent),
+        Some(agent.clone()),
+    )
+}
+
+/// A process outside any pane and without an agent on its parent chain.
+struct Chain<'a> {
+    proc: &'a Proc,
+    chain: &'a [&'a Proc],
+    root: &'a Proc,
+    reaches_launchd: bool,
+    uid: u32,
+}
+enum Unowned<'a> {
+    Agent(&'a Proc, &'a Agent),
+    Orphan,
+    App(String, String),
+    Other,
+}
+
+/// Owner ruling D1 = C, rules ② to ④, then U-BEH-3 and the fallbacks:
+/// ② an app on the chain owns it when the chain's root is an app itself;
+/// ③ otherwise launchd adopted the root, and the root's responsible process,
+///   a running app or agent that is not a terminal, launched it;
+/// ④ a terminal as the responsible process is handled by the orphan rule:
+///   a runtime working in HOME, with no app or agent on its chain, is an
+///   orphan, and the terminal is recorded as where it came from. Anything
+///   else a terminal is responsible for (its XPC services, daemons it
+///   started) stays with the terminal app (U-BEH-3), as before Phase 10.
+/// Anything left: the chain's app, else system or service.
+fn unowned<'a>(
+    c: &Chain<'a>,
+    cfg: &ConfigReader,
+    agents: &'a BTreeMap<i32, Agent>,
+    index: &BTreeMap<i32, &'a Proc>,
+    evidence: &mut Vec<Evidence>,
+) -> Unowned<'a> {
+    let mut found = None;
+    for p in c.chain {
+        if let Some(exe) = &p.exe_path {
+            match app(exe, cfg) {
+                Ok(Some(a)) => {
+                    found = Some(a);
+                    break;
+                }
+                Err(code) => evidence.push(Evidence::new("app_metadata", code, Confidence::Weak)),
+                Ok(None) => {}
+            }
+        }
+    }
+    let in_bundle = |p: &Proc| {
+        p.exe_path
+            .as_deref()
+            .is_some_and(|exe| bundle_root(exe).is_some())
+    };
+    if in_bundle(c.root)
+        && let Some(app) = found.take()
+    {
+        return bundle_owns(app, evidence);
+    }
+    let launcher = c
+        .root
+        .responsible_pid
+        .filter(|pid| c.reaches_launchd && *pid > 1)
+        .and_then(|pid| index.get(&pid).copied());
+    let launcher_app = launcher
+        .and_then(|r| r.exe_path.as_deref())
+        .and_then(|exe| app(exe, cfg).ok().flatten());
+    let terminal = launcher_app
+        .as_ref()
+        .is_some_and(|(id, _)| terminals::is_terminal(id));
+    if !terminal {
+        if let Some(r) = launcher.filter(|r| r.pid != c.root.pid)
+            && let Some(agent) = agents
+                .get(&r.pid)
+                .filter(|a| r.uid == c.uid || a.confidence == Confidence::Certain)
+        {
+            evidence.push(Evidence::new(
+                "responsible_launcher",
+                format!("{} pid {}", agent.tool, r.pid),
+                Confidence::Inferred,
+            ));
+            return Unowned::Agent(r, agent);
+        }
+        if let Some((id, label)) = launcher_app.clone() {
+            // A system service the app asked for (XPC, /System) is the app's own
+            // (U-BEH-3, certain). Anything else the app started is ③: inferred.
+            evidence.push(if found.is_none() && system_service(c.root) {
+                Evidence::new("responsible_app", id.clone(), Confidence::Certain)
+            } else {
+                Evidence::new("responsible_launcher", id.clone(), Confidence::Inferred)
+            });
+            return Unowned::App(id, label);
+        }
+    }
+    let identified = c
+        .chain
+        .iter()
+        .any(|p| in_bundle(p) || agents.contains_key(&p.pid));
+    let runtime_home = is_runtime(c.proc)
+        && c.proc
+            .cwd
+            .as_deref()
+            .is_some_and(|cwd| Path::new(cwd).starts_with(&cfg.home));
+    if c.reaches_launchd && c.proc.uid == c.uid && !identified && runtime_home {
+        if let Some((id, _)) = launcher_app.as_ref().filter(|_| terminal) {
+            evidence.push(Evidence::new(
+                "responsible_terminal",
+                id.clone(),
+                Confidence::Inferred,
+            ));
+        }
+        evidence.push(Evidence::new(
+            "runtime_home",
+            "runtime in HOME; launchd ancestry",
+            Confidence::Weak,
+        ));
+        return Unowned::Orphan;
+    }
+    if let Some(app) = found {
+        return bundle_owns(app, evidence);
+    }
+    if let Some((id, label)) = launcher_app {
+        // A terminal's own services and daemons: U-BEH-3.
+        evidence.push(Evidence::new(
+            "responsible_app",
+            id.clone(),
+            Confidence::Certain,
+        ));
+        return Unowned::App(id, label);
+    }
+    if launcher.is_some() {
+        evidence.push(Evidence::new(
+            "responsible_unavailable",
+            "no readable responsible app",
+            Confidence::Weak,
+        ));
+    }
+    Unowned::Other
+}
+
+/// XPC services and system binaries run on behalf of the app responsible for
+/// them; an unknown executable path is treated the same (the U-BEH-3 default).
+fn system_service(p: &Proc) -> bool {
+    p.exe_path.as_deref().is_none_or(|exe| {
+        exe.contains(".xpc/Contents/")
+            || exe.starts_with("/System/")
+            || exe.starts_with("/usr/libexec/")
+    })
+}
+
+/// The chain's own app owns it.
+fn bundle_owns<'a>((id, label): (String, String), evidence: &mut Vec<Evidence>) -> Unowned<'a> {
+    evidence.push(Evidence::new("app_bundle", id.clone(), Confidence::Certain));
+    Unowned::App(id, label)
 }
 
 pub fn attribute(
@@ -162,24 +352,7 @@ pub fn attribute(
             ));
         }
         let (id, kind, label, owner_agent) = if let Some((agent_proc, agent)) = agent {
-            if origin.cwd.is_none() {
-                origin.cwd = agent.cwd.clone();
-            }
-            let key = agent
-                .session_id
-                .clone()
-                .unwrap_or_else(|| format!("pid:{}", agent_proc.pid));
-            evidence.push(Evidence::new(
-                "agent_source",
-                agent.tool.clone(),
-                agent.confidence,
-            ));
-            (
-                format!("agent:{}:{key}", agent.tool),
-                OwnerKind::AgentSession,
-                agent_label(agent),
-                Some(agent.clone()),
-            )
+            agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else if let Some(pane) = pane {
             (
                 format!("pane:{}", pane.pane_id),
@@ -216,101 +389,62 @@ pub fn attribute(
                     None,
                 )
             }
-        } else if reaches_launchd
-            && proc.uid == uid
-            && is_runtime(proc)
-            && proc
-                .cwd
-                .as_deref()
-                .is_some_and(|cwd| Path::new(cwd).starts_with(&cfg.home))
-        {
-            evidence.push(Evidence::new(
-                "runtime_home",
-                "runtime in HOME; launchd ancestry",
-                Confidence::Weak,
-            ));
-            (
-                format!("orphan:{}", root.pid),
-                OwnerKind::Orphan,
-                root.comm.clone(),
-                None,
-            )
+        } else if let Some((agent_proc, agent)) = candidates.last().copied() {
+            // D1 = C ①: outside a pane, an agent on the chain still owns it,
+            // grouped by the agent's pid when it has no session. A closed-pane
+            // TMUX_PANE (certain) is checked first and wins over this weak name.
+            agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else {
-            let mut found = None;
-            for p in &chain {
-                if let Some(exe) = &p.exe_path {
-                    match app(exe, cfg) {
-                        Ok(Some(a)) => {
-                            evidence.push(Evidence::new(
-                                "app_bundle",
-                                a.0.clone(),
-                                Confidence::Certain,
-                            ));
-                            found = Some(a);
-                            break;
-                        }
-                        Err(code) => {
-                            evidence.push(Evidence::new("app_metadata", code, Confidence::Weak))
-                        }
-                        Ok(None) => {}
-                    }
+            let context = Chain {
+                proc,
+                chain: &chain,
+                root,
+                reaches_launchd,
+                uid,
+            };
+            match unowned(&context, cfg, agents, &index, &mut evidence) {
+                Unowned::Agent(agent_proc, agent) => {
+                    agent_owner(agent_proc, agent, &mut origin, &mut evidence)
                 }
-            }
-            if found.is_none()
-                && reaches_launchd
-                && let Some(responsible) = root
-                    .responsible_pid
-                    .filter(|pid| *pid > 1)
-                    .and_then(|pid| index.get(&pid))
-            {
-                match responsible.exe_path.as_deref().map(|exe| app(exe, cfg)) {
-                    Some(Ok(Some(a))) => {
-                        evidence.push(Evidence::new(
-                            "responsible_app",
-                            a.0.clone(),
-                            Confidence::Certain,
-                        ));
-                        found = Some(a);
-                    }
-                    _ => evidence.push(Evidence::new(
-                        "responsible_unavailable",
-                        "no readable responsible app",
+                Unowned::Orphan => (
+                    format!("orphan:{}", root.pid),
+                    OwnerKind::Orphan,
+                    root.comm.clone(),
+                    None,
+                ),
+                Unowned::App(id, label) => (format!("app:{id}"), OwnerKind::App, label, None),
+                Unowned::Other if proc.uid != uid => {
+                    evidence.push(Evidence::new(
+                        "other_uid",
+                        proc.uid.to_string(),
+                        Confidence::Certain,
+                    ));
+                    (
+                        format!("system:{}", root.pid),
+                        OwnerKind::System,
+                        root.comm.clone(),
+                        None,
+                    )
+                }
+                Unowned::Other => {
+                    evidence.push(Evidence::new(
+                        "service_fallback",
+                        if reaches_launchd {
+                            "launchd ancestry"
+                        } else {
+                            "missing or cyclic ancestry"
+                        },
                         Confidence::Weak,
-                    )),
+                    ));
+                    // Broken chains use the individual pid, never traversal order as a group key.
+                    let key = if reaches_launchd { root.pid } else { proc.pid };
+                    (
+                        format!("service:{key}"),
+                        OwnerKind::Service,
+                        root.comm.clone(),
+                        None,
+                    )
                 }
-            }
-            if let Some((id, label)) = found {
-                (format!("app:{id}"), OwnerKind::App, label, None)
-            } else if proc.uid != uid {
-                evidence.push(Evidence::new(
-                    "other_uid",
-                    proc.uid.to_string(),
-                    Confidence::Certain,
-                ));
-                (
-                    format!("system:{}", root.pid),
-                    OwnerKind::System,
-                    root.comm.clone(),
-                    None,
-                )
-            } else {
-                evidence.push(Evidence::new(
-                    "service_fallback",
-                    if reaches_launchd {
-                        "launchd ancestry"
-                    } else {
-                        "missing or cyclic ancestry"
-                    },
-                    Confidence::Weak,
-                ));
-                // Broken chains use the individual pid, never traversal order as a group key.
-                let key = if reaches_launchd { root.pid } else { proc.pid };
-                (
-                    format!("service:{key}"),
-                    OwnerKind::Service,
-                    root.comm.clone(),
-                    None,
-                )
             }
         };
         let owner = owners.entry(id.clone()).or_insert_with(|| {
@@ -365,9 +499,9 @@ pub fn attribute(
                     "pane_ancestor" => 0,
                     "agent_source" => 1,
                     "tmux_environment" => 2,
-                    "runtime_home" => 3,
+                    "runtime_home" | "responsible_terminal" => 3,
                     "app_bundle" => 4,
-                    "responsible_app" => 5,
+                    "responsible_app" | "responsible_launcher" => 5,
                     _ => 6,
                 },
                 e.kind.clone(),

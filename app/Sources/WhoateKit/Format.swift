@@ -60,21 +60,51 @@ public enum Format {
 
     /// Only the latest continuous run of raw history (AppModel.histories, never a
     /// tick's downsampled copy) is drawn; older or isolated points are never joined.
-    public static func trend(_ points: [HistoryPoint], width: Double, height: Double) -> Trend {
-        var run = latestRun(points)
+    /// `metric` .cpu draws CPU percent; points without a CPU value are left out.
+    public static func trend(_ points: [HistoryPoint], width: Double, height: Double,
+                             metric: SortKey = .memory) -> Trend {
+        let value: (HistoryPoint) -> Double? = metric == .cpu ? { $0.cpuPct } : { Double($0.memBytes) }
+        // The latest run of samples, then the points with a value, split again:
+        // a missing value is a gap too, and a stale stretch never stands in for
+        // a missing tail (its last value must be within gapLimit of the newest sample).
+        let samples = latestRun(points)
+        var run = latestRun(samples.filter { value($0) != nil })
+        if let newest = samples.last?.timestampS, let last = run.last?.timestampS, newest - last > gapLimit { run = [] }
         if let end = run.last?.timestampS { run.removeAll { $0.timestampS < end - window } }
         guard let first = run.first, let last = run.last, last.timestampS - first.timestampS >= minimumSpan else {
             return .insufficient
         }
-        var lo = Double(run.map(\.memBytes).min()!), hi = Double(run.map(\.memBytes).max()!)
-        // Changes under 5% of the value stay visually flat instead of filling the box.
-        let floor = hi * 0.05
+        let values = run.map { value($0)! }
+        var lo = values.min()!, hi = values.max()!
+        // Changes under 5% of the value (5 points of CPU) stay visually flat instead of filling the box.
+        let floor = metric == .cpu ? 5 : hi * 0.05
         if hi - lo < floor { (lo, hi) = ((lo + hi - floor) / 2, (lo + hi + floor) / 2) }
         let span = Double(last.timestampS - first.timestampS)
-        return .line(run.map { p in
+        return .line(zip(run, values).map { p, v in
             Point(x: Double(p.timestampS - first.timestampS) / span * width,
-                  y: hi > lo ? height - (Double(p.memBytes) - lo) / (hi - lo) * height : height / 2)
+                  y: hi > lo ? height - (v - lo) / (hi - lo) * height : height / 2)
         })
+    }
+
+    /// Unreadable processes behind a curve and its number: the owner's current
+    /// count, or the largest count on the drawn run. Both marks use this one N.
+    public static func unreadable(_ points: [HistoryPoint], current: Int) -> Int {
+        max(current, latestRun(points).compactMap(\.unknownMemCount).max() ?? 0)
+    }
+
+    /// Detail chart: every continuous run in the last `window` seconds, split
+    /// at gaps longer than `gapLimit` so the chart leaves a hole, never a bridge.
+    public static func runs(_ points: [HistoryPoint]) -> [[HistoryPoint]] {
+        guard let end = points.last?.timestampS else { return [] }
+        var runs: [[HistoryPoint]] = []
+        for p in points where p.timestampS >= end - window {
+            if let last = runs.last?.last, p.timestampS - last.timestampS <= gapLimit {
+                runs[runs.count - 1].append(p)
+            } else {
+                runs.append([p])
+            }
+        }
+        return runs
     }
 
     static func latestRun(_ points: [HistoryPoint]) -> [HistoryPoint] {

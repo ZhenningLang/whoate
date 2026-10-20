@@ -148,7 +148,9 @@ enum Phase08Round3Tests {
         model.sort = .memory
         let memory = try report([("A", 20), ("B", 83)], mem: ["A": 1, "B": 9])
         await step(model, feed, clock, at: 8, memory)
-        expect(model.rows == Panel.rows(memory, sort: .memory, language: .en, histories: model.histories))
+        // Phase 10: AppModel rows also carry the row-naming layer (RowNames).
+        expect(model.rows == RowNames.apply(Panel.rows(memory, sort: .memory, language: .en, histories: model.histories),
+                                            report: memory, language: .en))
         expect(model.rows.map(\.id) == ["B", "A"], "memory reorders while hovered")
         model.sort = .cpu
         model.setListHovered(false)

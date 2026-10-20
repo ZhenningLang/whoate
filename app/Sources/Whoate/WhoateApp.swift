@@ -48,9 +48,12 @@ struct WhoateApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PanelView(model: delegate.model, mainWindows: delegate.mainWindows, openMain: open, quit: delegate.quit)
+            PanelView(model: delegate.model, mainWindows: delegate.mainWindows,
+                      openMain: { PanelActions.showMain($0, open: open, dismiss: delegate.dismissPanel) },
+                      quit: delegate.quit, foundWindow: { delegate.panelWindow = $0 })
         } label: {
-            MenuBarLabel(host: delegate.model.host)
+            // Owner design gate 2026-10-21: style D (a system symbol, alerts as triangles).
+            MenuBarLabel(label: MenuBarItem.label(delegate.model.host, style: .systemSymbol, language: delegate.model.language))
                 .task { await delegate.runAutomation(open: open) }
         }
         .menuBarExtraStyle(.window)
@@ -58,7 +61,7 @@ struct WhoateApp: App {
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {
             MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows)
         }
-        .defaultSize(width: 720, height: 560)
+        .defaultSize(width: 1120, height: 720)
         .commands {
             // The regular-policy app menu's ⌘Q goes through the same QuitAction.
             CommandGroup(replacing: .appTermination) {
@@ -75,6 +78,11 @@ struct WhoateApp: App {
         case .create:
             openWindow(id: "main")
             NSApp.activate(ignoringOtherApps: true)
+            // A reused window gets no new reporter callback: track it again once it is shown.
+            let windows = delegate.mainWindows
+            for delay in AppDelegate.reattachDelays {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { windows.reattach() }
+            }
         }
     }
 }
@@ -84,6 +92,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
     let mainWindows = MainWindows()
     let quit = QuitAction()
+    /// After openWindow on a reused main window: it is shown within the first
+    /// run-loop turns (0.1 s measured in the QA22 reopen run); 0.5 s covers a slow tick.
+    static let reattachDelays = [0.1, 0.5]
+    /// Automation waits this long for the first report (fixture replay takes < 1 s).
+    static let reportWait = 10.0
+    /// The panel's window: the MenuBarExtra one, or the automation panel window.
+    weak var panelWindow: NSWindow?
+    /// SwiftUI's main-window opener, captured from the menu bar label (automation panel window).
+    private var openMain: ((String?) -> Void)?
     private var automationWindow: NSWindow?
     private var automationStarted = false
 
@@ -104,8 +121,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
         case nil: break
         }
+        if let sort = automation.sort { model.sort = sort }
         model.start()
         if automation.panelWindow { Task { await showPanelWindow(automation) } }
+        if automation.designGallery { showGalleryWindow(automation) }
+    }
+
+    /// Puts the panel away after it opened the main window. A MenuBarExtra panel
+    /// closes (SwiftUI recreates it on the next click); the automation window only hides.
+    func dismissPanel() {
+        guard let window = panelWindow else { return }
+        if window === automationWindow { window.orderOut(nil) } else { window.close() }
+    }
+
+    /// Design gate: every menu bar item state in an ordinary window, so the
+    /// screenshot is of whoate's own window, never the system menu bar.
+    private func showGalleryWindow(_ automation: Automation) {
+        let window = showAutomationWindow("whoate menu bar item", MenuBarGallery(language: model.language))
+        if let path = automation.windowFile {
+            let size = window.frame.size
+            appendLine("gallery\t\(window.windowNumber)\t\(Int(size.width))\t\(Int(size.height))\t"
+                + "\(window.backingScaleFactor)\t\(ProcessInfo.processInfo.processIdentifier)\t-\n",
+                to: path, failure: "window_file_failed")
+        }
     }
 
     /// Automation timeline, in seconds since the process started. Runs once,
@@ -115,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let automation = WhoateApp.automation
         guard automation.isActive, !automationStarted else { return }
         automationStarted = true
+        openMain = open
         let began = Main.launchedAt
         func at(_ seconds: Double, _ action: @escaping @MainActor () -> Void) {
             Task { @MainActor in
@@ -123,10 +162,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         if automation.mainWindow { at(0.5) { open(nil) } }
+        if let select = automation.select { Task { await applySelection(select) } }
         if let after = automation.showMainAfter { at(after) { open(nil) } }
+        if let after = automation.showMainAgainAfter { at(after) { open(nil) } }
+        if let after = automation.panelShowMainAfter {
+            at(after) { [weak self] in
+                PanelActions.showMain(nil, open: open, dismiss: { self?.dismissPanel() })
+            }
+        }
         if let after = automation.mainCloseAfter { at(after) { [mainWindows] in mainWindows.closeAll() } }
         if let after = automation.quitAfter { at(after) { [quit] in quit() } }
         if let path = automation.stateFile { await recordState(to: path) }
+    }
+
+    /// Automation only: a titled window around `root`, in front, sized to fit.
+    private func showAutomationWindow(_ title: String, _ root: some View) -> NSWindow {
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
+        window.title = title
+        window.contentView = NSHostingView(rootView: root)
+        window.setContentSize(window.contentView!.fittingSize)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        automationWindow = window
+        return window
+    }
+
+    /// Automation only: waits up to `reportWait` seconds for the first report.
+    private func waitForReport() async {
+        let deadline = ProcessInfo.processInfo.systemUptime + Self.reportWait
+        while model.report == nil, ProcessInfo.processInfo.systemUptime < deadline {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
+    /// WHOATE_UI_SELECT, once the first report is in.
+    private func applySelection(_ value: String) async {
+        await waitForReport()
+        guard model.report != nil else { return }
+        let (category, id) = MainWindowModel.select(value, rows: model.rows(limit: .max))
+        model.category = category
+        model.selectedOwnerID = id
     }
 
     /// One line whenever the observable window/refresh state changes.
@@ -142,6 +219,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             var fields = [
                 "policy=\(policy)", "active=\(NSApp.isActive)", "main_windows=\(mainWindows.count)",
                 "mode=\(model.fullRefresh ? "full" : "host")",
+                "panel_visible=\(panelWindow?.isVisible ?? false)",
+                "selected=\(model.selectedOwnerID ?? "-")",
             ]
             if let main {
                 fields += [
@@ -169,17 +248,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let after = automation.panelOpenAfter {
             try? await Task.sleep(for: .seconds(max(0, after - (ProcessInfo.processInfo.systemUptime - Main.launchedAt))))
         }
-        let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
-        window.title = "whoate panel"
-        window.contentView = NSHostingView(rootView: PanelView(
-            model: model, mainWindows: mainWindows, openMain: { _ in }, quit: quit))
-        window.setContentSize(window.contentView!.fittingSize)
-        window.center()
-        window.makeKeyAndOrderFront(nil)
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        automationWindow = window
-        for _ in 0..<100 where model.report == nil { try? await Task.sleep(for: .milliseconds(100)) }
+        let window = showAutomationWindow("whoate panel", PanelView(
+            model: model, mainWindows: mainWindows,
+            openMain: { [weak self] id in
+                PanelActions.showMain(id, open: { self?.openMain?($0) }, dismiss: { self?.dismissPanel() })
+            },
+            quit: quit))
+        panelWindow = window
+        await waitForReport()
         if let confirm = automation.confirm {
             // "first": the first panel row that can be closed, else the first unprotected owner row.
             let rows = model.rows.filter { $0.source == .owner }
@@ -215,51 +291,75 @@ func appendLine(_ line: String, to path: String, failure: String) {
     } catch { FileHandle.standardError.write(Data((failure + "\n").utf8)) }
 }
 
-/// Template icon plus used memory; tinted only when pressure is not normal.
+/// Template image plus system-font text; the system colours both for the
+/// menu bar's appearance. Nothing here is ever tinted (feedback 5).
 struct MenuBarLabel: View {
-    let host: WhoateKit.Host?
+    let label: MenuBarItem.Label
     var body: some View {
-        let text = host.map { Format.bytes($0.memUsedBytes) } ?? "—"
-        if let color = Palette.pressure(host?.pressure) {
-            Image(nsImage: Self.render(text: text, color: color))
-        } else {
-            HStack(spacing: 4) {
-                Image(nsImage: Self.icon)
-                Text(text).monospacedDigit()
-            }
+        HStack(spacing: 4) {
+            Image(nsImage: MenuBarItem.image(label.image, logo: Self.logo))
+            Text(label.text).monospacedDigit()
         }
     }
 
-    static let icon: NSImage = {
-        if let url = Bundle.main.url(forResource: "menubar-template", withExtension: "pdf"),
-           let image = NSImage(contentsOf: url) {
-            image.size = NSSize(width: 18, height: 14)
-            image.isTemplate = true
-            return image
-        }
-        // `swift run` has no bundle resources.
-        let image = NSImage(systemSymbolName: "memorychip", accessibilityDescription: "whoate")!
-        image.isTemplate = true
-        return image
+    /// The bundled template PDF (gallery styles A–C). launch.py wrapper bundles
+    /// have no resources; automation may name the PDF. `swift run`: nil.
+    static let logo: NSImage? = {
+        let bundled = Bundle.main.url(forResource: "menubar-template", withExtension: "pdf")
+        let url = bundled ?? WhoateApp.automation.menuBarIcon.map { URL(fileURLWithPath: $0) }
+        return url.flatMap(NSImage.init(contentsOf:))
     }()
+}
 
-    /// Menu bar labels are drawn as templates; colour needs a non-template image.
-    static func render(text: String, color: NSColor) -> NSImage {
-        let font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
-        let label = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
-        let iconSize = NSSize(width: 18, height: 14)
-        let size = NSSize(width: iconSize.width + 4 + ceil(label.size().width), height: 18)
-        let image = NSImage(size: size, flipped: false) { _ in
-            let tinted = icon.copy() as! NSImage
-            tinted.lockFocus()
-            color.set()
-            NSRect(origin: .zero, size: tinted.size).fill(using: .sourceAtop)
-            tinted.unlockFocus()
-            tinted.draw(in: NSRect(x: 0, y: (18 - iconSize.height) / 2, width: iconSize.width, height: iconSize.height))
-            label.draw(at: NSPoint(x: iconSize.width + 4, y: (18 - label.size().height) / 2))
-            return true
+/// Automation only (design-gallery): each alert style against each pressure,
+/// on a 24 pt strip in the bar material, as the owner compares them.
+struct MenuBarGallery: View {
+    let language: Language
+    private static let pressures: [(String, Pressure?)] = [
+        ("normal", .normal), ("warn", .warn), ("critical", .critical), ("no data", nil),
+    ]
+
+    var body: some View {
+        Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+            GridRow {
+                Text("")
+                ForEach(MenuBarItem.AlertStyle.allCases, id: \.self) { style in
+                    Text(Self.title(style)).font(.headline)
+                }
+            }
+            Divider().gridCellColumns(MenuBarItem.AlertStyle.allCases.count + 1)
+            ForEach(Array(Self.pressures.enumerated()), id: \.offset) { _, item in
+                let (name, pressure) = item
+                GridRow {
+                    Text(name).font(.callout).foregroundStyle(.secondary)
+                    ForEach(MenuBarItem.AlertStyle.allCases, id: \.self) { style in
+                        let host = pressure.map(Self.host)
+                        MenuBarLabel(label: MenuBarItem.label(host, style: style, language: language))
+                            .font(.body)
+                            .padding(.horizontal, 8)
+                            .frame(height: 24)
+                            .background(.bar, in: RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+            }
         }
-        image.isTemplate = false
-        return image
+        .padding(24)
+        .fixedSize()
+    }
+
+    static func title(_ style: MenuBarItem.AlertStyle) -> String {
+        switch style {
+        case .symbol: "A · symbol"
+        case .prefix: "B · ! prefix"
+        case .word: "C · word"
+        case .systemSymbol: "D · memorychip"
+        }
+    }
+
+    /// 41.2G used of 48G, as a decoded host (Host has no public memberwise init).
+    static func host(_ pressure: Pressure) -> WhoateKit.Host {
+        let json = #"{"mem_total_bytes":51539607552,"mem_used_bytes":44237000000,"compressed_bytes":9663676416,"#
+            + #""wired_bytes":5368709120,"swap_used_bytes":6442450944,"pressure":"\#(pressure.rawValue)"}"#
+        return try! JSONDecoder().decode(WhoateKit.Host.self, from: Data(json.utf8))
     }
 }
