@@ -179,7 +179,13 @@ pub fn report(report: &Report, catalog: &[Insight], lang: Language) -> String {
                     .unwrap_or_else(|| "missing".into())
             )
             .unwrap();
-            writeln!(out,"  {}: {} / {}; status={} cwd={} branch={} model={} cost={:?} confidence={:?} stale={}",safe(&a.tool),safe(a.name.as_deref().unwrap_or("unknown")),safe(a.title.as_deref().unwrap_or("unknown")),safe(a.status.as_deref().unwrap_or("unknown")),safe(a.cwd.as_deref().unwrap_or("unknown")),safe(a.branch.as_deref().unwrap_or("unknown")),safe(a.model.as_deref().unwrap_or("unknown")),a.cost_usd,a.confidence,a.stale).unwrap();
+            // A derived name is no longer the label (title is); keep it visible here.
+            let auto = if a.name_source.as_deref() == Some("derived") {
+                format!(" ({})", lang.choose("自动", "auto"))
+            } else {
+                String::new()
+            };
+            writeln!(out,"  {}: {}{} / {}; status={} cwd={} branch={} model={} cost={:?} confidence={:?} stale={}",safe(&a.tool),safe(a.name.as_deref().unwrap_or("unknown")),auto,safe(a.title.as_deref().unwrap_or("unknown")),safe(a.status.as_deref().unwrap_or("unknown")),safe(a.cwd.as_deref().unwrap_or("unknown")),safe(a.branch.as_deref().unwrap_or("unknown")),safe(a.model.as_deref().unwrap_or("unknown")),a.cost_usd,a.confidence,a.stale).unwrap();
             if let Some(s) = &a.first_prompt {
                 writeln!(out, "  first_prompt: {}", safe(s)).unwrap();
             }
@@ -290,6 +296,52 @@ pub fn report(report: &Report, catalog: &[Insight], lang: Language) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn phase08_derived_session_titles_the_owner_and_keeps_its_name_in_details() {
+        let mut r: Report = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/attribution/sample-v1.json"
+        ))
+        .unwrap();
+        let agent = r.owners[0].agent.as_mut().unwrap();
+        agent.name = Some("7-74".into());
+        agent.name_source = Some("derived".into());
+        agent.title = Some("X 数据流部署到 Claw 机器".into());
+        r.owners[0].label = whoate_core::attribute::agent_label(agent);
+        for (language, marker) in [(Language::En, "(auto)"), (Language::Zh, "(自动)")] {
+            let text = report(&r, &[], language);
+            let title = format!("\n{}  X 数据流部署到 Claw 机器  ", r.owners[0].id);
+            assert!(text.contains(&title), "{text}");
+            assert!(
+                text.contains(&format!(
+                    "  claude: 7-74 {marker} / X 数据流部署到 Claw 机器;"
+                )),
+                "{text}"
+            );
+        }
+        let manual: Report = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/attribution/sample-v1.json"
+        ))
+        .unwrap();
+        let text = report(&manual, &[], Language::En);
+        assert!(
+            text.contains("  claude: 展示会话 / 解释共享内存归因;"),
+            "{text}"
+        );
+        assert!(!text.contains("(auto)"));
+        let snap = whoate_core::snapshot::Snapshot::historical(r.taken_at.clone(), vec![]);
+        let redacted = crate::privacy::project(
+            &r,
+            &snap,
+            crate::privacy::Policy {
+                prompts: false,
+                redact: true,
+            },
+        );
+        assert_eq!(
+            redacted.owners[0].label, "claude",
+            "redact never leaks the title"
+        );
+    }
     #[test]
     fn phase04_render_unknown_cpu_control_characters_and_catalog_are_readable() {
         let mut r: Report = serde_json::from_str(include_str!(

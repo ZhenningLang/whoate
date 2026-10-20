@@ -342,6 +342,7 @@ mod tests {
             kernel_zones: None,
             gpu_memory: None,
             memory_diagnostics: None,
+            cpu: None,
             mem_total_bytes: 17179869184,
             mem_used_bytes: 8589934592,
             compressed_bytes: 1048576,

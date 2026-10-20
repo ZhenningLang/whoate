@@ -39,6 +39,7 @@ fn sampler_mock_replays_full_contract_and_local_timestamp() {
         kernel_zones: None,
         gpu_memory: None,
         memory_diagnostics: None,
+        cpu: None,
         mem_total_bytes: 1024,
         mem_used_bytes: 768,
         compressed_bytes: 64,

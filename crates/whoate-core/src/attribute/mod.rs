@@ -59,6 +59,21 @@ pub fn is_runtime(proc: &Proc) -> bool {
             .is_some_and(|v| !v.is_empty() && v.bytes().all(|b| b.is_ascii_digit() || b == b'.'))
 }
 
+/// Session display name. A name the tool derived itself (Claude Code's
+/// `7-74`) says less than the session title; a name the user chose wins.
+pub fn agent_label(agent: &Agent) -> String {
+    if agent.name_source.as_deref() == Some("derived")
+        && let Some(title) = agent.title.as_deref().filter(|t| !t.trim().is_empty())
+    {
+        return title.to_string();
+    }
+    agent
+        .name
+        .clone()
+        .or_else(|| agent.title.clone())
+        .unwrap_or_else(|| agent.tool.clone())
+}
+
 pub fn attribute(
     snap: &Snapshot,
     uid: u32,
@@ -162,11 +177,7 @@ pub fn attribute(
             (
                 format!("agent:{}:{key}", agent.tool),
                 OwnerKind::AgentSession,
-                agent
-                    .name
-                    .clone()
-                    .or_else(|| agent.title.clone())
-                    .unwrap_or_else(|| agent.tool.clone()),
+                agent_label(agent),
                 Some(agent.clone()),
             )
         } else if let Some(pane) = pane {

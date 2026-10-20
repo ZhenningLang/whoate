@@ -1,7 +1,7 @@
 /* C ABI smoke test for crates/whoate-ffi/include/whoate.h (QA3).
  * Compiled with -Wall -Werror against both the debug and release static
  * libraries. Usage:
- *   ffi_smoke [--tick-out FILE] [--why-out FILE] [--insights-out FILE]
+ *   ffi_smoke [--tick-out FILE] [--why-out FILE] [--insights-out FILE] [--host-out FILE]
  *   ffi_smoke --bench N      CPU time per tick, no sleeping between ticks
  *   ffi_smoke --fixture PATH debug library only: replay engine must open
  */
@@ -43,12 +43,13 @@ static double cpu_seconds(void) {
 }
 
 int main(int argc, char **argv) {
-    const char *tick_out = NULL, *why_out = NULL, *insights_out = NULL, *fixture = NULL;
+    const char *tick_out = NULL, *why_out = NULL, *insights_out = NULL, *host_out = NULL, *fixture = NULL;
     int bench = 0;
     for (int i = 1; i + 1 < argc; i += 2) {
         if (!strcmp(argv[i], "--tick-out")) tick_out = argv[i + 1];
         else if (!strcmp(argv[i], "--why-out")) why_out = argv[i + 1];
         else if (!strcmp(argv[i], "--insights-out")) insights_out = argv[i + 1];
+        else if (!strcmp(argv[i], "--host-out")) host_out = argv[i + 1];
         else if (!strcmp(argv[i], "--bench")) bench = atoi(argv[i + 1]);
         else if (!strcmp(argv[i], "--fixture")) fixture = argv[i + 1];
     }
@@ -74,6 +75,18 @@ int main(int argc, char **argv) {
     CHECK(host && strstr(host, "\"schema\":\"whoate/host-v1\"") && strstr(host, "\"mem_total_bytes\":"), "host_without_engine");
     CHECK(host && !strstr(host, "\"owners\""), "host_is_not_a_report");
     whoate_string_free(host);
+    /* Phase 08: host.cpu is the difference since the previous call. Tick
+     * counters advance in bursts, so poll up to 3 s for a call that spans ticks. */
+    char *again = NULL;
+    for (int i = 0; i < 15; i++) {
+        usleep(200000);
+        whoate_string_free(again);
+        again = whoate_host_json();
+        if (again && strstr(again, "\"status\":\"fresh\",\"usage_pct\":")) break;
+    }
+    CHECK(again && strstr(again, "\"status\":\"fresh\",\"usage_pct\":"), "host_later_call_cpu_fresh");
+    if (again) save(host_out, again);
+    whoate_string_free(again);
 
     WhoateEngine *engine = NULL;
 #ifdef WHOATE_DEBUG

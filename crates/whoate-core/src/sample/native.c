@@ -55,6 +55,18 @@ struct capture_host {
     int32_t pressure;
 };
 
+/* Cumulative CPU_STATE_{USER,SYSTEM,IDLE,NICE} ticks for the whole machine. */
+int capture_cpu_ticks(uint64_t out[4]) {
+    mach_port_t host = mach_host_self();
+    host_cpu_load_info_data_t info;
+    mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
+    kern_return_t status = host_statistics(host, HOST_CPU_LOAD_INFO, (host_info_t)&info, &count);
+    mach_port_deallocate(mach_task_self(), host);
+    if (status != KERN_SUCCESS || count != HOST_CPU_LOAD_INFO_COUNT) return EIO;
+    for (int i = 0; i < CPU_STATE_MAX; i++) out[i] = info.cpu_ticks[i];
+    return 0;
+}
+
 int capture_host(struct capture_host *out) {
     size_t size = sizeof(out->total);
     if (sysctlbyname("hw.memsize", &out->total, &size, NULL, 0)) return errno;

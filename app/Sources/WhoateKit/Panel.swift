@@ -19,19 +19,34 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var history: [HistoryPoint]
     /// Close is offered on actionable owner rows that are not protected.
     public var closable: Bool
+    /// Knowledge-base ids; their text comes from `Advice.lines`.
+    public var insights: [String] = []
 }
+
+/// The panel and main-window header: memory pressure, or whole-machine CPU.
+public struct Header: Equatable, Sendable {
+    public var headline: String
+    /// CPU mode only: load per core and how busy the machine is.
+    public var detail: String?
+}
+
+public enum CPULevel: Equatable, Sendable { case idle, moderate, busy }
 
 public enum Panel {
     public static let rowLimit = 5
 
     /// Owners and swarms mixed, by the chosen metric only. Unknown CPU sorts last.
-    public static func rows(_ report: Report, sort: SortKey, language: Language, limit: Int = rowLimit) -> [PanelRow] {
+    /// `histories` holds raw owner histories (AppModel); with it, an owner it
+    /// lacks gets no curve rather than the tick's gap-hiding downsampled one.
+    public static func rows(_ report: Report, sort: SortKey, language: Language, limit: Int = rowLimit,
+                            histories: [String: [HistoryPoint]]? = nil) -> [PanelRow] {
         let owners = report.owners.map { o in
             PanelRow(
-                id: o.id, source: .owner, title: o.label, memBytes: o.memBytes, cpuPct: o.cpuPct,
+                id: o.id, source: .owner, title: title(o), memBytes: o.memBytes, cpuPct: o.cpuPct,
                 subtitle: subtitle(o, language), level: o.verdict.level, pill: pill(o, language),
                 pillLevel: o.verdict.level == .ok && !o.insights.isEmpty && !isProtected(o) ? .watch : o.verdict.level,
-                history: o.history, closable: o.verdict.level == .act && !isProtected(o))
+                history: histories.map { $0[o.id] ?? [] } ?? o.history,
+                closable: o.verdict.level == .act && !isProtected(o), insights: o.insights)
         }
         let swarms = report.swarms.map { s in
             PanelRow(
@@ -95,9 +110,35 @@ public enum Panel {
         }
     }
 
+    /// A name the tool derived itself (`7-74`) gives way to the session title.
+    public static func title(_ o: Owner) -> String {
+        if let agent = o.agent, agent.nameSource == "derived",
+           let title = agent.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+        return o.label
+    }
+
+    /// Sessions: tool · tmux window (pane title) · directory · idle time, missing parts omitted.
+    public static func agentSubtitle(_ o: Owner, _ agent: Agent, _ language: Language) -> String {
+        var parts = [agent.tool]
+        if o.origin?.paneAlive == false {
+            parts.append(L10n.text(.paneClosed, language))
+        } else if let origin = o.origin, let window = origin.windowName ?? origin.tmuxPane {
+            parts.append(origin.paneTitle.map { "\(window) (\($0))" } ?? window)
+        }
+        if let cwd = o.origin?.cwd ?? agent.cwd, cwd != "/" {
+            parts.append(URL(fileURLWithPath: cwd).lastPathComponent)
+        }
+        if let idle = agent.idleSeconds {
+            parts.append(L10n.format(.idleFor, language, Format.duration(idle, language)))
+        }
+        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
     public static func subtitle(_ o: Owner, _ language: Language) -> String {
+        if let agent = o.agent { return agentSubtitle(o, agent, language) }
         var parts: [String] = []
-        if let agent = o.agent { parts.append(agent.tool) }
         if let origin = o.origin {
             if origin.paneAlive == false {
                 parts.append(L10n.text(.paneClosed, language))
@@ -127,6 +168,47 @@ public enum Panel {
 
     public static func abbreviate(_ path: String, home: String = NSHomeDirectory()) -> String {
         path == home ? "~" : path.hasPrefix(home + "/") ? "~" + path.dropFirst(home.count) : path
+    }
+
+    public static func header(_ host: Host?, sort: SortKey, _ language: Language) -> Header {
+        guard sort == .cpu else { return Header(headline: headline(host, language)) }
+        let cpu = host?.cpu
+        let headline = if let usage = cpu?.usagePct, cpu?.status == .fresh {
+            L10n.format(.cpuHeadline, language, Format.cpu(usage))
+        } else {
+            L10n.format(.cpuMissing, language, cpuReason(cpu?.reason, language))
+        }
+        var detail: [String] = []
+        if let load = cpu?.load1m {
+            let cores = cpu?.logicalCores.map(String.init) ?? "—"
+            detail.append(L10n.format(.cpuLoad, language, String(format: "%.2f", load), cores))
+        }
+        if let level = cpuLevel(cpu) {
+            detail.append(L10n.text(level == .busy ? .cpuBusy : level == .moderate ? .cpuModerate : .cpuIdle, language))
+        }
+        return Header(headline: headline, detail: detail.isEmpty ? nil : detail.joined(separator: " · "))
+    }
+
+    /// Busy: usage ≥ 85% or load ≥ 1.0 per core; fairly busy: ≥ 50% or ≥ 0.7.
+    /// Either signal alone decides when the other is missing; nil when both are.
+    public static func cpuLevel(_ cpu: HostCPU?) -> CPULevel? {
+        let usage = cpu?.status == .fresh ? cpu?.usagePct : nil
+        let perCore = cpu.flatMap { c in c.load1m.flatMap { l in c.logicalCores.flatMap { $0 > 0 ? l / Double($0) : nil } } }
+        guard usage != nil || perCore != nil else { return nil }
+        if (usage ?? 0) >= 85 || (perCore ?? 0) >= 1.0 { return .busy }
+        if (usage ?? 0) >= 50 || (perCore ?? 0) >= 0.7 { return .moderate }
+        return .idle
+    }
+
+    static func cpuReason(_ code: String?, _ language: Language) -> String {
+        switch code {
+        case "first_sample": L10n.text(.cpuReasonFirst, language)
+        case "counter_reset": L10n.text(.cpuReasonReset, language)
+        case "host_statistics_failed": L10n.text(.cpuReasonRead, language)
+        case "no_elapsed_ticks": L10n.text(.cpuReasonNoTicks, language)
+        case nil: L10n.text(.cpuReasonAbsent, language)
+        case let other?: other
+        }
     }
 
     public static func headline(_ host: Host?, _ language: Language) -> String {
@@ -175,5 +257,37 @@ public enum Panel {
     /// RFC 3339 with or without fractional seconds (the engine emits both).
     static func parseDate(_ text: String) -> Date? {
         fractional.date(from: text) ?? whole.date(from: text)
+    }
+}
+
+/// Knowledge-base text behind the panel's "N suggestions" pill.
+public enum Advice {
+    public struct Item: Equatable, Sendable {
+        public var id: String
+        public var cause: String?
+        public var advice: String?
+        public var source: String?
+    }
+
+    /// Loaded once from the library; the catalogue does not change at run time.
+    public static let catalog: [String: Insight] =
+        Dictionary(Engine.insights().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+
+    /// Unknown ids stay as bare ids.
+    public static func items(_ ids: [String], catalog: [String: Insight], language: Language) -> [Item] {
+        ids.map { id in
+            guard let entry = catalog[id] else { return Item(id: id) }
+            return Item(id: id, cause: entry.cause.text(language), advice: entry.advice.text(language), source: entry.source)
+        }
+    }
+
+    /// Tooltip and expanded text: cause and advice for each entry, then its source.
+    public static func lines(_ ids: [String], catalog: [String: Insight] = catalog, language: Language) -> String {
+        items(ids, catalog: catalog, language: language).map { item in
+            guard let cause = item.cause, let advice = item.advice else { return item.id }
+            var text = L10n.format(.adviceCause, language, cause) + "\n" + L10n.format(.adviceAdvice, language, advice)
+            if let source = item.source { text += "\n" + L10n.format(.adviceSource, language, source) }
+            return text
+        }.joined(separator: "\n\n")
     }
 }

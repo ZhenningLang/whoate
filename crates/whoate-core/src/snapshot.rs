@@ -100,6 +100,8 @@ pub struct Host {
     pub gpu_memory: Option<crate::sample::system_memory::GpuMemory>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memory_diagnostics: Option<Vec<crate::model::Verdict>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu: Option<crate::sample::host_cpu::HostCpu>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

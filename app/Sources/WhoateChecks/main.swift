@@ -2,7 +2,11 @@
 // swift-testing macro plugin fails to load in about half of the builds
 // (phases/05_gui HANDOFF). Exit status is non-zero on any failure or when no
 // check ran.
+import AppKit
 import Foundation
+
+// Some checks create real NSWindows; never show up as a foreground app.
+NSApplication.shared.setActivationPolicy(.accessory)
 
 nonisolated(unsafe) var failures: [String] = []
 nonisolated(unsafe) var skipReason: String?
@@ -50,6 +54,13 @@ var checks: [(String, () throws -> Void)] = [
     ("EnvironmentTests.languageOrderMatchesCore", EnvironmentTests.languageOrderMatchesCore),
     ("EnvironmentTests.pathIsAppendedNeverReplaced", EnvironmentTests.pathIsAppendedNeverReplaced),
     ("EnvironmentTests.automationIsInertUnlessEnabled", EnvironmentTests.automationIsInertUnlessEnabled),
+    ("Phase08Tests.derivedSessionsAreTitledAndSubtitledInOrder", Phase08Tests.derivedSessionsAreTitledAndSubtitledInOrder),
+    ("Phase08Tests.cpuHeaderShowsUsageLoadAndBusyness", Phase08Tests.cpuHeaderShowsUsageLoadAndBusyness),
+    ("Phase08Tests.adviceTextIsVisibleForEachEntry", Phase08Tests.adviceTextIsVisibleForEachEntry),
+    ("Phase08Tests.curveDrawsOnlyTheLatestContinuousRun", Phase08Tests.curveDrawsOnlyTheLatestContinuousRun),
+    ("Phase08Tests.automationTimersAreInertUnlessEnabled", Phase08Tests.automationTimersAreInertUnlessEnabled),
+    ("Phase08Tests.hostCpuDecodesAndMatchesTheSchema", Phase08Tests.hostCpuDecodesAndMatchesTheSchema),
+    ("Phase08Tests.englishTextHasNoCJK", Phase08Tests.englishTextHasNoCJK),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))
@@ -81,6 +92,10 @@ let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
     ("RefreshTests.nativeHostDecodesTheNewAbi", RefreshTests.nativeHostDecodesTheNewAbi),
     ("RefreshTests.oldCloseCannotOverwriteAReattachedVisibleWindow", RefreshTests.oldCloseCannotOverwriteAReattachedVisibleWindow),
     ("RefreshTests.visibleCadenceIncludesWorkRatherThanAddingTwoSeconds", RefreshTests.visibleCadenceIncludesWorkRatherThanAddingTwoSeconds),
+    ("Phase08Tests.panelAndMainWindowShareOneSort", Phase08Tests.panelAndMainWindowShareOneSort),
+    ("Phase08Tests.panelCurvesUseRawHistoryNotTheTickCopy", Phase08Tests.panelCurvesUseRawHistoryNotTheTickCopy),
+    ("Phase08Tests.mainWindowSwitchesPolicyAndIsRaisedNotDuplicated", { try Phase08Tests.mainWindowSwitchesPolicyAndIsRaisedNotDuplicated() }),
+    ("Phase08Tests.quitGoesThroughOneInjectedTerminate", { try Phase08Tests.quitGoesThroughOneInjectedTerminate() }),
 ]
 for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
     failures = []

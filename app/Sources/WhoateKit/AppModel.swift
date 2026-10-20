@@ -31,6 +31,11 @@ public final class AppModel {
     }
     public var close: CloseFlow = .idle
     public var selectedOwnerID: String?
+    /// Panel row whose advice text is expanded.
+    public var expandedAdvice: String?
+    /// Raw (not downsampled) history of the owners the panel can show, by owner id.
+    /// A tick's own history is capped at 60 evenly spaced points, which hides gaps.
+    public private(set) var histories: [String: [HistoryPoint]] = [:]
 
     @ObservationIgnored private var engine: (any RefreshEngine)?
     @ObservationIgnored private let makeEngine: @Sendable () -> (any RefreshEngine)?
@@ -70,7 +75,7 @@ public final class AppModel {
     }
 
     public var rows: [PanelRow] {
-        report.map { Panel.rows($0, sort: sort, language: language) } ?? []
+        report.map { Panel.rows($0, sort: sort, language: language, histories: histories) } ?? []
     }
 
     public func owner(_ id: String) -> Owner? { report?.owners.first { $0.id == id } }
@@ -165,7 +170,15 @@ public final class AppModel {
         guard running, revision == current else { return }
         switch decoded {
         case .value(let report):
+            // Either sort can be shown next; fetch both top lists (at most 2 × rowLimit owners).
+            let wanted = Set(SortKey.allCases.flatMap { Panel.rows(report, sort: $0, language: language) }.map(\.id))
+            let targets = report.owners.filter { wanted.contains($0.id) }.compactMap { o in o.pids.first.map { (o.id, $0) } }
+            let full = await Task.detached(priority: .utility) {
+                Dictionary(uniqueKeysWithValues: targets.compactMap { id, pid in engine.history(pid: pid, owner: id).map { (id, $0) } })
+            }.value
+            guard running, revision == current else { return }
             self.report = report
+            histories = full
             host = report.host
             if report.host != nil { hostTakenAt = report.takenAt }
             lastError = nil

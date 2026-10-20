@@ -209,6 +209,7 @@ mod scenarios {
                 kernel_zones: None,
                 gpu_memory: None,
                 memory_diagnostics: None,
+                cpu: None,
             });
             let mut memory = MemoryCache::missing("fixture");
             memory.kernel_zones.status = whoate_core::snapshot::Freshness::Fresh;
@@ -439,6 +440,7 @@ mod scenarios {
             kernel_zones: None,
             gpu_memory: None,
             memory_diagnostics: None,
+            cpu: None,
             mem_total_bytes: 2048,
             mem_used_bytes: 1024,
             compressed_bytes: 10,
@@ -714,6 +716,7 @@ mod scenarios {
                 reason: None,
             }),
             memory_diagnostics: None,
+            cpu: None,
         });
         for fresh in [false, true] {
             let mut snap = cached.clone();

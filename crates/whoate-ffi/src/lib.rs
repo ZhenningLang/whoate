@@ -13,7 +13,10 @@ use whoate_core::{
     engine::{Clock, Engine},
     kill::{self, Backend, Identity, KillPlan, KillStatus, MacBackend, PidResult},
     model::{HistoryPoint, Report},
-    sample::{SampleError, Sampler},
+    sample::{
+        SampleError, Sampler,
+        host_cpu::{CpuMeter, PlatformCpu},
+    },
     snapshot::Snapshot,
 };
 
@@ -128,10 +131,21 @@ fn host_json(sample: impl FnOnce() -> Result<whoate_core::snapshot::Host, Sample
     }
 }
 
+/// Previous whole-machine CPU reading for whoate_host_json; ticks keep their own.
+static HOST_CPU: Mutex<CpuMeter> = Mutex::new(CpuMeter::new(PlatformCpu));
+
 /// Independent lightweight projection; never constructs an Engine or sampler.
+/// host.cpu is the difference since the previous call (missing on the first).
 #[unsafe(no_mangle)]
 pub extern "C" fn whoate_host_json() -> *mut c_char {
-    guarded(|| host_json(whoate_core::sample::libproc::host))
+    guarded(|| {
+        host_json(|| {
+            let mut host = whoate_core::sample::libproc::host()?;
+            let mut meter = HOST_CPU.lock().unwrap_or_else(|e| e.into_inner());
+            host.cpu = Some(meter.sample());
+            Ok(host)
+        })
+    })
 }
 
 /// Equal spacing over the series, always ending at the newest point.

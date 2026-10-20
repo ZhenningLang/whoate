@@ -4,9 +4,12 @@
 The external observer is never a product child. The threshold includes live
 descendants plus reaped-child credits, measured over the same top window.
 Every run, including incomplete and failed runs, retains its raw evidence.
+The app is started through launch.py (its own LaunchServices coalition, never
+a child of this tmux pane); --binary may still be a bare executable path.
 """
 import argparse, ctypes, hashlib, json, math, os, platform, signal, subprocess, sys, threading, time
 from pathlib import Path
+import launch
 
 libproc = ctypes.CDLL("/usr/lib/libproc.dylib")
 libc = ctypes.CDLL("/usr/lib/libSystem.dylib")
@@ -159,7 +162,8 @@ def tree_delta(before, after, root):
 def top_samples(pid, count):
     try:
         completed = subprocess.run(["/usr/bin/top", "-l", str(count), "-s", "1", "-pid", str(pid), "-stats", "pid,cpu"],
-                                   capture_output=True, text=True, timeout=count + 30)
+                                   # A loaded machine takes ~1.5 s per frame (1000+ processes, measured).
+                                   capture_output=True, text=True, timeout=count * 3 + 30)
     except subprocess.TimeoutExpired as error:
         raw = error.stdout or b""
         if isinstance(raw, bytes): raw = raw.decode(errors="replace")
@@ -201,19 +205,18 @@ def main():
     ap.add_argument("--label", required=True)
     ap.add_argument("--warmup", type=float, default=5)
     ap.add_argument("--samples", type=int, default=61)
-    ap.add_argument("--env", action="append", default=[], help="KEY=VALUE for the app")
+    ap.add_argument("--env", action="append", default=[], help="KEY=VALUE for the app (its only variables "
+                    "besides launchd's HOME/USER/LOGNAME/TMPDIR/PATH)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=float, default=1.0)
     ap.add_argument("--report-only", action="store_true", help="visible CPU has no <1%% gate; accounting must still be valid")
     args = ap.parse_args()
 
-    env = dict(os.environ)
-    for item in args.env:
-        key, _, value = item.partition("=")
-        env[key] = value
+    # The caller's WHOATE_*/TMUX_TMPDIR/language settings reach the app as before; --env wins.
+    env = launch.inherited_env(os.environ, (item.partition("=")[::2] for item in args.env))
     if Path(args.out).exists():
         raise SystemExit("CPU_EVIDENCE_ALREADY_EXISTS: choose a new run path")
-    app = None
+    launcher, app = launch.Launcher(), None
     def interrupted(signum, frame):
         raise KeyboardInterrupt(f"signal={signum}")
     signal.signal(signal.SIGTERM, interrupted)
@@ -222,15 +225,17 @@ def main():
               "ncpu": os.cpu_count(), "limit": args.limit, "raw_top": None}
     try:
         result["binary_sha256"] = hashlib.sha256(Path(args.binary).read_bytes()).hexdigest()
-        app = subprocess.Popen([args.binary], env=env, stdin=subprocess.DEVNULL,
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        result["pid"] = app.pid
-        print(f"CPU_START label={args.label} pid={app.pid} warmup_s={args.warmup}", flush=True)
+        app = launcher.start(args.binary, env=env)
+        result["pid"] = app["pid"]
+        result["launch"] = {"isolation": app["isolation"], "bundle": app["bundle"], "pid": app["pid"]}
+        print(f"CPU_START label={args.label} pid={app['pid']} isolation={app['isolation']} "
+              f"warmup_s={args.warmup}", flush=True)
         warmup(args.warmup)
-        if app.poll() is not None:
-            raise ValueError(f"cpu_app_exited rc={app.returncode}")
-        before = tree_sample(app.pid)
+        if not launcher.alive(app):
+            raise ValueError("cpu_app_exited")
+        before = tree_sample(app["pid"])
         began = time.monotonic()
+        result["measure_started_epoch"] = time.time()
         timeline = [{"at": began, "tree": before}]
         failures = []
         gaps = []
@@ -238,15 +243,15 @@ def main():
         def observe():
             while not done.wait(1):
                 try:
-                    current = tree_sample(app.pid)
-                    tree_delta(timeline[-1]["tree"], current, app.pid)
-                    reconcile_gaps(gaps, current, app.pid, time.monotonic())
+                    current = tree_sample(app["pid"])
+                    tree_delta(timeline[-1]["tree"], current, app["pid"])
+                    reconcile_gaps(gaps, current, app["pid"], time.monotonic())
                     timeline.append({"at": time.monotonic(), "tree": current})
                 except TreeSnapshotError as error:
                     if error.children and error.parent is not None:
                         for child in error.children:
                             gaps.append(dict(child, at=time.monotonic(), parent_identity=error.parent["identity"],
-                                             credit_floor_ns=timeline[-1]["tree"][str(app.pid)]["child_ns"]))
+                                             credit_floor_ns=timeline[-1]["tree"][str(app["pid"])]["child_ns"]))
                         continue
                     failures.append(str(error))
                     return
@@ -256,7 +261,7 @@ def main():
         observer = threading.Thread(target=observe)
         observer.start()
         try:
-            values, raw = top_samples(app.pid, args.samples)
+            values, raw = top_samples(app["pid"], args.samples)
             elapsed = time.monotonic() - began
         finally:
             done.set()
@@ -265,13 +270,13 @@ def main():
             result["privileged_child_gaps"] = gaps
         # Save raw top before any subsequent fallible accounting check.
         result.update(samples=values, raw_top=raw, duration=elapsed, before=before)
-        after = tree_sample(app.pid)
+        after = tree_sample(app["pid"])
         result["after"] = after
         if failures: raise ValueError("cpu_timeline_invalid: " + failures[0])
-        tree_delta(timeline[-1]["tree"], after, app.pid)
-        if not reconcile_gaps(gaps, after, app.pid, time.monotonic()):
+        tree_delta(timeline[-1]["tree"], after, app["pid"])
+        if not reconcile_gaps(gaps, after, app["pid"], time.monotonic()):
             raise ValueError("unreconciled_privileged_child_gap")
-        own, children = tree_delta(before, after, app.pid)
+        own, children = tree_delta(before, after, app["pid"])
         child_pct = children / (elapsed * 1e9) * 100
         verdict = evaluate(values, args.samples, child_pct, args.limit)
         result.update(mean_excluding_first=verdict["mean"], rusage_self_pct=own / (elapsed * 1e9) * 100,
@@ -282,13 +287,10 @@ def main():
         result["error"] = str(error)
         if isinstance(error, TopFailure): result["raw_top"] = error.raw
     finally:
-        if app is not None and app.poll() is None:
-            app.send_signal(signal.SIGTERM)
-            try:
-                app.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                app.kill()
-                app.wait()
+        if app is not None:
+            # Only the resolved pid, only while its identity still matches.
+            result.setdefault("launch", {})["stop"] = launcher.stop(app)
+            launch.cleanup(app)
         with open(args.out, "x") as f:
             json.dump(result, f, indent=1)
     print(f"CPU {args.label} self={result.get('mean_excluding_first')}% "

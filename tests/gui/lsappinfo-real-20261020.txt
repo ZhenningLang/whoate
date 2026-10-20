@@ -1,0 +1,36 @@
+# Real `lsappinfo list` entries from this Mac, 2026-10-20 (owner ruling 16:14).
+# Each entry verbatim, read at the time noted below (two separate reads),
+# except: /Users/<user> replaced by ~ (project anonymisation rule).
+# tmux server pids at capture: 13921, 32509.
+# - 64634 "whoate", read 12:30: exited-with-subordinates; its related coalition
+#   3801 was the tmux server's coalition before the 11:17 force quit (48961 and
+#   48968 are tmux pane processes that survived it, checked with proc_pidinfo).
+# - 19641 "WhoateChecks", read 12:30: exited-with-subordinates, left by the
+#   Phase 09 verify that ran it bare in a tmux pane.
+# - 35264 "Ghostty", read 16:15: relatedCoalitionPIDs contains tmux server 13921.
+# The post-exit residue is covered only by this text, not by a live run.
+81) "whoate" ASN:0x0-0x1412411: 
+    bundleID="io.github.zhenninglang.whoate"
+    bundle path="~/Projects/whoate-docs-design-lr-whoate-v1-per-software-process-attribution/dist/whoate.app"
+    executable path="~/Projects/whoate-docs-design-lr-whoate-v1-per-software-process-attribution/dist/whoate.app/Contents/MacOS/Whoate"
+    pid = 64634 token=[sess=100017 pid=64634 uid:501,501,501 g:20,20 pV:13715574] type="UIElement" flavor=3 Version="0.1.0" fileType="APPL" creator="????" Arch=ARM64 (exited-with-subordinates) 
+    coalition: 124656    relatedCoalitionIDs: ( 3801)  relatedCoalitionPIDs: ( 48961, 48968)
+    launch time =  2026/10/19 11:25:35 ( 1 days, 1 hours, 4 minutes, 33.6646 seconds ago )
+    checkin time = 2026/10/19 11:25:35 ( 1 days, 1 hours, 4 minutes, 33.5822 seconds ago )
+    launch to checkin time: 0.0824013 seconds
+107) "WhoateChecks" ASN:0x0-0x1f2ff2e: 
+    bundleID=[ NULL ] 
+    bundle path="~/Projects/whoate-docs-design-lr-whoate-v1-per-software-process-attribution/app/.build/out/Products/Debug/WhoateChecks"
+    executable path="~/Projects/whoate-docs-design-lr-whoate-v1-per-software-process-attribution/app/.build/debug/WhoateChecks"
+    pid = 19641 token=[sess=100017 pid=19641 uid:501,501,501 g:20,20 pV:22752043] !signalled type="BackgroundOnly" flavor=3 Version=[ NULL ]  fileType="????" creator="????" Arch=ARM64 (exited-with-subordinates) 
+    checkin time = 2026/10/20 04:04:18 ( 8 hours, 25 minutes, 50.6323 seconds ago )
+107) "Ghostty" ASN:0x0-0x211e11c: (in front) 
+    bundleID="com.mitchellh.ghostty"
+    bundle path="/Applications/Ghostty.app"
+    executable path="/Applications/Ghostty.app/Contents/MacOS/ghostty"
+    pid = 35264 token=[sess=100017 pid=35264 uid:501,501,501 g:20,20 pV:24113796] type="Foreground" flavor=3 Version="15212" fileType="APPL" creator="????" Arch=ARM64 
+    coalition: 167525  { 35264 35361 35372 45422 53965 }    relatedCoalitionIDs: ( 3946)  relatedCoalitionPIDs: ( 8177, 13921, 15690, 21570, 21608, 21650, 21749, 21790, 21845, 21900, 21960, 22014, 22058, 22111, 22155, 22198, 22255, 22308, 22358, 22412, 27124, 27132, 27139, 27164, 27194, 27220, 27231, 27244, 27264, 27303, 27312, 27318, 27540, 29081, 29272, 29425, 29471, 29650, 29690, 29702, 29715, 29857, 30162, 30182, 30186, 30194, 30196, 30199, 30959, 31360, 31439, 31441, 31443, 32169, 56545, 56589, 56608, 56670, 56671, 61555, 61558, 61585, 61586, 64646, 64648, 71632, 71633, 71715, 71716, 89804, 89817, 89822, 92916, 97471, 98037, 98049, 98247, 98447, 98477, 98478)
+    parentASN="程序坞" ASN:0x0-0x14af4ae: 
+    launch time =  2026/10/20 11:20:01 ( 4 hours, 55 minutes, 41.4247 seconds ago )
+    checkin time = 2026/10/20 11:20:01 ( 4 hours, 55 minutes, 41.2372 seconds ago )
+    launch to checkin time: 0.187468 seconds

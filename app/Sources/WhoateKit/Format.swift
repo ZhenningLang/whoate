@@ -40,25 +40,42 @@ public enum Format {
         }
     }
 
-    /// Points scaled into a width×height box, newest at the right edge.
-    /// Gaps (missing seconds) are kept as separate segments, never bridged.
-    public static func sparkline(_ points: [HistoryPoint], width: Double, height: Double) -> [[(x: Double, y: Double)]] {
-        guard let first = points.first, let last = points.last else { return [] }
-        var lo = Double(points.map(\.memBytes).min()!), hi = Double(points.map(\.memBytes).max()!)
+    public enum Trend: Equatable, Sendable {
+        /// Points scaled into the box, oldest at x=0 and newest at the right edge.
+        case line([Point])
+        /// The latest continuous run is shorter than `minimumSpan`: show text, not a curve.
+        case insufficient
+    }
+    public struct Point: Equatable, Sendable {
+        public var x: Double, y: Double
+        public init(x: Double, y: Double) { self.x = x; self.y = y }
+    }
+    public static let minimumSpan: Int64 = 30
+    /// Raw history has one point per visible refresh (2 s); a wider gap than
+    /// 3 × 2 s (at least 10 s) means the owner was not being sampled.
+    public static let gapLimit: Int64 = 10
+
+    /// Only the latest continuous run of raw history (AppModel.histories, never a
+    /// tick's downsampled copy) is drawn; older or isolated points are never joined.
+    public static func trend(_ points: [HistoryPoint], width: Double, height: Double) -> Trend {
+        let run = latestRun(points)
+        guard let first = run.first, let last = run.last, last.timestampS - first.timestampS >= minimumSpan else {
+            return .insufficient
+        }
+        var lo = Double(run.map(\.memBytes).min()!), hi = Double(run.map(\.memBytes).max()!)
         // Changes under 5% of the value stay visually flat instead of filling the box.
         let floor = hi * 0.05
         if hi - lo < floor { (lo, hi) = ((lo + hi - floor) / 2, (lo + hi + floor) / 2) }
-        let span = Double(max(last.timestampS - first.timestampS, 1))
-        let gapLimit = max(span / Double(max(points.count - 1, 1)) * 3, 2)
-        var segments: [[(x: Double, y: Double)]] = [[]]
-        var previous: Int64?
-        for p in points {
-            if let previous, Double(p.timestampS - previous) > gapLimit { segments.append([]) }
-            previous = p.timestampS
-            let x = points.count == 1 ? width : Double(p.timestampS - first.timestampS) / span * width
-            let y = hi > lo ? height - (Double(p.memBytes) - lo) / (hi - lo) * height : height / 2
-            segments[segments.count - 1].append((x, y))
-        }
-        return segments.filter { !$0.isEmpty }
+        let span = Double(last.timestampS - first.timestampS)
+        return .line(run.map { p in
+            Point(x: Double(p.timestampS - first.timestampS) / span * width,
+                  y: hi > lo ? height - (Double(p.memBytes) - lo) / (hi - lo) * height : height / 2)
+        })
+    }
+
+    static func latestRun(_ points: [HistoryPoint]) -> [HistoryPoint] {
+        guard var start = points.indices.last else { return [] }
+        while start > 0, points[start].timestampS - points[start - 1].timestampS <= gapLimit { start -= 1 }
+        return Array(points[start...])
     }
 }

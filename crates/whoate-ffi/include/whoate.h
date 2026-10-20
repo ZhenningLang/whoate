@@ -18,11 +18,14 @@ typedef struct WhoateEngine WhoateEngine;
 WhoateEngine *whoate_engine_new(void);
 
 /* whoate/v1 report. Each owner's history holds at most 60 evenly spaced
- * points ending at the newest one. */
+ * points ending at the newest one. host.cpu is whole-machine CPU since the
+ * previous sample. */
 char *whoate_engine_tick(WhoateEngine *engine);
 
 /* Independent host projection: {"schema":"whoate/host-v1","taken_at", "host"}.
- * No engine, process enumeration, session reads or worker creation. */
+ * No engine, process enumeration, session reads or worker creation.
+ * host.cpu {status, usage_pct, load_1m, logical_cores, reason} differs from
+ * the previous whoate_host_json call; the first call is status "missing". */
 char *whoate_host_json(void);
 
 /* active=0 cancels/joins owned workers; 1 permits restart. Retains report/history.

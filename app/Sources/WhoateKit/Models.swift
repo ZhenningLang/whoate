@@ -59,12 +59,25 @@ public struct Host: Decodable, Sendable, Equatable {
     public var kernelZones: KernelZones?
     public var gpuMemory: GpuMemory?
     public var memoryDiagnostics: [Verdict]?
+    public var cpu: HostCPU?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case memTotalBytes = "mem_total_bytes", memUsedBytes = "mem_used_bytes"
         case compressedBytes = "compressed_bytes", wiredBytes = "wired_bytes"
         case swapUsedBytes = "swap_used_bytes", pressure
         case kernelZones = "kernel_zones", gpuMemory = "gpu_memory"
-        case memoryDiagnostics = "memory_diagnostics"
+        case memoryDiagnostics = "memory_diagnostics", cpu
+    }
+}
+
+/// Whole-machine CPU since the previous sample. usage is 0–100 of all cores.
+public struct HostCPU: Decodable, Sendable, Equatable {
+    public var status: Freshness
+    public var usagePct: Double?
+    public var load1m: Double?
+    public var logicalCores: Int?
+    public var reason: String?
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case status, usagePct = "usage_pct", load1m = "load_1m", logicalCores = "logical_cores", reason
     }
 }
 

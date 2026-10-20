@@ -1,0 +1,536 @@
+{
+ "schema": "whoate/v1",
+ "taken_at": "2026-10-14T19:40:00+08:00",
+ "host": {
+  "mem_total_bytes": 17179869184,
+  "mem_used_bytes": 8589934592,
+  "compressed_bytes": 1073741824,
+  "wired_bytes": 2147483648,
+  "swap_used_bytes": 0,
+  "pressure": "normal",
+  "cpu": {
+   "status": "fresh",
+   "usage_pct": 37.5,
+   "load_1m": 4.2,
+   "logical_cores": 12,
+   "reason": null
+  }
+ },
+ "system_procs": {
+  "status": "missing",
+  "as_of": null
+ },
+ "owners": [
+  {
+   "id": "orphan:4242",
+   "kind": "orphan",
+   "label": "wrangler (node)",
+   "mem_bytes": 10415000000,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.4,
+   "pids": [
+    4242
+   ],
+   "origin": {
+    "tmux_pane": "%9",
+    "pane_alive": false,
+    "cwd": "/srv/app",
+    "ports": [
+     8787
+    ]
+   },
+   "agent": null,
+   "evidence": [],
+   "parts": [],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1791978000,
+     "mem_bytes": 10000000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978002,
+     "mem_bytes": 10014000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978004,
+     "mem_bytes": 10028000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978006,
+     "mem_bytes": 10042000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978008,
+     "mem_bytes": 10056000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978010,
+     "mem_bytes": 10070000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978012,
+     "mem_bytes": 10084000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978014,
+     "mem_bytes": 10098000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978016,
+     "mem_bytes": 10112000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978018,
+     "mem_bytes": 10126000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978020,
+     "mem_bytes": 10140000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978022,
+     "mem_bytes": 10154000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978024,
+     "mem_bytes": 10168000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978026,
+     "mem_bytes": 10182000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978028,
+     "mem_bytes": 10196000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978030,
+     "mem_bytes": 10210000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978032,
+     "mem_bytes": 10224000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978034,
+     "mem_bytes": 10238000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978036,
+     "mem_bytes": 10252000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978038,
+     "mem_bytes": 10266000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978040,
+     "mem_bytes": 10280000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978042,
+     "mem_bytes": 10294000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978044,
+     "mem_bytes": 10308000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978046,
+     "mem_bytes": 10322000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978048,
+     "mem_bytes": 10336000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978050,
+     "mem_bytes": 10350000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978052,
+     "mem_bytes": 10364000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978054,
+     "mem_bytes": 10378000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978056,
+     "mem_bytes": 10392000000,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1791978058,
+     "mem_bytes": 10406000000,
+     "cpu_pct": 0.4
+    }
+   ],
+   "verdict": {
+    "level": "act",
+    "rule": "orphan-dev-server",
+    "text": "Orphan dev server",
+    "action": null
+   }
+  },
+  {
+   "id": "agent:claude:demo-session",
+   "kind": "agent_session",
+   "label": "展示会话 / Demo session",
+   "mem_bytes": 1572864000,
+   "unknown_mem_count": 0,
+   "cpu_pct": 12.5,
+   "pids": [
+    900001,
+    900002,
+    900003,
+    900004,
+    900005,
+    900006,
+    900007,
+    900008,
+    900009,
+    900010,
+    900011,
+    900012,
+    900013,
+    900014,
+    900015,
+    900016,
+    900017,
+    900018,
+    900019,
+    900020,
+    900021
+   ],
+   "origin": {
+    "tmux_pane": "%demo",
+    "pane_alive": true,
+    "cwd": "~/demo",
+    "ports": []
+   },
+   "agent": {
+    "tool": "claude",
+    "session_id": "demo-session",
+    "name": "展示会话",
+    "name_source": "manual",
+    "title": "解释共享内存归因",
+    "first_prompt": "请解释这些进程属于谁。",
+    "first_reply": "我会先核对进程树与会话证据。",
+    "status": "working",
+    "cwd": "~/demo",
+    "branch": "demo",
+    "model": "example-model",
+    "cost_usd": 0.25,
+    "confidence": "certain",
+    "updated_at_ms": 1791978000000,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%demo",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "claude",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "Session",
+     "mem_bytes": 524288000,
+     "process_count": 1,
+     "pids": [
+      900001
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "MCP: demo-service",
+     "mem_bytes": 1048576000,
+     "process_count": 20,
+     "pids": [
+      900002,
+      900003,
+      900004,
+      900005,
+      900006,
+      900007,
+      900008,
+      900009,
+      900010,
+      900011,
+      900012,
+      900013,
+      900014,
+      900015,
+      900016,
+      900017,
+      900018,
+      900019,
+      900020,
+      900021
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [
+    {
+     "key": "sample",
+     "label": "展示样例 / Handwritten example",
+     "value": "Not a live observation"
+    }
+   ],
+   "insights": [
+    "demo.insight"
+   ],
+   "history": [
+    {
+     "timestamp_s": 1791978000,
+     "mem_bytes": 900000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978002,
+     "mem_bytes": 901000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978004,
+     "mem_bytes": 902000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978006,
+     "mem_bytes": 903000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978008,
+     "mem_bytes": 904000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978010,
+     "mem_bytes": 905000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978012,
+     "mem_bytes": 906000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978014,
+     "mem_bytes": 907000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978016,
+     "mem_bytes": 908000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978018,
+     "mem_bytes": 909000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978020,
+     "mem_bytes": 910000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978022,
+     "mem_bytes": 911000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978024,
+     "mem_bytes": 912000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978026,
+     "mem_bytes": 913000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978028,
+     "mem_bytes": 914000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978030,
+     "mem_bytes": 915000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978032,
+     "mem_bytes": 916000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978034,
+     "mem_bytes": 917000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978036,
+     "mem_bytes": 918000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978038,
+     "mem_bytes": 919000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978040,
+     "mem_bytes": 920000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978042,
+     "mem_bytes": 921000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978044,
+     "mem_bytes": 922000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978046,
+     "mem_bytes": 923000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978048,
+     "mem_bytes": 924000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978050,
+     "mem_bytes": 925000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978052,
+     "mem_bytes": 926000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978054,
+     "mem_bytes": 927000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978056,
+     "mem_bytes": 928000000,
+     "cpu_pct": 1.0
+    },
+    {
+     "timestamp_s": 1791978058,
+     "mem_bytes": 929000000,
+     "cpu_pct": 1.0
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  }
+ ],
+ "swarms": [
+  {
+   "signature": "service:demo-service",
+   "label": "demo-service",
+   "count": 20,
+   "mem_bytes": 1048576000,
+   "unknown_mem_count": 0,
+   "cpu_pct": 2.5,
+   "shape": "burst",
+   "owners": [
+    {
+     "id": "agent:claude:demo-session",
+     "count": 20
+    }
+   ],
+   "parents": [
+    900001
+   ],
+   "started_span_s": 5.0,
+   "pids": [
+    900002,
+    900003,
+    900004,
+    900005,
+    900006,
+    900007,
+    900008,
+    900009,
+    900010,
+    900011,
+    900012,
+    900013,
+    900014,
+    900015,
+    900016,
+    900017,
+    900018,
+    900019,
+    900020,
+    900021
+   ],
+   "evidence": [
+    {
+     "kind": "synthetic_sample",
+     "detail": "Handwritten demo, not observed",
+     "confidence": "weak"
+    }
+   ],
+   "verdict": {
+    "level": "act",
+    "rule": "swarm-burst",
+    "text": "同一父进程拉起 20 个相同服务，疑似失控",
+    "action": "whoate kill 900002 900003 900004 900005 900006 900007 900008 900009 900010 900011 900012 900013 900014 900015 900016 900017 900018 900019 900020 900021"
+   }
+  }
+ ],
+ "issues": []
+}

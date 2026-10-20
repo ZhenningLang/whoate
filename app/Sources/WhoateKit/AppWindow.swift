@@ -1,0 +1,113 @@
+// Activation policy, "show main window" and quit. whoate is a menu bar tool
+// (LSUIElement, accessory policy); while a main window is open it becomes a
+// regular app so the window is reachable from the Dock and ⌘Tab. Nothing here
+// depends on what the main window shows.
+import AppKit
+import Observation
+import SwiftUI
+
+public enum WindowPolicy {
+    public static func activation(mainWindows: Int) -> NSApplication.ActivationPolicy {
+        mainWindows > 0 ? .regular : .accessory
+    }
+
+    public enum OpenAction: Equatable, Sendable { case bringToFront, create }
+
+    /// An existing main window is raised; a second one is never created.
+    public static func open(mainWindowExists: Bool) -> OpenAction {
+        mainWindowExists ? .bringToFront : .create
+    }
+
+    public static func openLabel(mainWindowExists: Bool, _ language: Language) -> String {
+        L10n.text(mainWindowExists ? .showMain : .openWhoate, language)
+    }
+}
+
+/// The one quit path for the panel button, ⌘Q and automation.
+public struct QuitAction: Sendable {
+    private let terminate: @MainActor @Sendable () -> Void
+    public init(terminate: @escaping @MainActor @Sendable () -> Void = { NSApplication.shared.terminate(nil) }) {
+        self.terminate = terminate
+    }
+    @MainActor public func callAsFunction() { terminate() }
+}
+
+/// Tracks open main windows and applies the activation policy when their count
+/// changes. `apply` is injected so tests can observe it without a real app.
+@MainActor @Observable
+public final class MainWindows {
+    public private(set) var count = 0
+    @ObservationIgnored private var windows: [ObjectIdentifier: (window: NSWindow, token: NSObjectProtocol)] = [:]
+    @ObservationIgnored private let apply: @MainActor (NSApplication.ActivationPolicy) -> Void
+
+    public init(apply: @escaping @MainActor (NSApplication.ActivationPolicy) -> Void = MainWindows.applyToApp) {
+        self.apply = apply
+    }
+
+    public static func applyToApp(_ policy: NSApplication.ActivationPolicy) {
+        guard NSApp.activationPolicy() != policy else { return }
+        NSApp.setActivationPolicy(policy)
+        if policy == .regular { NSApp.activate(ignoringOtherApps: true) }
+    }
+
+    public var exists: Bool { count > 0 }
+    public var all: [NSWindow] { windows.values.map(\.window) }
+
+    public func register(_ window: NSWindow) {
+        let id = ObjectIdentifier(window)
+        guard windows[id] == nil else { return }
+        // Explicit: deactivation must never hide the main window.
+        window.hidesOnDeactivate = false
+        let token = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.closed(id) }
+        }
+        windows[id] = (window, token)
+        changed()
+    }
+
+    func closed(_ id: ObjectIdentifier) {
+        guard let entry = windows.removeValue(forKey: id) else { return }
+        NotificationCenter.default.removeObserver(entry.token)
+        changed()
+    }
+
+    /// Raises the existing main window; false when there is none.
+    @discardableResult public func bringToFront() -> Bool {
+        guard let window = windows.values.first?.window else { return false }
+        apply(.regular)
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return true
+    }
+
+    public func closeAll() { all.forEach { $0.close() } }
+
+    private func changed() {
+        count = windows.count
+        apply(WindowPolicy.activation(mainWindows: count))
+    }
+}
+
+/// Reports the NSWindow hosting a view, once it has one.
+public struct WindowReporter: NSViewRepresentable {
+    private let found: @MainActor (NSWindow) -> Void
+    public init(found: @escaping @MainActor (NSWindow) -> Void) { self.found = found }
+    public func makeNSView(context: Context) -> ReporterView { ReporterView(found: found) }
+    public func updateNSView(_ view: ReporterView, context: Context) {}
+
+    @MainActor public final class ReporterView: NSView {
+        private let found: @MainActor (NSWindow) -> Void
+        init(found: @escaping @MainActor (NSWindow) -> Void) {
+            self.found = found
+            super.init(frame: .zero)
+        }
+        required init?(coder: NSCoder) { fatalError("init(coder:) unavailable") }
+        public override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let window { found(window) }
+        }
+    }
+}

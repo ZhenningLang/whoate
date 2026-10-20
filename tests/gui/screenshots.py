@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """QA17 (Phase 05a part): panel view and close confirmation, light and dark.
 
-Runs the bundled app with WHOATE_UI_AUTOMATION=panel-window against the live
-engine (read-only), reads the window number the app writes, and captures it
+Runs the bundled app (through launch.py, never a bare exec) with
+WHOATE_UI_AUTOMATION=panel-window against the live engine (read-only), reads
+the window number the app writes, and captures it
 with `screencapture -l<id> -x -o`. Checks: PNG exists, size equals window size
 times backing scale, not a solid colour, dark is darker than light, the
 window belongs to the process this script started, and the confirm shots
@@ -11,6 +12,7 @@ means macOS denied screen recording to this terminal: report
 `blocked screen-recording-permission`.
 """
 import json, os, struct, subprocess, sys, tempfile, time, zlib
+import launch
 
 SHOTS = [("panel", None), ("confirm", "first")]
 
@@ -61,12 +63,13 @@ def stats(path):
 
 def capture(binary, out_dir, name, appearance, confirm, language):
     window_file = tempfile.mktemp(prefix="whoate-window-")
-    env = dict(os.environ, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_APPEARANCE=appearance,
-               WHOATE_UI_WINDOW_FILE=window_file, LC_ALL=language)
+    env = launch.inherited_env(overrides=dict(
+        WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_APPEARANCE=appearance,
+        WHOATE_UI_WINDOW_FILE=window_file, LC_ALL=language))
     if confirm:
         env["WHOATE_UI_CONFIRM"] = confirm
-    app = subprocess.Popen([binary], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL)
+    launcher = launch.Launcher()
+    app = launcher.start(binary, env=env)
     try:
         for _ in range(300):
             if os.path.exists(window_file):
@@ -75,8 +78,8 @@ def capture(binary, out_dir, name, appearance, confirm, language):
         else:
             raise SystemExit(f"QA17_WINDOW_FILE_MISSING {name}")
         _, number, width, height, scale, pid, target = open(window_file).read().rstrip("\n").split("\t")
-        if int(pid) != app.pid:
-            raise SystemExit(f"QA17_WINDOW_NOT_OURS {name} pid={pid} launched={app.pid}")
+        if int(pid) != app["pid"]:
+            raise SystemExit(f"QA17_WINDOW_NOT_OURS {name} pid={pid} launched={app['pid']}")
         if (target != "-") != bool(confirm):
             raise SystemExit(f"QA17_CONFIRM_STATE_WRONG {name} confirm={confirm} open_for={target}")
         png = os.path.join(out_dir, f"{name}-{appearance}.png")
@@ -87,13 +90,13 @@ def capture(binary, out_dir, name, appearance, confirm, language):
             sys.exit(77)
         s = stats(png)
         expected = (round(int(width) * float(scale)), round(int(height) * float(scale)))
-        s.update(name=name, appearance=appearance, file=png, window=int(number), pid=app.pid, confirm_owner=target,
+        s.update(name=name, appearance=appearance, file=png, window=int(number), pid=app["pid"], confirm_owner=target,
                  expected_size=expected, size_ok=(s["width"], s["height"]) == expected,
                  not_solid=s["distinct_colours"] > 8, source="live engine (real machine, read-only)")
         return s
     finally:
-        app.terminate()
-        app.wait(timeout=10)
+        launcher.stop(app)
+        launch.cleanup(app)
         if os.path.exists(window_file):
             os.remove(window_file)
 

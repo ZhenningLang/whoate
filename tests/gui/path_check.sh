@@ -2,7 +2,9 @@
 # QA12: launchd-style PATH. A pane on a private tmux server (temporary
 # TMUX_TMPDIR, never the default server) must appear in the bundled app's
 # dump-tick only when the app repairs PATH; the control run proves the test
-# can fail. Usage: tests/gui/path_check.sh <Whoate executable> <evidence dir>
+# can fail. The app starts through launch.py (own coalition, launchd-style
+# environment), never as a child of this shell.
+# Usage: tests/gui/path_check.sh <Whoate executable> <evidence dir>
 set -euo pipefail
 exec </dev/null
 binary=$1
@@ -21,10 +23,12 @@ env -i TMUX_TMPDIR="$tmp" "$tmux_bin" new-session -d -s whoatepath "/bin/sleep 6
 pane=$(env -i TMUX_TMPDIR="$tmp" "$tmux_bin" list-panes -a -F '#{pane_id}' | head -1)
 [[ $pane =~ ^%[0-9]+$ ]] || { echo "QA12_PANE_MISSING"; exit 1; }
 
+launcher="$(cd "$(dirname "$0")" && pwd)/launch.py"
 run() {
-    env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin HOME="$tmp/home" TMUX_TMPDIR="$tmp" \
-        WHOATE_HOME_OVERRIDE="$tmp/home" WHOATE_CACHE_DIR="$tmp/cache" WHOATE_RULES="$tmp/rules.toml" \
-        WHOATE_UI_AUTOMATION="$1" "$binary" >"$2"
+    python3 -B "$launcher" run "$binary" --timeout 120 --env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+        --env HOME="$tmp/home" --env TMUX_TMPDIR="$tmp" --env WHOATE_HOME_OVERRIDE="$tmp/home" \
+        --env WHOATE_CACHE_DIR="$tmp/cache" --env WHOATE_RULES="$tmp/rules.toml" \
+        --env WHOATE_UI_AUTOMATION="$1" >"$2"
 }
 run dump-tick "$out/dump-tick.json"
 run dump-tick,no-path-repair "$out/dump-tick-control.json"

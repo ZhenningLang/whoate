@@ -2,6 +2,7 @@
 use super::{
     SampleError, SampleResult, Sampler,
     cache::{self, CachedProc, SlowSource, SystemCache, Worker},
+    host_cpu::CpuMeter,
     ports, sysctl, tmux, top,
 };
 use crate::snapshot::{Proc, SampleIssue, Snapshot};
@@ -400,6 +401,7 @@ fn issue(issues: &mut BTreeMap<(&'static str, String), usize>, error: SampleErro
 pub struct MacSampler {
     worker: Worker,
     arguments: Vec<u8>,
+    cpu: CpuMeter,
 }
 impl MacSampler {
     pub fn new() -> SampleResult<Self> {
@@ -416,6 +418,7 @@ impl MacSampler {
         Ok(Self {
             worker: Worker::start(path, source),
             arguments,
+            cpu: CpuMeter::default(),
         })
     }
     pub fn cache_state(&self) -> cache::CacheState {
@@ -426,6 +429,9 @@ impl MacSampler {
 impl Sampler for MacSampler {
     fn set_active(&mut self, active: bool) {
         self.worker.set_active(active);
+        if !active {
+            self.cpu.reset();
+        }
     }
     fn sample(&mut self) -> SampleResult<Snapshot> {
         let taken_at = sysctl::now_timestamp()?;
@@ -478,6 +484,7 @@ impl Sampler for MacSampler {
             }
         }
         let mut host = host()?;
+        host.cpu = Some(self.cpu.sample());
         self.worker.memory().merge(&mut host, now);
         let cache = self.worker.state();
         cache.merge(&mut procs, now);

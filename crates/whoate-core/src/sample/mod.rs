@@ -35,6 +35,7 @@ pub trait Sampler {
 pub mod cache;
 pub mod command;
 pub mod fixture;
+pub mod host_cpu;
 pub mod libproc;
 pub mod ports;
 pub mod sysctl;

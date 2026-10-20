@@ -1,3 +1,5 @@
+import contextlib
+import io
 import unittest
 import json
 from pathlib import Path
@@ -93,6 +95,39 @@ class MeterTests(unittest.TestCase):
             receipt = json.loads(output.read_text())
             self.assertFalse(receipt["pass"])
             self.assertIn("error", receipt)
+
+class CallerEnvironmentTests(unittest.TestCase):
+    # P09 verify_driver passes its settings in the process environment, not --env.
+    def test_caller_test_environment_reaches_the_app_and_tmux_does_not(self):
+        seen = {}
+
+        class Recorder:
+            def start(self, target, env=None, **_):
+                seen.update(env)
+                raise meter.launch.LaunchError("recorded")
+
+            def stop(self, handle):
+                return "unused"
+
+        parent = {"WHOATE_UI_AUTOMATION": "panel-window", "WHOATE_UI_SCHEDULE_LOG": "/private/t/schedule",
+                  "WHOATE_CACHE_DIR": "/private/t/cache", "TMUX_TMPDIR": "/private/t/tmux", "LC_ALL": "en_US.UTF-8",
+                  "TMUX": "/private/tmp/tmux-501/default,13921,0", "TMUX_PANE": "%3", "SECRET_TOKEN": "x"}
+        with tempfile.TemporaryDirectory(prefix="whoate-meter-") as directory, \
+                patch.dict(meter.os.environ, parent, clear=True), \
+                patch.object(meter.launch, "Launcher", Recorder), \
+                patch.object(sys, "argv", ["cpu_sample.py", "--binary", __file__, "--label", "env", "--out",
+                                           str(Path(directory) / "r.json"), "--env", "WHOATE_CACHE_DIR=/private/override"]):
+            # Keep main()'s summary line out of the unittest -v log that verify.sh reads.
+            with self.assertRaises(SystemExit), contextlib.redirect_stdout(io.StringIO()):
+                meter.main()
+        self.assertEqual(seen["WHOATE_UI_AUTOMATION"], "panel-window")
+        self.assertEqual(seen["WHOATE_UI_SCHEDULE_LOG"], "/private/t/schedule")
+        self.assertEqual(seen["TMUX_TMPDIR"], "/private/t/tmux")
+        self.assertEqual(seen["LC_ALL"], "en_US.UTF-8")
+        self.assertEqual(seen["WHOATE_CACHE_DIR"], "/private/override", "--env overrides the caller")
+        for key in ("TMUX", "TMUX_PANE", "SECRET_TOKEN"):
+            self.assertNotIn(key, seen)
+
 
 if __name__ == "__main__":
     unittest.main()

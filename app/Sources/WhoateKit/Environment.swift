@@ -18,11 +18,13 @@ public func repairProcessPath() {
 }
 
 /// Only active when WHOATE_UI_AUTOMATION is set; otherwise every field is nil.
-/// WHOATE_UI_AUTOMATION is a comma list of: dump-tick, panel-window.
+/// WHOATE_UI_AUTOMATION is a comma list of: dump-tick, panel-window,
+/// main-window, no-path-repair, menubar (no extra window; for the timers below).
 public struct Automation: Equatable, Sendable {
     public enum Appearance: String, Sendable { case light, dark }
     public var dumpTick = false
     public var panelWindow = false
+    public var mainWindow = false
     public var noPathRepair = false
     public var appearance: Appearance?
     /// Owner id to open the close confirmation for, or "first" for the first row.
@@ -34,6 +36,14 @@ public struct Automation: Equatable, Sendable {
     public var fixture: String?
     public var scheduleLog: String?
     public var panelCloseAfter: Double?
+    /// One line per change of activation policy, main windows, key/visible/occlusion or refresh mode.
+    public var stateFile: String?
+    /// Panel row frames: "<row id>\t<buttons|trend>\t<x>\t<y>\t<w>\t<h>".
+    public var layoutFile: String?
+    /// Seconds after the process started: quit through QuitAction, close or (re)show the main window.
+    public var quitAfter: Double?
+    public var mainCloseAfter: Double?
+    public var showMainAfter: Double?
 
     public static let off = Automation()
 
@@ -43,14 +53,22 @@ public struct Automation: Equatable, Sendable {
         let set = Set(modes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) })
         dumpTick = set.contains("dump-tick")
         panelWindow = set.contains("panel-window")
+        mainWindow = set.contains("main-window")
         noPathRepair = set.contains("no-path-repair")
         appearance = environment["WHOATE_UI_APPEARANCE"].flatMap(Appearance.init(rawValue:))
         confirm = environment["WHOATE_UI_CONFIRM"]
         windowFile = environment["WHOATE_UI_WINDOW_FILE"]
         fixture = environment["WHOATE_UI_FIXTURE"]
         scheduleLog = environment["WHOATE_UI_SCHEDULE_LOG"]
-        panelCloseAfter = environment["WHOATE_UI_PANEL_CLOSE_AFTER"].flatMap(Double.init)
-            .flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let seconds = { (key: String) in
+            environment[key].flatMap(Double.init).flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        }
+        panelCloseAfter = seconds("WHOATE_UI_PANEL_CLOSE_AFTER")
+        stateFile = environment["WHOATE_UI_STATE_FILE"]
+        layoutFile = environment["WHOATE_UI_LAYOUT_FILE"]
+        quitAfter = seconds("WHOATE_UI_QUIT_AFTER")
+        mainCloseAfter = seconds("WHOATE_UI_MAIN_CLOSE_AFTER")
+        showMainAfter = seconds("WHOATE_UI_SHOW_MAIN_AFTER")
     }
     public var isActive: Bool { self != .off }
 }

@@ -109,6 +109,7 @@ pub fn host_from_pages(
         kernel_zones: None,
         gpu_memory: None,
         memory_diagnostics: None,
+        cpu: None,
         mem_total_bytes: total,
         mem_used_bytes: bytes(used)?,
         compressed_bytes: bytes(compressed)?,

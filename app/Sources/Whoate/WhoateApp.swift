@@ -6,10 +6,17 @@ import WhoateKit
 
 @main
 enum Main {
+    /// Process start on the uptime clock: the automation timers count from here.
+    nonisolated(unsafe) static var launchedAt = ProcessInfo.processInfo.systemUptime
+
     static func main() {
+        launchedAt = ProcessInfo.processInfo.systemUptime
         let automation = Automation(environment: ProcessInfo.processInfo.environment)
         if !automation.noPathRepair { repairProcessPath() }
         if automation.dumpTick { dumpTick(automation) }
+        // Before anything else touches AppKit: even a bare executable without
+        // Info.plist must never register as a foreground app with a Dock icon.
+        NSApplication.shared.setActivationPolicy(.accessory)
         WhoateApp.automation = automation
         WhoateApp.main()
     }
@@ -41,43 +48,51 @@ struct WhoateApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PanelView(model: delegate.model, openMain: open)
+            PanelView(model: delegate.model, mainWindows: delegate.mainWindows, openMain: open, quit: delegate.quit)
         } label: {
             MenuBarLabel(host: delegate.model.host)
+                .task { await delegate.runAutomation(open: open) }
         }
         .menuBarExtraStyle(.window)
 
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {
-            MainWindowView(model: delegate.model)
+            MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows)
         }
         .defaultSize(width: 720, height: 560)
+        .commands {
+            // The regular-policy app menu's ⌘Q goes through the same QuitAction.
+            CommandGroup(replacing: .appTermination) {
+                Button(L10n.text(.quit, delegate.model.language)) { delegate.quit() }.keyboardShortcut("q")
+            }
+        }
     }
 
+    /// An existing main window is raised; otherwise SwiftUI creates it.
     private func open(_ ownerID: String?) {
         if let ownerID { delegate.model.selectedOwnerID = ownerID }
-        openWindow(id: "main")
-        NSApp.activate(ignoringOtherApps: true)
+        switch WindowPolicy.open(mainWindowExists: delegate.mainWindows.exists) {
+        case .bringToFront: delegate.mainWindows.bringToFront()
+        case .create:
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
+    let mainWindows = MainWindows()
+    let quit = QuitAction()
     private var automationWindow: NSWindow?
+    private var automationStarted = false
 
     override init() {
         let automation = WhoateApp.automation
         model = AppModel(language: .system(), makeEngine: { Main.makeEngine(automation) }, trace: { mode in
             guard let path = automation.scheduleLog else { return }
-            let line = "\(Date().timeIntervalSince1970)\t\(mode)\n"
             // Opt-in safe event log; no process, argv or session source content.
-            if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
-            do {
-                let file = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
-                defer { try? file.close() }
-                try file.seekToEnd()
-                try file.write(contentsOf: Data(line.utf8))
-            } catch { FileHandle.standardError.write(Data("schedule_log_failed\n".utf8)) }
+            appendLine("\(Date().timeIntervalSince1970)\t\(mode)\n", to: path, failure: "schedule_log_failed")
         })
         super.init()
     }
@@ -93,12 +108,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if automation.panelWindow { Task { await showPanelWindow(automation) } }
     }
 
+    /// Automation timeline, in seconds since the process started. Runs once,
+    /// from the menu bar label (the one view that always exists and can open
+    /// SwiftUI windows).
+    func runAutomation(open: @escaping (String?) -> Void) async {
+        let automation = WhoateApp.automation
+        guard automation.isActive, !automationStarted else { return }
+        automationStarted = true
+        let began = Main.launchedAt
+        func at(_ seconds: Double, _ action: @escaping @MainActor () -> Void) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(max(0, seconds - (ProcessInfo.processInfo.systemUptime - began))))
+                action()
+            }
+        }
+        if automation.mainWindow { at(0.5) { open(nil) } }
+        if let after = automation.showMainAfter { at(after) { open(nil) } }
+        if let after = automation.mainCloseAfter { at(after) { [mainWindows] in mainWindows.closeAll() } }
+        if let after = automation.quitAfter { at(after) { [quit] in quit() } }
+        if let path = automation.stateFile { await recordState(to: path) }
+    }
+
+    /// One line whenever the observable window/refresh state changes.
+    private func recordState(to path: String) async {
+        var last = ""
+        while !Task.isCancelled {
+            let main = mainWindows.all.first
+            let policy = switch NSApp.activationPolicy() {
+            case .regular: "regular"
+            case .accessory: "accessory"
+            default: "prohibited"
+            }
+            var fields = [
+                "policy=\(policy)", "active=\(NSApp.isActive)", "main_windows=\(mainWindows.count)",
+                "mode=\(model.fullRefresh ? "full" : "host")",
+            ]
+            if let main {
+                fields += [
+                    "key=\(main.isKeyWindow)", "visible=\(main.isVisible)",
+                    "occlusion_visible=\(main.occlusionState.contains(.visible))",
+                    "hides_on_deactivate=\(main.hidesOnDeactivate)", "level=\(main.level.rawValue)",
+                    "behavior=\(main.collectionBehavior.rawValue)", "window=\(main.windowNumber)",
+                ]
+            }
+            let line = fields.joined(separator: "\t")
+            if line != last {
+                last = line
+                // since_launch lets a checker align its clock with the timers above.
+                let since = String(format: "%.3f", ProcessInfo.processInfo.systemUptime - Main.launchedAt)
+                appendLine("\(Date().timeIntervalSince1970)\t\(line)\tsince_launch=\(since)\n", to: path,
+                           failure: "state_file_failed")
+            }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+    }
+
     /// Screenshot entry: the same PanelView in an ordinary titled window,
     /// because a MenuBarExtra panel cannot be opened programmatically.
     private func showPanelWindow(_ automation: Automation) async {
         let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
         window.title = "whoate panel"
-        window.contentView = NSHostingView(rootView: PanelView(model: model, openMain: { _ in }))
+        window.contentView = NSHostingView(rootView: PanelView(
+            model: model, mainWindows: mainWindows, openMain: { _ in }, quit: quit))
         window.setContentSize(window.contentView!.fittingSize)
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -128,6 +199,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.orderOut(nil)
         }
     }
+}
+
+/// Appends to an opt-in automation file, creating it on first use.
+func appendLine(_ line: String, to path: String, failure: String) {
+    if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
+    do {
+        let file = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
+        defer { try? file.close() }
+        try file.seekToEnd()
+        try file.write(contentsOf: Data(line.utf8))
+    } catch { FileHandle.standardError.write(Data((failure + "\n").utf8)) }
 }
 
 /// Template icon plus used memory; tinted only when pressure is not normal.

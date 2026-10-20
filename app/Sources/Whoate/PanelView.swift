@@ -5,7 +5,9 @@ import WhoateKit
 
 struct PanelView: View {
     @Bindable var model: AppModel
+    let mainWindows: MainWindows
     var openMain: (String?) -> Void
+    let quit: QuitAction
 
     private var language: Language { model.language }
 
@@ -18,19 +20,27 @@ struct PanelView: View {
             footer
         }
         .frame(width: 420)
+        .coordinateSpace(.named(RowFrames.space))
         .overlay { CloseFlowView(model: model) }
         .background(RefreshVisibility { model.setVisible(panel: $0) }.frame(width: 0, height: 0))
+        .onPreferenceChange(RowFrames.self) { frames in
+            if let path = WhoateApp.automation.layoutFile { RowFrames.write(frames, to: path) }
+        }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let header = Panel.header(model.report?.host, sort: model.sort, language)
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(Panel.headline(model.report?.host, language)).font(.system(size: 15, weight: .semibold))
+                Text(header.headline).font(.system(size: 15, weight: .semibold))
                 Spacer()
                 if let host = model.report?.host {
                     Text("\(Format.bytes(host.memUsedBytes)) / \(Format.bytes(host.memTotalBytes)) · \(L10n.text(.swap, language)) \(Format.bytes(host.swapUsedBytes))")
                         .monospacedDigit().foregroundStyle(.secondary)
                 }
+            }
+            if let detail = header.detail {
+                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
             }
             if let host = model.report?.host { PressureBar(host: host) }
             HStack(spacing: 12) {
@@ -69,7 +79,9 @@ struct PanelView: View {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 { Divider().overlay(Palette.line.opacity(0.6)) }
                     PanelRowView(row: row, language: language, sort: model.sort,
-                                 openMain: openMain, close: { model.requestClose(row.id) })
+                                 openMain: openMain, close: { model.requestClose(row.id) },
+                                 expanded: Binding(get: { model.expandedAdvice == row.id },
+                                                   set: { model.expandedAdvice = $0 ? row.id : nil }))
                 }
             }
         }
@@ -87,7 +99,9 @@ struct PanelView: View {
         HStack {
             Text(footerText).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
             Spacer()
-            Button(L10n.text(.openWhoate, language)) { openMain(nil) }.controlSize(.regular)
+            Button(L10n.text(.quit, language)) { quit() }.controlSize(.regular).keyboardShortcut("q")
+            Button(WindowPolicy.openLabel(mainWindowExists: mainWindows.exists, language)) { openMain(nil) }
+                .controlSize(.regular)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
     }
@@ -119,34 +133,66 @@ struct PanelRowView: View {
     let sort: SortKey
     var openMain: (String?) -> Void
     var close: () -> Void
+    let expanded: Binding<Bool>
 
+    // Curve and value share the first line; buttons own the second, so the
+    // curve can never cover them.
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(row.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
                     Text(row.subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
                         .lineLimit(1).truncationMode(.middle)
                 }
                 Spacer(minLength: 0)
-                VStack(alignment: .trailing, spacing: 5) {
-                    Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
-                        .font(.system(size: 13, weight: .semibold)).monospacedDigit()
-                    Sparkline(points: row.history, color: row.level == .ok ? Palette.flat : Palette.tint(row.level))
-                        .frame(width: 64, height: 18).clipped()
-                }
+                Sparkline(points: row.history, color: row.level == .ok ? Palette.flat : Palette.tint(row.level),
+                          language: language)
+                    .frame(width: 64, height: 18).clipped()
+                    .rowFrame(row.id, "trend")
+                Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
+                    .font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                    .frame(minWidth: 44, alignment: .trailing)
             }
             HStack(spacing: 6) {
-                Pill(text: row.pill, level: row.pillLevel)
+                AdvicePill(row: row, language: language, expanded: expanded)
                 Spacer()
                 if row.closable {
-                    Button(L10n.text(.details, language)) { openMain(row.id) }.controlSize(.small)
-                    Button(L10n.text(.close, language), action: close)
-                        .controlSize(.small).buttonStyle(.borderedProminent).tint(Palette.act)
+                    HStack(spacing: 6) {
+                        Button(L10n.text(.details, language)) { openMain(row.id) }.controlSize(.small)
+                        Button(L10n.text(.close, language), action: close)
+                            .controlSize(.small).buttonStyle(.borderedProminent).tint(Palette.act)
+                    }
+                    .rowFrame(row.id, "buttons")
                 }
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+}
+
+/// The pill; with advice it also shows the entries' text on hover and on click.
+/// (No @State: the SwiftUI macro plugin is missing under Command Line Tools.)
+struct AdvicePill: View {
+    let row: PanelRow
+    let language: Language
+    @Binding var expanded: Bool
+
+    var body: some View {
+        let pill = Pill(text: row.pill, level: row.pillLevel)
+        if row.insights.isEmpty {
+            pill
+        } else {
+            let text = Advice.lines(row.insights, language: language)
+            Button { expanded.toggle() } label: { pill }
+                .buttonStyle(.plain)
+                .help(text)
+                .popover(isPresented: $expanded, arrowEdge: .bottom) {
+                    Text(text).font(.system(size: 12)).textSelection(.enabled)
+                        .frame(width: 320, alignment: .leading).fixedSize(horizontal: false, vertical: true)
+                        .padding(12)
+                }
+        }
     }
 }
 
@@ -163,20 +209,51 @@ struct Pill: View {
 }
 
 /// Plain Path, not Swift Charts: this redraws every second for five rows.
+/// Only the latest continuous run is drawn; a short run shows text instead.
 struct Sparkline: View {
     let points: [HistoryPoint]
     let color: Color
+    let language: Language
     var body: some View {
-        Canvas { context, size in
-            for segment in Format.sparkline(points, width: size.width, height: size.height - 2) {
-                var path = Path()
-                path.move(to: CGPoint(x: segment[0].x, y: segment[0].y + 1))
-                for p in segment.dropFirst() { path.addLine(to: CGPoint(x: p.x, y: p.y + 1)) }
-                if segment.count == 1 {
-                    path.addEllipse(in: CGRect(x: segment[0].x - 1.5, y: segment[0].y - 0.5, width: 3, height: 3))
+        GeometryReader { geo in
+            switch Format.trend(points, width: geo.size.width, height: geo.size.height - 2) {
+            case .insufficient:
+                Text(L10n.text(.notEnoughSamples, language))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .trailing)
+            case .line(let line):
+                Path { path in
+                    path.move(to: CGPoint(x: line[0].x, y: line[0].y + 1))
+                    for p in line.dropFirst() { path.addLine(to: CGPoint(x: p.x, y: p.y + 1)) }
                 }
-                context.stroke(path, with: .color(color), lineWidth: 1.6)
+                .stroke(color, lineWidth: 1.6)
             }
         }
+    }
+}
+
+/// Automation only (WHOATE_UI_LAYOUT_FILE): panel row part frames for the
+/// button/curve overlap check.
+struct RowFrames: PreferenceKey {
+    static let space = "panel"
+    static let defaultValue: [String: CGRect] = [:]
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+    static func write(_ frames: [String: CGRect], to path: String) {
+        let lines = frames.sorted { $0.key < $1.key }.map { key, r in
+            "\(key)\t\(r.minX)\t\(r.minY)\t\(r.width)\t\(r.height)\n"
+        }
+        try? lines.joined().write(toFile: path, atomically: true, encoding: .utf8)
+    }
+}
+
+extension View {
+    func rowFrame(_ id: String, _ part: String) -> some View {
+        background(GeometryReader { geo in
+            Color.clear.preference(key: RowFrames.self,
+                                   value: ["\(id)\t\(part)": geo.frame(in: .named(RowFrames.space))])
+        })
     }
 }

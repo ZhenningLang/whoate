@@ -44,7 +44,10 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case stillAliveQuestion, forceButton, done, killFailed, forcing, refreshFailed
     case reasonProtectedPid, reasonNotInSnapshot, reasonProtectedOrUnknown, reasonProcessMissing
     case reasonIdentityChanged, reasonPlatformBinary, reasonPlatformProbeFailed, reasonNoConfirmedPlan
-    case mainWindowTitle, mainWindowPending
+    case mainWindowTitle, mainWindowPending, showMain
+    case cpuHeadline, cpuMissing, cpuLoad, cpuIdle, cpuModerate, cpuBusy
+    case cpuReasonFirst, cpuReasonReset, cpuReasonRead, cpuReasonNoTicks, cpuReasonAbsent
+    case notEnoughSamples, adviceCause, adviceAdvice, adviceSource
 }
 
 public enum L10n {
@@ -62,7 +65,7 @@ public enum L10n {
         .systemProcsAgo: ("系统进程 %@ 秒前", "system processes %@ s ago"),
         .systemProcsMissing: ("系统进程暂缺", "system processes unavailable"),
         .openWhoate: ("打开 whoate", "Open whoate"),
-        .quit: ("退出", "Quit"),
+        .quit: ("退出 whoate", "Quit whoate"),
         .details: ("详情", "Details"),
         .close: ("关闭", "Close"),
         .normal: ("正常", "Normal"),
@@ -120,6 +123,22 @@ public enum L10n {
         .reasonNoConfirmedPlan: ("不在已确认的关闭列表里", "not in the confirmed close list"),
         .mainWindowTitle: ("whoate", "whoate"),
         .mainWindowPending: ("三栏主窗口在下一期提供，当前列出全部归属。", "The three-column window arrives next; all owners are listed for now."),
+        .showMain: ("显示主窗口", "Show main window"),
+        .cpuHeadline: ("整机 CPU %@", "CPU %@"),
+        .cpuMissing: ("整机 CPU 暂缺：%@", "CPU unavailable: %@"),
+        .cpuLoad: ("1 分钟负载 %@ / %@ 核", "1-min load %@ / %@ cores"),
+        .cpuIdle: ("空闲", "Idle"),
+        .cpuModerate: ("偏忙", "Fairly busy"),
+        .cpuBusy: ("繁忙", "Busy"),
+        .cpuReasonFirst: ("刚开始采样", "first sample"),
+        .cpuReasonReset: ("计数器回退", "counter reset"),
+        .cpuReasonRead: ("读取失败", "read failed"),
+        .cpuReasonNoTicks: ("采样间隔太短", "interval too short"),
+        .cpuReasonAbsent: ("引擎未提供", "not reported"),
+        .notEnoughSamples: ("采样不足", "Not enough samples"),
+        .adviceCause: ("原因：%@", "Cause: %@"),
+        .adviceAdvice: ("建议：%@", "Advice: %@"),
+        .adviceSource: ("出处：%@", "Source: %@"),
     ]
 
     public static func text(_ key: L10nKey, _ language: Language) -> String {

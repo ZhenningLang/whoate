@@ -129,7 +129,8 @@ enum PanelTests {
         ]
         let owner = try decodeValue(Owner.self, agent)
         expect(Panel.pill(owner, .zh) == "空闲 2 小时 30 分")
-        expect(Panel.subtitle(owner, .zh) == "claude · tmux main %15 · 端口 5173")
+        // Phase 08: sessions read tool · window (pane title) · directory · idle.
+        expect(Panel.subtitle(owner, .zh) == "claude · main (claude) · site · 空闲 2 小时 30 分")
 
         var orphan = ownerJSON("o", mem: 1, level: "act", rule: "orphan-dev-server", kind: "orphan")
         orphan["origin"] = ["tmux_pane": "%9", "pane_alive": false, "cwd": "/srv/app", "ports": NSNull()]
@@ -172,11 +173,5 @@ enum PanelTests {
         expect(Format.signedBytes(1 << 30) == "+1.0G")
         expect(Format.duration(59, .en) == "59s")
         expect(Format.duration(90_061, .zh) == "1 天 1 小时")
-        let points = [0, 1, 2, 30, 31].map { HistoryPoint(timestampS: Int64($0), memBytes: UInt64($0), cpuPct: nil) }
-        let segments = Format.sparkline(points, width: 62, height: 10)
-        expect(segments.count == 2, "a gap is not bridged")
-        expect(segments.last?.last?.x == 62)
-        let flat = Format.sparkline([1000, 1010].enumerated().map { HistoryPoint(timestampS: Int64($0.offset), memBytes: UInt64($0.element), cpuPct: nil) }, width: 10, height: 10)
-        expect(abs(flat[0][0].y - flat[0][1].y) < 2.5, "a 1% change stays near flat")
     }
 }

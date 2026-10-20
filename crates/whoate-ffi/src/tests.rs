@@ -140,6 +140,42 @@ fn phase09_host_uses_only_injected_host_and_preserves_full_snapshot() {
 }
 
 #[test]
+fn phase08_host_json_cpu_is_the_difference_since_the_previous_call() {
+    let _serial = SERIAL.lock().unwrap();
+    let first = take(super::whoate_host_json());
+    let cpu = &first["host"]["cpu"];
+    assert!(
+        cpu["logical_cores"].as_u64().is_some_and(|n| n > 0),
+        "{first}"
+    );
+    assert!(cpu["load_1m"].is_number());
+    if cpu["status"] == "missing" {
+        assert!(cpu["usage_pct"].is_null(), "missing is never 0%");
+        assert!(cpu["reason"].is_string());
+    }
+    // Tick counters advance in bursts (measured: idle stretches up to ~1 s),
+    // so a short gap is honestly missing; the next call that spans ticks is fresh.
+    let mut second = Value::Null;
+    for _ in 0..15 {
+        std::thread::sleep(Duration::from_millis(200));
+        second = take(super::whoate_host_json());
+        if second["host"]["cpu"]["status"] == "fresh" {
+            break;
+        }
+        assert_eq!(
+            second["host"]["cpu"]["reason"], "no_elapsed_ticks",
+            "{second}"
+        );
+        assert!(second["host"]["cpu"]["usage_pct"].is_null());
+    }
+    let cpu = &second["host"]["cpu"];
+    assert_eq!(cpu["status"], "fresh", "{second}");
+    let usage = cpu["usage_pct"].as_f64().unwrap();
+    assert!((0.0..=100.0).contains(&usage));
+    assert!(cpu["reason"].is_null());
+}
+
+#[test]
 fn phase09_control_reaches_sampler_without_replacing_history_or_kill_identity() {
     let _serial = SERIAL.lock().unwrap();
     use std::sync::Arc;
