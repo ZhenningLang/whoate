@@ -44,9 +44,9 @@ enum Phase08Tests {
                      "pane_title": NSNull()]))
         expect(Panel.subtitle(partial, .en) == "claude · %3 · Idle 2h 30m")
         for row in rows { expect(!row.subtitle.contains(" ·  · ") && !row.subtitle.hasSuffix(" · ")) }
-        // The interim main window builds its rows with the same function.
+        // The interim main window shows the model's rows (built by Panel.rows).
         let main = String(decoding: try repoFile("app/Sources/Whoate/MainWindowView.swift"), as: UTF8.self)
-        expect(main.contains("Panel.rows(") && main.contains("row.title") && !main.contains("owner.label"))
+        expect(main.contains("model.rows(limit: .max)") && main.contains("row.title") && !main.contains("owner.label"))
     }
 
     static func host(cpu: [String: Any]?) throws -> WhoateKit.Host {
@@ -99,7 +99,7 @@ enum Phase08Tests {
         for _ in 0..<200 where model.report == nil { try? await Task.sleep(for: .milliseconds(5)) }
         model.stop()
         model.sort = .cpu
-        let all = Panel.rows(try require(model.report), sort: model.sort, language: .en, limit: .max)
+        let all = model.rows(limit: .max)
         expect(all.count == 7, "the main window list is not truncated")
         expect(all.first?.id == "busy" && all.last?.id == "none", "CPU descending, unknown last")
         expect(model.rows.first?.id == "busy", "the panel follows the same sort")
@@ -157,11 +157,7 @@ enum Phase08Tests {
         expect(Format.trend(points(old + [720]), width: 64, height: 16) == .insufficient, "a lone point is never joined")
         expect(Format.trend(points([0, 300, 600, 900, 1200, 1210, 1212]), width: 64, height: 16) == .insufficient,
                "sparse points are not a curve")
-        // One point per brief opening, 30 s apart: 59 or exactly 60 (the tick cap) points are still not a curve.
-        for count in [59, 60, 61] {
-            let sparse = points((0..<count).map { Int64($0) * 30 })
-            expect(Format.trend(sparse, width: 64, height: 16) == .insufficient, "\(count) isolated points")
-        }
+        // 30 s points are real hidden samples now (QA32 replaces the 59/60/61 sparse-point case).
         expect(Format.trend(points([5]), width: 64, height: 16) == .insufficient)
         expect(Format.trend([], width: 64, height: 16) == .insufficient)
         // 30 minutes of continuous raw history is one run.

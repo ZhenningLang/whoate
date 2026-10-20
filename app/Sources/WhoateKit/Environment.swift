@@ -38,12 +38,15 @@ public struct Automation: Equatable, Sendable {
     public var panelCloseAfter: Double?
     /// One line per change of activation policy, main windows, key/visible/occlusion or refresh mode.
     public var stateFile: String?
-    /// Panel row frames: "<row id>\t<buttons|trend>\t<x>\t<y>\t<w>\t<h>".
+    /// Panel row frames: "<row id>\t<buttons|trend>\t<x>\t<y>\t<w>\t<h>", and
+    /// "<row id>\tcurve\t<line|insufficient>\t<epoch written>".
     public var layoutFile: String?
     /// Seconds after the process started: quit through QuitAction, close or (re)show the main window.
     public var quitAfter: Double?
     public var mainCloseAfter: Double?
     public var showMainAfter: Double?
+    /// panel-window only: stay hidden this many seconds after start, then open the panel window.
+    public var panelOpenAfter: Double?
 
     public static let off = Automation()
 
@@ -69,6 +72,7 @@ public struct Automation: Equatable, Sendable {
         quitAfter = seconds("WHOATE_UI_QUIT_AFTER")
         mainCloseAfter = seconds("WHOATE_UI_MAIN_CLOSE_AFTER")
         showMainAfter = seconds("WHOATE_UI_SHOW_MAIN_AFTER")
+        panelOpenAfter = seconds("WHOATE_UI_PANEL_OPEN_AFTER")
     }
     public var isActive: Bool { self != .off }
 }

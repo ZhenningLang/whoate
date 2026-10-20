@@ -3,20 +3,25 @@
 
   window_check.py activation <Whoate executable> <evidence dir>   QA12
   window_check.py quit <Whoate executable> <evidence dir>         QA13
-  window_check.py layout <debug Whoate executable> <evidence dir>             QA16
+  window_check.py layout <debug Whoate executable> <evidence dir>             QA16 QA34
+  window_check.py hidden-open <Whoate executable> <evidence dir>              QA31 (real app)
 
 activation: the app starts accessory; the main window makes it regular and
 Foreground; `open -a Finder` takes focus once, and 4 s later the window is
 still visible and unoccluded while full refreshes continue at <= 3 s; showing
 again keeps one window and makes it key; closing it returns to accessory and
-host-only refresh. quit: with the main window open, QuitAction ends the app
+hidden refresh (host, hidden-full; no full or resume). quit: with the main window open, QuitAction ends the app
 within 5 s and leaves no LaunchServices residue. layout: in every panel row
 with buttons, the buttons and the curve do not overlap (debug replay of
-panel-act-report.json: one closable orphan row, since a live machine may have none).
+panel-act-report.json: one closable orphan row, since a live machine may have none);
+QA34 then captures only that panel window (`screencapture -l<window>`) for the
+owner to look at. hidden-open: hidden for 65 s (paused full ticks every 30 s),
+then the panel shows a line within 4 s; the 5 s control shows only
+"not enough samples".
 """
 import json, os, subprocess, sys, tempfile, time
 from pathlib import Path
-import launch, ls_residue
+import launch, ls_residue, screenshots
 
 # Seconds on the app's own automation clock (WHOATE_UI_*_AFTER): since its
 # process started, as each state line's since_launch reports.
@@ -127,6 +132,8 @@ def activation(binary, out):
     checks["show_again_one_key_window"] = shown.get("main_windows") == "1" and shown.get("key") == "true"
     checks["close_returns_accessory"] = closed.get("policy") == "accessory" and closed.get("main_windows") == "0"
     checks["close_returns_host"] = any(m == "host" for t, m in ticks if t > began + CLOSE_AT)
+    # Hidden again: host and the 30 s paused hidden-full only, never full or resume.
+    checks["close_no_full_or_resume"] = not any(m in ("full", "resume") for t, m in ticks if t > began + CLOSE_AT + 0.5)
     checks["quit_after_exited"] = exited
     evidence = {"pid": handle["pid"], "isolation": handle["isolation"], "finder_at": finder, "ls_types": types,
                 "states": rows, "schedule": ticks, "full_after_focus": full_after, "gaps": gaps, "checks": checks}
@@ -184,44 +191,142 @@ def intersects(a, b):
     return a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
 
 
+def read_layout(path):
+    """{row: {part: (x, y, w, h)}} and {row: (curve kind, epoch written)} from WHOATE_UI_LAYOUT_FILE."""
+    rows, curves, text = {}, {}, ""
+    if os.path.exists(path):
+        with open(path) as f:
+            text = f.read()
+    for line in text.splitlines():
+        row, part, *rest = line.split("\t")
+        if part == "curve":
+            curves[row] = (rest[0], float(rest[1]))
+        else:
+            rows.setdefault(row, {})[part] = tuple(map(float, rest))
+    return rows, curves
+
+
+def capture_window(window_file, pid, png):
+    """QA34: only the panel window this run started, never the whole screen."""
+    with open(window_file) as f:
+        _, number, width, height, scale, owner, _ = f.read().rstrip("\n").split("\t")
+    shot = subprocess.run(["/usr/sbin/screencapture", f"-l{number}", "-x", "-o", png], capture_output=True, text=True)
+    result = {"window": int(number), "window_pid": int(owner), "launched_pid": pid, "file": png,
+              "screencapture_rc": shot.returncode, "stderr": shot.stderr.strip()}
+    if shot.returncode != 0 or not os.path.exists(png):
+        print(f"QA34 blocked screen-recording-permission: {shot.stderr.strip()}")
+        return result, False
+    stats = screenshots.stats(png)
+    expected = (round(int(width) * float(scale)), round(int(height) * float(scale)))
+    result.update(stats, expected_size=expected, pid_ok=int(owner) == pid,
+                  size_ok=(stats["width"], stats["height"]) == expected, not_solid=stats["distinct_colours"] > 8)
+    return result, result["pid_ok"] and result["size_ok"] and result["not_solid"]
+
+
 def layout(binary, out, fixture=ACT_REPORT):
     root = tempfile.mkdtemp(prefix="wlay-", dir="/private/tmp")
-    path = f"{root}/layout"
+    path, window_file = f"{root}/layout", f"{root}/window"
     env = private_env(root, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_LAYOUT_FILE=path,
+                      WHOATE_UI_WINDOW_FILE=window_file,
                       WHOATE_UI_FIXTURE=os.path.realpath(fixture), WHOATE_UI_PANEL_CLOSE_AFTER=30)
     runner = launch.Launcher()
     handle = runner.start(binary, env=env)
-    rows = {}
+    rows, curves, shot, shot_ok = {}, {}, None, False
     try:
         for _ in range(150):
             time.sleep(0.2)
-            rows = {}
-            text = ""
-            if os.path.exists(path):
-                with open(path) as f:
-                    text = f.read()
-            for line in text.splitlines():
-                row, part, *box = line.split("\t")
-                rows.setdefault(row, {})[part] = tuple(map(float, box))
-            if any("buttons" in parts for parts in rows.values()):
+            rows, curves = read_layout(path)
+            if any("buttons" in parts for parts in rows.values()) and os.path.exists(window_file):
                 time.sleep(1)
+                rows, curves = read_layout(path)
+                shot, shot_ok = capture_window(window_file, handle["pid"], os.path.join(out, "qa16-panel.png"))
                 break
     finally:
         handle["stop"] = runner.stop(handle)
     checked = {row: not intersects(parts["buttons"], parts["trend"])
                for row, parts in rows.items() if "buttons" in parts and "trend" in parts}
+    act_curves = {row: curves.get(row, ("missing",))[0] for row in checked}
     write_receipt(out, "qa16-layout.json",
                   {"source": f"debug fixture replay {fixture}", "rows": rows, "checked": checked})
+    write_receipt(out, "qa34-panel-shot.json", {"shot": shot, "act_row_curves": act_curves, "ok": shot_ok})
     for row, ok in checked.items():
         print(f"QA16 row={row} buttons={rows[row]['buttons']} trend={rows[row]['trend']} no_overlap={ok}")
     print(f"QA16 rows_with_buttons={len(checked)} source=fixture:{os.path.basename(fixture)}")
+    if shot:
+        print(f"QA34 file={shot['file']} window={shot['window']} pid_ok={shot.get('pid_ok')} "
+              f"size={shot.get('width')}x{shot.get('height')} expected={shot.get('expected_size')} "
+              f"colours={shot.get('distinct_colours')} act_row_curves={act_curves}")
+    else:
+        print("QA34 no panel window to capture")
     launch.cleanup(handle)
-    return bool(checked) and all(checked.values())
+    qa16 = bool(checked) and all(checked.values())
+    qa34 = shot_ok and bool(act_curves) and all(kind == "line" for kind in act_curves.values())
+    print(f"QA16 ok={qa16} QA34 ok={qa34}")
+    return qa16 and qa34
+
+
+OPEN_AFTER, CONTROL_AFTER, WATCH_S = 65, 5, 4
+
+
+def hidden_open_run(binary, out, after):
+    """One launch: hidden `after` s, then the panel window; the layout is polled
+    from the moment the panel's first full refresh is logged until 4 s later."""
+    root = tempfile.mkdtemp(prefix="whid-", dir="/private/tmp")
+    path, log = f"{root}/layout", f"{root}/schedule"
+    env = private_env(root, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_LAYOUT_FILE=path,
+                      WHOATE_UI_SCHEDULE_LOG=log, WHOATE_UI_PANEL_OPEN_AFTER=after)
+    runner = launch.Launcher()
+    handle = runner.start(binary, env=env)
+    seen, opened = [], None
+    try:
+        deadline = time.time() + after + 60
+        while time.time() < deadline:
+            time.sleep(0.2)
+            ticks = schedule(log)
+            opened = opened or next((t for t, m in ticks if m in ("resume", "full")), None)
+            if opened is None:
+                continue
+            _, curves = read_layout(path)
+            seen.append({"at": time.time(), "curves": curves})
+            if time.time() > opened + WATCH_S + 0.5:
+                break
+    finally:
+        handle["stop"] = runner.stop(handle)
+    ticks = schedule(log)
+    before = [m for t, m in ticks if opened is None or t < opened]
+    window = [s for s in seen if opened is not None and s["at"] <= opened + WATCH_S]
+    lines = sorted(written for s in window for kind, written in s["curves"].values() if kind == "line")
+    receipt = {"open_after_s": after, "pid": handle["pid"], "isolation": handle["isolation"], "opened_at": opened,
+               "schedule": ticks, "polls": seen,
+               "hidden_full_before_open": before.count("hidden-full"), "full_before_open": before.count("full"),
+               "rows_seen": sorted({row for s in window for row in s["curves"]}),
+               "first_line_written_s_after_open": round(lines[0] - opened, 3) if lines else None}
+    write_receipt(out, f"qa31-open-after-{after}.json", receipt)
+    launch.cleanup(handle)
+    return receipt
+
+
+def hidden_open(binary, out):
+    """QA31 real app: after 65 s hidden the curve is there within 4 s of opening; the 5 s control is not."""
+    late, early = hidden_open_run(binary, out, OPEN_AFTER), hidden_open_run(binary, out, CONTROL_AFTER)
+    first = late["first_line_written_s_after_open"]
+    checks = {
+        "opened": late["opened_at"] is not None and early["opened_at"] is not None,
+        "two_hidden_full_before_open": late["hidden_full_before_open"] >= 2 and late["full_before_open"] == 0,
+        "line_within_4s": first is not None and 0 <= first <= WATCH_S,
+        "control_rows_seen": bool(early["rows_seen"]),
+        "control_all_insufficient": early["first_line_written_s_after_open"] is None,
+    }
+    for name, ok in checks.items():
+        print(f"QA31 {name}={ok}")
+    print(f"QA31 open_after={OPEN_AFTER} hidden_full_before={late['hidden_full_before_open']} "
+          f"first_line_s={first} control_after={CONTROL_AFTER} control_rows={len(early['rows_seen'])}")
+    return all(checks.values())
 
 
 def main(argv):
     command, *rest = argv
-    ok = {"activation": activation, "quit": quit_check, "layout": layout}[command](*rest)
+    ok = {"activation": activation, "quit": quit_check, "layout": layout, "hidden-open": hidden_open}[command](*rest)
     return 0 if ok else 1
 
 

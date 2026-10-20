@@ -226,6 +226,7 @@ def main():
     try:
         result["binary_sha256"] = hashlib.sha256(Path(args.binary).read_bytes()).hexdigest()
         app = launcher.start(args.binary, env=env)
+        result["launched_epoch"] = time.time()
         result["pid"] = app["pid"]
         result["launch"] = {"isolation": app["isolation"], "bundle": app["bundle"], "pid": app["pid"]}
         print(f"CPU_START label={args.label} pid={app['pid']} isolation={app['isolation']} "
@@ -239,7 +240,16 @@ def main():
         timeline = [{"at": began, "tree": before}]
         failures = []
         gaps = []
+        # Once a second on its own thread, so a slow tree_sample never stretches
+        # the gaps: the app's descendant commands (QA33: never /usr/bin/top while hidden).
+        seen = []
         done = threading.Event()
+        def list_children():
+            while not done.wait(1):
+                try:
+                    seen.append({"epoch": time.time(), "comms": sorted({c["comm"] for c in descendants(app["pid"])})})
+                except Exception as error:
+                    seen.append({"epoch": time.time(), "error": str(error)})
         def observe():
             while not done.wait(1):
                 try:
@@ -258,14 +268,18 @@ def main():
                 except Exception as error:
                     failures.append(str(error))
                     return
-        observer = threading.Thread(target=observe)
+        observer, lister = threading.Thread(target=observe), threading.Thread(target=list_children)
         observer.start()
+        lister.start()
         try:
             values, raw = top_samples(app["pid"], args.samples)
             elapsed = time.monotonic() - began
+            result["measure_ended_epoch"] = time.time()
         finally:
             done.set()
             observer.join()
+            lister.join()
+            result["descendant_comms"] = seen
             result["rusage_timeline"] = timeline
             result["privileged_child_gaps"] = gaps
         # Save raw top before any subsequent fallible accounting check.

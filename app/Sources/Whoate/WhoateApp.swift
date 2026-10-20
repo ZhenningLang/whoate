@@ -166,6 +166,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Screenshot entry: the same PanelView in an ordinary titled window,
     /// because a MenuBarExtra panel cannot be opened programmatically.
     private func showPanelWindow(_ automation: Automation) async {
+        if let after = automation.panelOpenAfter {
+            try? await Task.sleep(for: .seconds(max(0, after - (ProcessInfo.processInfo.systemUptime - Main.launchedAt))))
+        }
         let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
         window.title = "whoate panel"
         window.contentView = NSHostingView(rootView: PanelView(

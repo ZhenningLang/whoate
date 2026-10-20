@@ -84,6 +84,8 @@ struct PanelView: View {
                                                    set: { model.expandedAdvice = $0 ? row.id : nil }))
                 }
             }
+            // CPU order holds still under the pointer so a row can be clicked.
+            .onHover { model.setListHovered($0) }
         }
     }
 
@@ -150,6 +152,7 @@ struct PanelRowView: View {
                           language: language)
                     .frame(width: 64, height: 18).clipped()
                     .rowFrame(row.id, "trend")
+                    .background { if WhoateApp.automation.layoutFile != nil { CurveKind(row: row) } }
                 Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
                     .font(.system(size: 13, weight: .semibold)).monospacedDigit()
                     .frame(minWidth: 44, alignment: .trailing)
@@ -233,8 +236,18 @@ struct Sparkline: View {
     }
 }
 
+/// Automation only: reports whether the row draws a line or the
+/// not-enough-samples text, as a "curve\t<line|insufficient>" layout entry.
+struct CurveKind: View {
+    let row: PanelRow
+    var body: some View {
+        let line = Format.trend(row.history, width: 1, height: 1) != .insufficient
+        Color.clear.rowFrame(row.id, "curve\t" + (line ? "line" : "insufficient"))
+    }
+}
+
 /// Automation only (WHOATE_UI_LAYOUT_FILE): panel row part frames for the
-/// button/curve overlap check.
+/// button/curve overlap check, plus each row's curve kind with the write time.
 struct RowFrames: PreferenceKey {
     static let space = "panel"
     static let defaultValue: [String: CGRect] = [:]
@@ -242,8 +255,10 @@ struct RowFrames: PreferenceKey {
         value.merge(nextValue()) { $1 }
     }
     static func write(_ frames: [String: CGRect], to path: String) {
+        let now = Date().timeIntervalSince1970
         let lines = frames.sorted { $0.key < $1.key }.map { key, r in
-            "\(key)\t\(r.minX)\t\(r.minY)\t\(r.width)\t\(r.height)\n"
+            key.split(separator: "\t").dropFirst().first == "curve" ? "\(key)\t\(now)\n"
+                : "\(key)\t\(r.minX)\t\(r.minY)\t\(r.width)\t\(r.height)\n"
         }
         try? lines.joined().write(toFile: path, atomically: true, encoding: .utf8)
     }

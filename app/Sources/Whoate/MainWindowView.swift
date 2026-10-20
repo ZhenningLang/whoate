@@ -35,7 +35,8 @@ struct MainWindowView: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
             Divider()
             List(selection: $model.selectedOwnerID) {
-                ForEach(model.report.map { Panel.rows($0, sort: model.sort, language: language, limit: .max) } ?? []) { row in
+                // The panel's own order (CPU average, hover freeze), untruncated.
+                ForEach(model.rows(limit: .max)) { row in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(row.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)

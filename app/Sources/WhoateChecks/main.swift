@@ -61,6 +61,8 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase08Tests.automationTimersAreInertUnlessEnabled", Phase08Tests.automationTimersAreInertUnlessEnabled),
     ("Phase08Tests.hostCpuDecodesAndMatchesTheSchema", Phase08Tests.hostCpuDecodesAndMatchesTheSchema),
     ("Phase08Tests.englishTextHasNoCJK", Phase08Tests.englishTextHasNoCJK),
+    ("Phase08Round3Tests.cpuAverageUsesOnlyTheLastTenSeconds", Phase08Round3Tests.cpuAverageUsesOnlyTheLastTenSeconds),
+    ("Phase08Round3Tests.curveGapIsFortyFiveSecondsAndWindowThirtyMinutes", Phase08Round3Tests.curveGapIsFortyFiveSecondsAndWindowThirtyMinutes),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))
@@ -85,7 +87,7 @@ for (name, check) in checks where filter.map({ name.contains($0) }) ?? true {
     }
 }
 let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
-    ("RefreshTests.hiddenIsHostOnlyAndVisibleUsesOneEngine", RefreshTests.hiddenIsHostOnlyAndVisibleUsesOneEngine),
+    ("RefreshTests.hiddenStaysPausedAndVisibleUsesOneEngine", RefreshTests.hiddenStaysPausedAndVisibleUsesOneEngine),
     ("RefreshTests.failuresPreserveBothGoodValuesAndIndependentErrors", RefreshTests.failuresPreserveBothGoodValuesAndIndependentErrors),
     ("RefreshTests.stopDropsLateTickAndRestartKeepsOneEngine", RefreshTests.stopDropsLateTickAndRestartKeepsOneEngine),
     ("RefreshTests.realWindowAdapterPublishesShowOrderOutAndClose", RefreshTests.realWindowAdapterPublishesShowOrderOutAndClose),
@@ -96,6 +98,10 @@ let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
     ("Phase08Tests.panelCurvesUseRawHistoryNotTheTickCopy", Phase08Tests.panelCurvesUseRawHistoryNotTheTickCopy),
     ("Phase08Tests.mainWindowSwitchesPolicyAndIsRaisedNotDuplicated", { try Phase08Tests.mainWindowSwitchesPolicyAndIsRaisedNotDuplicated() }),
     ("Phase08Tests.quitGoesThroughOneInjectedTerminate", { try Phase08Tests.quitGoesThroughOneInjectedTerminate() }),
+    ("Phase08Round3Tests.cpuOrderHoldsStillWhenLeadersAlternate", Phase08Round3Tests.cpuOrderHoldsStillWhenLeadersAlternate),
+    ("Phase08Round3Tests.cpuOrderLetsARealJumpThrough", Phase08Round3Tests.cpuOrderLetsARealJumpThrough),
+    ("Phase08Round3Tests.hoverFreezesCpuOrderOnly", Phase08Round3Tests.hoverFreezesCpuOrderOnly),
+    ("Phase08Round3Tests.hiddenFullTicksEvery30SecondsPaused", Phase08Round3Tests.hiddenFullTicksEvery30SecondsPaused),
 ]
 for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
     failures = []

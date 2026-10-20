@@ -51,17 +51,19 @@ enum RefreshTests {
         }
         fail("refresh condition timed out")
     }
-    @MainActor static func hiddenIsHostOnlyAndVisibleUsesOneEngine() async throws {
+    /// Cold hidden: one paused full tick, then host only until 30 s pass (QA31;
+    /// replaces P09's "cold hidden never creates an engine").
+    @MainActor static func hiddenStaysPausedAndVisibleUsesOneEngine() async throws {
         let spy = try Spy()
         let model = AppModel(language: .en, makeEngine: { spy.make() }, sampleHost: { spy.host() }, sleep: { try await spy.delay($0) })
         model.start()
         model.start()
         await wait { spy.state().hosts > 0 }
-        expect(spy.state().made == 0, "cold hidden must not create an engine")
-        expect(spy.state().ticks == 0)
+        expect(spy.state().made == 1 && spy.state().ticks == 1, "one hidden full tick")
+        expect(spy.state().activity == [false], "the new engine is paused, never resumed while hidden")
         expect(model.host?.memUsedBytes == 2048)
         model.setVisible(panel: true)
-        await wait { model.report != nil }
+        await wait { spy.state().ticks > 1 }
         expect(spy.state().made == 1)
         model.setVisible(main: true)
         model.setVisible(panel: false)

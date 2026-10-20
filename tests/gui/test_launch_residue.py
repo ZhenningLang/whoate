@@ -243,6 +243,22 @@ class StaticScanTests(unittest.TestCase):
             self.assertIsNone(self.FORBIDDEN.search(path.read_text()), path.name)
         self.assertTrue(any("screenshots.py" == p.name for p in self.sources()))
 
+    # A call: the binary path, a quoted argv entry, or a shell command with flags.
+    CAPTURE = re.compile(r"/usr/sbin/screencapture|[\"']screencapture[\"']|\bscreencapture\s+-")
+
+    def test_every_screencapture_names_one_window(self):
+        # QA34: only whoate's own window is captured, never the whole screen.
+        found = 0
+        for path in self.sources():
+            if path.name == "test_launch_residue.py":
+                continue
+            for line in path.read_text().splitlines():
+                if self.CAPTURE.search(line):
+                    found += 1
+                    self.assertRegex(line, r"-l[\w{$<]", f"{path.name}: {line.strip()}")
+        self.assertGreater(found, 0)
+        self.assertIsNotNone(self.CAPTURE.search("screencapture -x shot.png"), "a whole-screen call is seen")
+
 
 if __name__ == "__main__":
     unittest.main()

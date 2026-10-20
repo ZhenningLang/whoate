@@ -4,9 +4,11 @@ import Observation
 
 @MainActor @Observable
 public final class AppModel {
-    /// Visible views retain the approved 2 s cadence. Hidden menus only sample host.
+    /// Visible views retain the approved 2 s cadence. Hidden menus sample host
+    /// every 5 s and make one full tick, engine still paused, every 30 s.
     public static let refreshInterval: Double = 2
     public static let hiddenInterval: Double = 5
+    public static let hiddenFullInterval: Double = 30
 
     public enum CloseFlow: Equatable {
         case idle
@@ -36,6 +38,8 @@ public final class AppModel {
     /// Raw (not downsampled) history of the owners the panel can show, by owner id.
     /// A tick's own history is capped at 60 evenly spaced points, which hides gaps.
     public private(set) var histories: [String: [HistoryPoint]] = [:]
+    /// CPU-mode order shared by the panel and the main window (10 s average, hover freeze).
+    public private(set) var cpuOrder = CPUOrder()
 
     @ObservationIgnored private var engine: (any RefreshEngine)?
     @ObservationIgnored private let makeEngine: @Sendable () -> (any RefreshEngine)?
@@ -51,6 +55,8 @@ public final class AppModel {
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var mainVisible = false
     @ObservationIgnored private var engineIsActive = false
+    /// Start of the latest full tick, visible or hidden, on the `now` clock.
+    @ObservationIgnored private var lastFullAt: Double?
 
     public init(language: Language, makeEngine: @escaping @Sendable () -> (any RefreshEngine)?,
                 sampleHost: @escaping @Sendable () -> Decoded<HostSample> = { Engine.host() },
@@ -66,6 +72,9 @@ public final class AppModel {
     }
     public var fullRefresh: Bool { panelVisible || mainVisible }
     public func setVisible(panel: Bool? = nil, main: Bool? = nil) {
+        // A closing panel may never report the pointer leaving its list, and a
+        // late hover-in can arrive after it closed: any panel change unfreezes.
+        if panel != nil { cpuOrder.freeze(false) }
         let previous = fullRefresh
         if let panel { panelVisible = panel }
         if let main { mainVisible = main }
@@ -74,9 +83,18 @@ public final class AppModel {
         sleeper?.cancel()
     }
 
-    public var rows: [PanelRow] {
-        report.map { Panel.rows($0, sort: sort, language: language, histories: histories) } ?? []
+    public var rows: [PanelRow] { rows(limit: Panel.rowLimit) }
+
+    /// Panel and main window rows. Memory order is Panel.rows' own; CPU order is `cpuOrder`.
+    public func rows(limit: Int) -> [PanelRow] {
+        guard let report else { return [] }
+        guard sort == .cpu else { return Panel.rows(report, sort: sort, language: language, limit: limit, histories: histories) }
+        let all = Panel.rows(report, sort: .cpu, language: language, limit: .max, histories: histories)
+        return Array(cpuOrder.arrange(all).prefix(limit))
     }
+
+    /// The pointer is over the panel list: CPU order holds still, values keep updating.
+    public func setListHovered(_ hovered: Bool) { cpuOrder.freeze(hovered) }
 
     public func owner(_ id: String) -> Owner? { report?.owners.first { $0.id == id } }
 
@@ -139,6 +157,10 @@ public final class AppModel {
                 trace("pause")
             }
             guard running, revision == current else { return }
+            if lastFullAt.map({ now() - $0 >= Self.hiddenFullInterval - 0.5 }) ?? true {
+                if await hiddenFull(current) { return }
+                guard running, revision == current else { return }
+            }
             let sample = sampleHost
             trace("host")
             let value = await Task.detached(priority: .utility) { sample() }.value
@@ -166,25 +188,72 @@ public final class AppModel {
         }
         guard running, revision == current else { return }
         trace("full")
+        lastFullAt = now()
         let decoded = await Task.detached(priority: .utility) { engine.tick() }.value
         guard running, revision == current else { return }
         switch decoded {
         case .value(let report):
+            let at = now()
+            // A copy only to know the CPU top rows for histories; the shown
+            // order changes once, in publish, after the histories arrive.
+            var order = cpuOrder
+            order.record(Self.cpuValues(report), at: at)
             // Either sort can be shown next; fetch both top lists (at most 2 × rowLimit owners).
-            let wanted = Set(SortKey.allCases.flatMap { Panel.rows(report, sort: $0, language: language) }.map(\.id))
+            let wanted = Set(Panel.rows(report, sort: .memory, language: language).map(\.id) + order.order.prefix(Panel.rowLimit))
             let targets = report.owners.filter { wanted.contains($0.id) }.compactMap { o in o.pids.first.map { (o.id, $0) } }
             let full = await Task.detached(priority: .utility) {
                 Dictionary(uniqueKeysWithValues: targets.compactMap { id, pid in engine.history(pid: pid, owner: id).map { (id, $0) } })
             }.value
             guard running, revision == current else { return }
-            self.report = report
             histories = full
-            host = report.host
-            if report.host != nil { hostTakenAt = report.takenAt }
-            lastError = nil
+            publish(report, at: at)
         case .failure(let error):
             lastError = error.message
         }
+    }
+
+    /// Hidden: one full tick per hiddenFullInterval with the engine left paused
+    /// (resuming restarts the slow worker and its `top`). No histories: nothing
+    /// draws them until a view is visible. False when the caller should sample host instead.
+    private func hiddenFull(_ current: UInt64) async -> Bool {
+        lastFullAt = now()
+        if engine == nil {
+            let make = makeEngine
+            let made = await Task.detached(priority: .utility) { make() }.value
+            engineFailed = made == nil
+            guard let made else { return false }
+            engine = made
+            engineIsActive = true
+            // A new engine starts active; pause it before its first tick.
+            let result = await Task.detached { made.setActive(false) }.value
+            if case .failure(let error) = result { hostError = error.message; return false }
+            engineIsActive = false
+        }
+        guard running, revision == current, let engine, !engineIsActive else { return false }
+        trace("hidden-full")
+        let decoded = await Task.detached(priority: .utility) { engine.tick() }.value
+        guard running, revision == current else { return true }
+        switch decoded {
+        case .value(let report):
+            publish(report, at: now())
+            return true
+        case .failure(let error):
+            lastError = error.message
+            return false
+        }
+    }
+
+    static func cpuValues(_ report: Report) -> [(id: String, pct: Double?)] {
+        report.owners.map { ($0.id, $0.cpuPct) } + report.swarms.map { ($0.id, $0.cpuPct) }
+    }
+
+    /// `at` is the tick's time on the `now` clock (the CPU average window).
+    private func publish(_ report: Report, at: Double) {
+        self.report = report
+        cpuOrder.record(Self.cpuValues(report), at: at)
+        host = report.host
+        if report.host != nil { hostTakenAt = report.takenAt }
+        lastError = nil
     }
 
     public func requestClose(_ ownerID: String) {

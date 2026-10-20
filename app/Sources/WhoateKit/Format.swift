@@ -51,14 +51,18 @@ public enum Format {
         public init(x: Double, y: Double) { self.x = x; self.y = y }
     }
     public static let minimumSpan: Int64 = 30
-    /// Raw history has one point per visible refresh (2 s); a wider gap than
-    /// 3 × 2 s (at least 10 s) means the owner was not being sampled.
-    public static let gapLimit: Int64 = 10
+    /// Raw history has one point per visible refresh (2 s) and one per hidden
+    /// full sample (AppModel.hiddenFullInterval, 30 s). 1.5 × 30 s keeps hidden
+    /// points joined; one missed hidden sample (60 s), sleep or a restart breaks the run.
+    public static let gapLimit: Int64 = 45
+    /// At most the last 30 minutes; history keeps 1800 points, about 15 hours at 30 s.
+    public static let window: Int64 = 1800
 
     /// Only the latest continuous run of raw history (AppModel.histories, never a
     /// tick's downsampled copy) is drawn; older or isolated points are never joined.
     public static func trend(_ points: [HistoryPoint], width: Double, height: Double) -> Trend {
-        let run = latestRun(points)
+        var run = latestRun(points)
+        if let end = run.last?.timestampS { run.removeAll { $0.timestampS < end - window } }
         guard let first = run.first, let last = run.last, last.timestampS - first.timestampS >= minimumSpan else {
             return .insufficient
         }
