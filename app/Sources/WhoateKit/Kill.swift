@@ -8,6 +8,8 @@ public struct KillConfirmation: Equatable, Sendable {
     public var pids: [Int32]
     public var estimateBytes: UInt64?
     public var estimate: String
+    /// "将结束 3 个进程，预计腾出 1.2G" (R2): the count and the estimate in one line.
+    public var summary: String
     public var isProtected: Bool
 
     public init(owner: Owner, language: Language) {
@@ -21,6 +23,8 @@ public struct KillConfirmation: Equatable, Sendable {
             let unknown = owner.reclaimablePhysical?.unknownCount ?? owner.pids.count
             estimate = L10n.format(.estimateUnknown, language, "\(unknown)")
         }
+        summary = estimateBytes.map { L10n.format(.confirmSummary, language, "\(owner.pids.count)", Format.bytes($0)) }
+            ?? L10n.format(.confirmSummaryUnknown, language, "\(owner.pids.count)")
         isProtected = Panel.isProtected(owner)
     }
 }

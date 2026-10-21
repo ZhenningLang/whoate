@@ -153,7 +153,7 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
         let own_agents: Vec<_> = current
             .procs
             .iter()
-            .filter(|p| p.uid == self.context.uid && crate::sources::tool(p).is_some())
+            .filter(|p| p.uid == self.context.uid && crate::sources::has_session_source(p))
             .cloned()
             .collect();
         let (mut agents, issues) = self.sessions.collect(&own_agents, &self.context.cfg);

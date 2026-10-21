@@ -177,6 +177,7 @@ fn resident_sampler_enrichment_uses_the_same_identity_window_as_footprint() {
                 argv: vec![],
                 tmux: None,
                 tmux_pane: None,
+                codex_thread_id: None,
             })
         }
         fn responsible_pid(&mut self, _: i32) -> Option<i32> {

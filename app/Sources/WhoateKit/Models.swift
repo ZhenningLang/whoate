@@ -32,8 +32,30 @@ public struct Report: Decodable, Sendable, Equatable {
     public var owners: [Owner]
     public var swarms: [Swarm]
     public var issues: [Issue]
+    /// whoate_why only: the owners' processes and their ancestors (R4, R8).
+    public var procs: [ProcBrief]?
     enum CodingKeys: String, CodingKey, CaseIterable {
-        case schema, takenAt = "taken_at", host, systemProcs = "system_procs", owners, swarms, issues
+        case schema, takenAt = "taken_at", host, systemProcs = "system_procs", owners, swarms, issues, procs
+    }
+}
+
+/// One process from whoate_why. Members carry memory, cwd and argv already
+/// redacted by the core's fixture rules; ancestors only pid, ppid and name.
+public struct ProcBrief: Decodable, Sendable, Equatable {
+    public var pid: Int32
+    public var ppid: Int32
+    public var comm: String
+    public var inOwner: Bool
+    public var memBytes: UInt64?
+    public var cwd: String?
+    public var argv: [String]?
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case pid, ppid, comm, inOwner = "in_owner", memBytes = "mem_bytes", cwd, argv
+    }
+    public init(pid: Int32, ppid: Int32, comm: String, inOwner: Bool, memBytes: UInt64? = nil,
+                cwd: String? = nil, argv: [String]? = nil) {
+        (self.pid, self.ppid, self.comm, self.inOwner) = (pid, ppid, comm, inOwner)
+        (self.memBytes, self.cwd, self.argv) = (memBytes, cwd, argv)
     }
 }
 

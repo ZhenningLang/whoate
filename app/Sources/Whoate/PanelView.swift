@@ -102,7 +102,7 @@ struct PanelView: View {
 
     /// Owner design gate 2026-10-21: quit stays a button, alone at the far left
     /// and borderless; the bordered main-window button is at the far right, with
-    /// the status line between them (feedback 3; app/DESIGN.md §5).
+    /// the status line between them (feedback 3; app/DESIGN.md §5). Words: R1.
     private var footer: some View {
         HStack(spacing: 12) {
             Button(L10n.text(.quit, language)) { quit() }.keyboardShortcut("q")
@@ -171,7 +171,11 @@ struct PanelRowView: View {
                 if row.closable {
                     HStack(spacing: 8) {
                         Button(L10n.text(.details, language)) { openMain(row.id) }.controlSize(.small)
-                        Button(L10n.text(.close, language), role: .destructive, action: close).controlSize(.small)
+                        // A bordered button ignores tint on macOS: the title itself is red (R2).
+                        Button(role: .destructive, action: close) {
+                            Text(L10n.text(.close, language)).foregroundStyle(.red)
+                        }
+                        .controlSize(.small).tint(.red)
                     }
                     .rowFrame(row.id, "buttons")
                 }
@@ -232,29 +236,29 @@ struct Pill: View {
     }
 }
 
-/// Number with the unreadable-memory mark in front (feedback 1).
+/// The row's number: memory ("≥ 596M" when some processes are unreadable, R5) or CPU.
 struct ValueText: View {
     let row: PanelRow
     let sort: SortKey
     let language: Language
     var body: some View {
-        let unreadable = Format.unreadable(row.history, current: row.unknownMemCount)
-        HStack(spacing: 4) {
-            if sort == .memory, unreadable > 0 { UnknownMemMark(count: unreadable, language: language) }
-            Text(sort == .memory ? Format.bytes(row.memBytes) : Format.cpu(row.cpuPct))
-                .font(.headline).monospacedDigit()
+        if sort == .memory {
+            MemoryText(memory: row.memory(language)).font(.headline)
+        } else {
+            Text(Format.cpu(row.cpuPct)).font(.headline).monospacedDigit()
         }
     }
 }
 
-/// Small secondary mark; hover explains it.
-struct UnknownMemMark: View {
-    let count: Int
-    let language: Language
+/// A memory number from Format.memory; hover tells how many processes were unreadable.
+struct MemoryText: View {
+    let memory: Format.Memory
     var body: some View {
-        Image(systemName: "questionmark.circle").font(.caption).foregroundStyle(.secondary)
-            .help(L10n.format(.unknownMem, language, "\(count)"))
-            .accessibilityLabel(L10n.format(.unknownMem, language, "\(count)"))
+        if let help = memory.help {
+            Text(memory.text).monospacedDigit().help(help).accessibilityLabel(memory.text + ", " + help)
+        } else {
+            Text(memory.text).monospacedDigit()
+        }
     }
 }
 

@@ -39,11 +39,14 @@ SHOTS = [
     ("main-orphan", "main", "main-window", {"WHOATE_UI_SELECT": "kind:orphan"}, 5.0),
     ("main-browser", "main", "main-window", {"WHOATE_UI_SELECT": "kind:browser"}, 5.0),
     ("main-overview", "main", "main-window", {"WHOATE_UI_SELECT": "overview"}, 5.0),
+    # Round 3 (R3): a pane running two agent sessions.
+    ("main-pane", "main", "main-window", {"WHOATE_UI_SELECT": "pane:%22"}, 5.0),
 ]
 ENGLISH = {"panel", "main-agent"}
 # Owner id prefix (or test) the selected row must have, per main window shot.
 SELECTED = {"main-agent": lambda i: i.startswith("agent:"), "main-orphan": lambda i: i.startswith("orphan:"),
-            "main-browser": lambda i: i == "app:com.brave.Browser", "main-overview": lambda i: i == "-"}
+            "main-browser": lambda i: i == "app:com.brave.Browser", "main-overview": lambda i: i == "-",
+            "main-pane": lambda i: i == "pane:%22"}
 
 
 def fresh_fixture(path):
@@ -90,8 +93,10 @@ def capture(binary, out_dir, fixture, shot, appearance, language):
         lines = open(state_file).read().splitlines() if os.path.exists(state_file) else []
         selected = next((f.split("=", 1)[1] for f in reversed(lines[-1].split("\t")) if f.startswith("selected=")), None) \
             if lines else None
-        s.update(selected=selected, size_ok=(s["width"], s["height"]) == (round(int(width) * float(scale)),
-                                                                          round(int(height) * float(scale))))
+        # The window line truncates points to integers (559.5 → 559): a capture of a
+        # fractional-width window is up to one point wider, which shows at 1× scale.
+        fits = lambda pixels, points: round(int(points) * float(scale)) <= pixels <= round((int(points) + 1) * float(scale))
+        s.update(selected=selected, size_ok=fits(s["width"], width) and fits(s["height"], height))
         s.update(name=name + suffix, appearance=appearance, language=language, file=os.path.basename(png),
                  window=int(number), pid=app["pid"], window_points=[int(width), int(height)], scale=float(scale),
                  not_solid=s["distinct_colours"] > 8,

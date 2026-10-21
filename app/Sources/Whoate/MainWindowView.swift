@@ -155,8 +155,14 @@ struct MainRowView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(row.subtitle).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(row.source == .swarm ? .tail : .middle)
                 Spacer(minLength: 8)
-                Text(sort == .memory ? "CPU " + Format.cpu(row.cpuPct) : Format.bytes(row.memBytes))
-                    .font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                Group {
+                    if sort == .memory {
+                        Text("CPU " + Format.cpu(row.cpuPct)).monospacedDigit()
+                    } else {
+                        MemoryText(memory: row.memory(language))
+                    }
+                }
+                .font(.callout).foregroundStyle(.secondary)
             }
             HStack(spacing: 8) {
                 Pill(row: row)

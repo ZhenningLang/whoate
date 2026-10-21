@@ -5365,6 +5365,2132 @@
     "rule": "default",
     "text": "正常"
    }
+  },
+  {
+   "id": "agent:codex:019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42",
+   "kind": "agent_session",
+   "label": "重构导出模块",
+   "mem_bytes": 751619276,
+   "unknown_mem_count": 0,
+   "cpu_pct": 3.1,
+   "pids": [
+    960100,
+    960101,
+    960102
+   ],
+   "origin": {
+    "tmux_pane": null,
+    "pane_alive": null,
+    "cwd": "/Users/demo/src/export-kit",
+    "ports": null
+   },
+   "agent": {
+    "tool": "codex",
+    "session_id": "019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42",
+    "name": "重构导出模块",
+    "name_source": "codex",
+    "title": null,
+    "first_prompt": null,
+    "first_reply": null,
+    "status": null,
+    "cwd": "/Users/demo/src/export-kit",
+    "branch": "refactor/export",
+    "model": null,
+    "cost_usd": null,
+    "confidence": "certain",
+    "updated_at_ms": 1792652100000,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "agent_source",
+     "detail": "codex",
+     "confidence": "certain"
+    },
+    {
+     "kind": "codex_thread_env",
+     "detail": "019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "python3.13",
+     "mem_bytes": 536870912,
+     "process_count": 2,
+     "pids": [
+      960100,
+      960101
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "node",
+     "mem_bytes": 214748364,
+     "process_count": 1,
+     "pids": [
+      960102
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 644245094,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 645438140,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 646631187,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 647824233,
+     "cpu_pct": 2.4
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 649017280,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 650210326,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 651403373,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 652596419,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 653789466,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 654982512,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 656175559,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 657368605,
+     "cpu_pct": 2.5
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 658561652,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 659754698,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 660947744,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 662140791,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 663333837,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 664526884,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 665719930,
+     "cpu_pct": 2.6
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 666912977,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 668106023,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 669299070,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 670492116,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 671685163,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 672878209,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 674071256,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 675264302,
+     "cpu_pct": 2.7
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 676457349,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 677650395,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 678843442,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 680036488,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 681229535,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 682422581,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 683615627,
+     "cpu_pct": 2.8
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 684808674,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 686001720,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 687194767,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 688387813,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 689580860,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 690773906,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 691966953,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 693159999,
+     "cpu_pct": 2.9
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 694353046,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 695546092,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 696739139,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 697932185,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 699125232,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 700318278,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 701511325,
+     "cpu_pct": 3.0
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 702704371,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 703897417,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 705090464,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 706283510,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 707476557,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 708669603,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 709862650,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 711055696,
+     "cpu_pct": 3.1
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 712248743,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 713441789,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 714634836,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 715827882,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 717020929,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 718213975,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 719407022,
+     "cpu_pct": 3.2
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 720600068,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 721793115,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 722986161,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 724179207,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 725372254,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 726565300,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 727758347,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 728951393,
+     "cpu_pct": 3.3
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 730144440,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 731337486,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 732530533,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 733723579,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 734916626,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 736109672,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 737302719,
+     "cpu_pct": 3.4
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 738495765,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 739688812,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 740881858,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 742074905,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 743267951,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 744460997,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 745654044,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 746847090,
+     "cpu_pct": 3.5
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 748040137,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 749233183,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 750426230,
+     "cpu_pct": 3.6
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 751619276,
+     "cpu_pct": 3.6
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "agent:claude:5d1e8a90-2c4b-4f7e-8a1d-6b3c9e0f2a17",
+   "kind": "agent_session",
+   "label": "补 README 示例",
+   "mem_bytes": 536870912,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.6,
+   "pids": [
+    973000,
+    973001
+   ],
+   "origin": {
+    "tmux_pane": "%22",
+    "pane_alive": true,
+    "cwd": "/Users/demo/src/atlas",
+    "ports": null,
+    "window_name": "main",
+    "pane_title": "claude"
+   },
+   "agent": {
+    "tool": "claude",
+    "session_id": "5d1e8a90-2c4b-4f7e-8a1d-6b3c9e0f2a17",
+    "name": "补 README 示例",
+    "name_source": "manual",
+    "title": "补 README 示例",
+    "first_prompt": "给 README 补两个用法示例",
+    "first_reply": "好，先看现有的命令列表……",
+    "status": "idle",
+    "cwd": "/Users/demo/src/atlas",
+    "branch": "main",
+    "model": null,
+    "cost_usd": null,
+    "confidence": "certain",
+    "updated_at_ms": 1792651800000,
+    "last_activity_at": null,
+    "idle_seconds": 600,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%22",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "claude",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "claude",
+     "mem_bytes": 429496729,
+     "process_count": 1,
+     "pids": [
+      973000
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "node",
+     "mem_bytes": 107374182,
+     "process_count": 1,
+     "pids": [
+      973001
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.5
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.6
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 536870912,
+     "cpu_pct": 0.7
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "agent:opencode:ses_Lk92wQ",
+   "kind": "agent_session",
+   "label": "检查文档死链",
+   "mem_bytes": 214748364,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.3,
+   "pids": [
+    974000
+   ],
+   "origin": {
+    "tmux_pane": "%22",
+    "pane_alive": true,
+    "cwd": "/Users/demo/src/atlas",
+    "ports": null,
+    "window_name": "main",
+    "pane_title": "opencode"
+   },
+   "agent": {
+    "tool": "opencode",
+    "session_id": "ses_Lk92wQ",
+    "name": "检查文档死链",
+    "name_source": "manual",
+    "title": "检查文档死链",
+    "first_prompt": "检查 docs 目录的死链",
+    "first_reply": "共找到 3 个失效链接……",
+    "status": "idle",
+    "cwd": "/Users/demo/src/atlas",
+    "branch": "main",
+    "model": null,
+    "cost_usd": null,
+    "confidence": "certain",
+    "updated_at_ms": 1792651500000,
+    "last_activity_at": null,
+    "idle_seconds": 900,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "pane_ancestor",
+     "detail": "%22",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "opencode",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "opencode",
+     "mem_bytes": 214748364,
+     "process_count": 1,
+     "pids": [
+      974000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 214748364,
+     "cpu_pct": 0.4
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
+  },
+  {
+   "id": "agent:opencode:pid:975000",
+   "kind": "agent_session",
+   "label": "opencode",
+   "mem_bytes": 429496729,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.1,
+   "pids": [
+    975000,
+    975001
+   ],
+   "origin": {
+    "tmux_pane": "%301",
+    "pane_alive": false,
+    "cwd": "/Users/demo/src/old-api",
+    "ports": null
+   },
+   "agent": {
+    "tool": "opencode",
+    "session_id": null,
+    "name": null,
+    "name_source": null,
+    "title": null,
+    "first_prompt": null,
+    "first_reply": null,
+    "status": null,
+    "cwd": "/Users/demo/src/old-api",
+    "branch": null,
+    "model": null,
+    "cost_usd": null,
+    "confidence": "weak",
+    "updated_at_ms": null,
+    "last_activity_at": null,
+    "idle_seconds": null,
+    "stale": false
+   },
+   "evidence": [
+    {
+     "kind": "tmux_environment",
+     "detail": "%301",
+     "confidence": "certain"
+    },
+    {
+     "kind": "agent_source",
+     "detail": "opencode",
+     "confidence": "weak"
+    }
+   ],
+   "parts": [
+    {
+     "name": "opencode",
+     "mem_bytes": 322122547,
+     "process_count": 1,
+     "pids": [
+      975000
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "node",
+     "mem_bytes": 107374182,
+     "process_count": 1,
+     "pids": [
+      975001
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 429496729,
+     "cpu_pct": 0.1
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   }
   }
  ],
  "swarms": [

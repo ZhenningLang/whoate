@@ -183,6 +183,7 @@ pub fn enrich_proc(
                 candidate.argv = args.argv;
                 candidate.tmux = args.tmux;
                 candidate.tmux_pane = args.tmux_pane;
+                candidate.codex_thread_id = args.codex_thread_id;
             }
             Err(error) => errors.push(error),
         }

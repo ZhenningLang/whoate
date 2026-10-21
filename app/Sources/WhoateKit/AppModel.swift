@@ -36,7 +36,8 @@ public final class AppModel {
     public var selectedOwnerID: String? { didSet { if selectedOwnerID != oldValue { notice = nil } } }
     /// Main window sidebar selection.
     public var category: MainCategory = .all
-    /// Last tmux jump message in the main window (no client, no terminal, failure); nil after success.
+    /// The action bar's message for the selected owner: a tmux jump result (no client,
+    /// no terminal, failure; nil after success) or "copied".
     public private(set) var notice: String?
     /// Main window list rows on screen now (onAppear/onDisappear); they get full histories.
     @ObservationIgnored private var visibleMainRows = Set<String>()
@@ -52,6 +53,11 @@ public final class AppModel {
     /// Raw (not downsampled) history of the owners the panel can show, by owner id.
     /// A tick's own history is capped at 60 evenly spaced points, which hides gaps.
     public private(set) var histories: [String: [HistoryPoint]] = [:]
+    /// The selected owner's processes from its whoate_why (R4, R8); empty until it arrives.
+    public private(set) var selectedProcs: (owner: String, procs: [ProcBrief])?
+    public func procs(_ ownerID: String) -> [ProcBrief] {
+        selectedProcs?.owner == ownerID ? selectedProcs?.procs ?? [] : []
+    }
     /// CPU-mode order shared by the panel and the main window (10 s average, hover freeze).
     public private(set) var cpuOrder = CPUOrder()
 
@@ -121,6 +127,25 @@ public final class AppModel {
     public func setListHovered(_ hovered: Bool) { cpuOrder.freeze(hovered) }
 
     public func owner(_ id: String) -> Owner? { report?.owners.first { $0.id == id } }
+
+    /// WHOATE_UI_SELECT and a pane's session list (R3) share this one selection path.
+    public func select(_ value: String) {
+        let (category, id) = MainWindowModel.select(value, rows: rows(limit: .max))
+        self.category = category
+        selectedOwnerID = id
+    }
+
+    /// "已复制" in the action bar's message for two seconds (R4).
+    public func markCopied(_ ownerID: String) {
+        guard selectedOwnerID == ownerID else { return }
+        let text = L10n.text(.copied, language)
+        notice = text
+        let sleep = sleep
+        Task { [weak self] in
+            try? await sleep(2)
+            if self?.notice == text { self?.notice = nil }
+        }
+    }
 
     public func start() {
         guard !running else { return }
@@ -233,11 +258,14 @@ public final class AppModel {
                 wanted.formUnion(visibleMainRows.sorted().prefix(Self.visibleHistoryRows))
             }
             let targets = report.owners.filter { wanted.contains($0.id) }.compactMap { o in o.pids.first.map { (o.id, $0) } }
+            let selected = mainVisible ? selectedOwnerID : nil
             let full = await Task.detached(priority: .utility) {
-                Dictionary(uniqueKeysWithValues: targets.compactMap { id, pid in engine.history(pid: pid, owner: id).map { (id, $0) } })
+                Dictionary(uniqueKeysWithValues: targets.compactMap { id, pid in engine.detail(pid: pid, owner: id).map { (id, $0) } })
             }.value
             guard running, revision == current else { return }
-            histories = full
+            histories = full.mapValues(\.history)
+            let procs = selected.flatMap { id in full[id].map { (owner: id, procs: $0.procs) } }
+            if procs?.owner != selectedProcs?.owner || procs?.procs != selectedProcs?.procs { selectedProcs = procs }
             publish(report, at: at)
         case .failure(let error):
             lastError = error.message

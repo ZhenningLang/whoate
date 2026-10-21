@@ -52,9 +52,11 @@ public final class Engine: RefreshEngine, @unchecked Sendable {
     public func tick() -> Decoded<Report> { decode(Report.self, from: tickData()) }
     public func why(pid: Int32) -> Decoded<Report> { decode(Report.self, from: whyData(pid: pid)) }
     /// whoate_why reuses the latest tick (no new sample) and keeps every point.
-    public func history(pid: Int32, owner: String) -> [HistoryPoint]? {
-        guard case .value(let report) = why(pid: pid) else { return nil }
-        return report.owners.first { $0.id == owner }?.history
+    public func history(pid: Int32, owner: String) -> [HistoryPoint]? { detail(pid: pid, owner: owner)?.history }
+    public func detail(pid: Int32, owner: String) -> (history: [HistoryPoint], procs: [ProcBrief])? {
+        guard case .value(let report) = why(pid: pid), let found = report.owners.first(where: { $0.id == owner })
+        else { return nil }
+        return (found.history, report.procs ?? [])
     }
     public func setActive(_ active: Bool) -> Decoded<RefreshControl> {
         queue.sync { decode(RefreshControl.self, from: take(whoate_engine_set_active(handle, active ? 1 : 0))) }

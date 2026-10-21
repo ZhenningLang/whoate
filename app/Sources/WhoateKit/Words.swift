@@ -18,6 +18,7 @@ public enum Words {
         "other_uid": ("属于其他用户", "Belongs to another user"),
         "service_fallback": ("归不到具体软件，按后台服务处理", "No owner found; treated as a background service"),
         "pane_status_unknown": ("这次没读到 tmux pane 列表", "tmux pane list unavailable this time"),
+        "codex_thread_env": ("Codex 在环境变量里标记了会话", "Codex tagged its session in the environment"),
     ]
     static let status: [String: (zh: String, en: String)] = [
         "working": ("正在干活", "Working"),
@@ -25,6 +26,7 @@ public enum Words {
         "waiting": ("等你回复", "Waiting for you"),
         "running": ("在跑命令", "Running a command"),
         "done": ("已完成", "Done"),
+        "archived": ("已归档", "Archived"),
     ]
 
     public static func evidence(_ kind: String, _ language: Language) -> String {

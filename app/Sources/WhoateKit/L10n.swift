@@ -53,10 +53,17 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case sectionOwners, sectionFilters, ownersCount, sortedBy, last30Minutes, unknownMem, menuTight, menuCritical
     case kindPane, overview, memoryUsed, wired, kernelZones, gpuMemory, diagnostics, notFresh
     case session, sessionName, autoNamed, conversation, status, location, project, confidence
-    case whyHere, curve30, parts, advice, processesInSession, jumpToPane, copyCommand, revealInFinder
+    case whyHere, curve30, parts, advice, processesInSession, jumpToPane, copyInfo, copied
     case notInTmux, closeProcesses, systemDoNotClose, swarmOwners, noSelection
     case noSession, idle, unavailable, gpuMissing, noTerminalApp, noTmuxClient, jumpFailed
     case systemCard, restartNotRun, facts, linuxNote
+    case confirmSummary, confirmSummaryUnknown
+    case paneSessions, paneSessionsLine, andMore, codexSession, byFolder, other
+    case whyOwnApp, whySession, whyCodex, whyPane, whyLauncher, whyNoSession, whyPaneClosed, whyOrphan
+    case whyResponsible, whyChain, evidenceDetails
+    case copyHeader, copyOwner, copySession, copyKind, copyKindAgent, copyMemory, copyUnknown, copyCwd
+    case copyTmux, copyWindow, copyReason, copySuggestion, copyProcesses, copyMore, copyNoArgv
+    case lastActive
 }
 
 public enum L10n {
@@ -73,8 +80,9 @@ public enum L10n {
         .refreshEvery: ("每 %@ 秒刷新", "Refreshes every %@ s"),
         .systemProcsAgo: ("系统进程 %@ 秒前", "system processes %@ s ago"),
         .systemProcsMissing: ("系统进程暂缺", "system processes unavailable"),
-        .openWhoate: ("打开 whoate", "Open whoate"),
-        .quit: ("退出 whoate", "Quit whoate"),
+        // R1 (owner 2026-10-21): one word for the main window in both states.
+        .openWhoate: ("完整面板", "Full Panel"),
+        .quit: ("退出", "Quit"),
         .details: ("详情", "Details"),
         .close: ("关闭", "Close"),
         .normal: ("正常", "Normal"),
@@ -132,7 +140,7 @@ public enum L10n {
         .reasonNoConfirmedPlan: ("不在已确认的关闭列表里", "not in the confirmed close list"),
         .mainWindowTitle: ("whoate", "whoate"),
         .mainWindowPending: ("三栏主窗口在下一期提供，当前列出全部归属。", "The three-column window arrives next; all owners are listed for now."),
-        .showMain: ("显示主窗口", "Show main window"),
+        .showMain: ("完整面板", "Full Panel"),
         .cpuHeadline: ("整机 CPU %@", "CPU %@"),
         .cpuMissing: ("整机 CPU 暂缺：%@", "CPU unavailable: %@"),
         .cpuLoad: ("1 分钟负载 %@ / %@ 核", "1-min load %@ / %@ cores"),
@@ -166,7 +174,7 @@ public enum L10n {
         .ownersCount: ("%@ 个归属", "%@ owners"),
         .sortedBy: ("按%@", "by %@"),
         .last30Minutes: ("最近 30 分钟", "Last 30 minutes"),
-        .unknownMem: ("%@ 个进程读不到内存，数字和曲线只计读得到的部分", "%@ processes unreadable; number and curve count the rest"),
+        .unknownMem: ("%@ 个进程读不到内存", "%@ processes unreadable"),
         .menuTight: ("偏紧", "tight"),
         .menuCritical: ("紧张", "critical"),
         .kindPane: ("tmux pane", "tmux pane"),
@@ -191,8 +199,8 @@ public enum L10n {
         .advice: ("建议", "Suggestions"),
         .processesInSession: ("这个会话下的进程", "Processes in this session"),
         .jumpToPane: ("跳到这个 pane", "Go to pane"),
-        .copyCommand: ("复制命令", "Copy command"),
-        .revealInFinder: ("在 Finder 中显示目录", "Show folder in Finder"),
+        .copyInfo: ("复制相关信息", "Copy Details"),
+        .copied: ("已复制", "Copied"),
         .notInTmux: ("不在 tmux 里", "Not in tmux"),
         .closeProcesses: ("关闭 %@ 个进程…", "Close %@ processes…"),
         .systemDoNotClose: ("系统进程，勿关", "System process; do not close"),
@@ -209,6 +217,42 @@ public enum L10n {
         .restartNotRun: ("没有可用的重启命令", "No restart command"),
         .facts: ("实测数据", "Measured facts"),
         .linuxNote: ("Docker 数字按 Linux 口径统计", "Docker figures use Linux accounting"),
+        .confirmSummary: ("将结束 %@ 个进程，预计腾出 %@", "Ends %@ processes, frees about %@"),
+        .confirmSummaryUnknown: ("将结束 %@ 个进程，预计腾出：无法预估", "Ends %@ processes; memory freed: cannot estimate"),
+        .paneSessions: ("这个 pane 里的助手会话", "Agent sessions in this pane"),
+        .paneSessionsLine: ("会话：%@", "Sessions: %@"),
+        .andMore: ("等 %@ 个", "%@ in all"),
+        .codexSession: ("Codex 会话", "Codex session"),
+        .byFolder: ("按工作目录分组", "By working folder"),
+        .other: ("其他", "Other"),
+        .whyOwnApp: ("%@ 自己的进程", "%@'s own processes"),
+        .whySession: ("%@ 会话里的进程", "Processes in a %@ session"),
+        .whyCodex: ("Codex 会话里的进程（由 Codex 标记了会话）", "Processes in a Codex session (tagged by Codex)"),
+        .whyPane: ("tmux pane %@ 里的进程", "Processes in tmux pane %@"),
+        .whyLauncher: ("父进程已退出，系统记录由 %@ 启动", "Its parent has exited; macOS records it as started by %@"),
+        .whyNoSession: ("%@ 起的进程，没对上会话", "Started by %@; no session matched"),
+        .whyPaneClosed: ("启动它的 pane 已关闭", "the pane that started it is closed"),
+        .whyOrphan: ("启动它的程序已退出，进程被系统收养", "The program that started it has exited; macOS adopted the process"),
+        .whyResponsible: ("系统记录 %@ 为它负责", "macOS lists %@ as responsible for it"),
+        .whyChain: ("父进程链：%@", "Parent chain: %@"),
+        .evidenceDetails: ("证据明细（%@ 条）", "Evidence (%@)"),
+        .copyHeader: ("whoate 归属信息 · %@ · 帮我判断保留还是关闭。不含对话内容。",
+                      "whoate owner info · %@ · Help me decide whether to keep or close it. No conversation content."),
+        .copyOwner: ("软件/会话", "Software/session"),
+        .copySession: ("%@ 会话「%@」", "%@ session “%@”"),
+        .copyKind: ("种类", "Kind"),
+        .copyKindAgent: ("助手会话（%@）", "Agent session (%@)"),
+        .copyMemory: ("内存", "Memory"),
+        .copyUnknown: ("（%@ 个进程读不到内存，只计读得到的）", " (%@ processes unreadable; counted the rest)"),
+        .copyCwd: ("工作目录", "Working folder"),
+        .copyTmux: ("tmux", "tmux"),
+        .copyWindow: ("窗口「%@」", "window “%@”"),
+        .copyReason: ("归属理由", "Why grouped here"),
+        .copySuggestion: ("建议", "Suggestion"),
+        .copyProcesses: ("进程（%@ 个）", "Processes (%@)"),
+        .copyMore: ("另有 %@ 个未列出", "%@ more not listed"),
+        .copyNoArgv: ("命令行不可用", "Command lines unavailable"),
+        .lastActive: ("最近活动", "Last active"),
     ]
 
     public static func text(_ key: L10nKey, _ language: Language) -> String {

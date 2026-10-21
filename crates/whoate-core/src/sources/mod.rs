@@ -1,5 +1,6 @@
 mod cache;
 pub mod claude_code;
+mod codex;
 pub mod kilo;
 pub mod opencode;
 
@@ -85,12 +86,19 @@ pub fn tool(proc: &Proc) -> Option<&'static str> {
     None
 }
 
+/// A process whose session the sources look up: an agent CLI, or a Codex
+/// tool call (CODEX_THREAD_ID, phase 10 R7).
+pub fn has_session_source(proc: &Proc) -> bool {
+    tool(proc).is_some() || proc.codex_thread_id.is_some()
+}
+
 #[derive(Default)]
 pub struct Sessions {
     cache: BTreeMap<SessionKey, Agent>,
     source_reads: usize,
     memo: BTreeMap<SessionKey, cache::Memo>,
     databases: opencode::Cached,
+    codex: codex::Cached,
 }
 impl Sessions {
     /// Successful memo hits do not increment this source-parser counter.
@@ -105,6 +113,7 @@ impl Sessions {
         let mut agents = BTreeMap::new();
         let mut issues = vec![];
         let mut active = BTreeSet::new();
+        let mut codex = BTreeMap::new();
         // A symlink/root replacement must not authorize a stale value from the
         // previous physical home, even if its configured spelling is unchanged.
         let home_identity = cfg.home.canonicalize().ok().and_then(|path| {
@@ -118,6 +127,13 @@ impl Sessions {
                 continue;
             }
             let Some(tool) = tool(proc) else {
+                // Codex ids are looked up together after the loop; the
+                // single-session capability never reads them.
+                if let Some(id) = &proc.codex_thread_id
+                    && cfg.session_pid().is_none()
+                {
+                    codex.insert(proc.pid, id.clone());
+                }
                 continue;
             };
             // The limited transcript reader is Claude-specific. Never silently
@@ -216,6 +232,17 @@ impl Sessions {
             };
             agents.insert(proc.pid, agent);
         }
+        let (threads, codes) = self.codex.lookup(&codex.values().cloned().collect(), cfg);
+        for (pid, id) in codex {
+            if let Some(agent) = threads.get(&id) {
+                agents.insert(pid, agent.clone());
+            }
+        }
+        issues.extend(codes.into_iter().map(|code| SampleIssue {
+            stage: "codex".into(),
+            pid: None,
+            code: code.into(),
+        }));
         self.cache.retain(|key, _| active.contains(key));
         self.memo.retain(|key, _| active.contains(key));
         self.databases.retain(&active);

@@ -40,6 +40,9 @@ pub struct Proc {
     pub cwd: Option<String>,
     pub tmux_pane: Option<String>,
     pub tmux: Option<String>,
+    /// CODEX_THREAD_ID from the environment: the Codex session of a tool call.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub codex_thread_id: Option<String>,
     pub footprint_bytes: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resident_bytes: Option<u64>,
@@ -67,6 +70,7 @@ impl Proc {
             cwd: None,
             tmux_pane: None,
             tmux: None,
+            codex_thread_id: None,
             footprint_bytes: None,
             resident_bytes: None,
             cpu_time_ns: None,

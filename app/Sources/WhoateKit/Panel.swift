@@ -28,6 +28,15 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var rule: String?
 }
 
+extension PanelRow {
+    /// The row's memory number. "≥" and its count describe this tick only: a
+    /// curve that was partly unreadable earlier does not mark the number now
+    /// (R5; round 3 conform review B1).
+    public func memory(_ language: Language) -> Format.Memory {
+        Format.memory(memBytes, unknown: unknownMemCount, language)
+    }
+}
+
 /// The panel and main-window header: memory pressure, or whole-machine CPU.
 public struct Header: Equatable, Sendable {
     public var headline: String
@@ -134,7 +143,7 @@ public enum Panel {
         } else if let origin = o.origin, let window = origin.windowName ?? origin.tmuxPane {
             parts.append(windowLabel(window, origin))
         }
-        if let cwd = o.origin?.cwd ?? agent.cwd, cwd != "/" {
+        if let cwd = Detail.folder(o), cwd != "/" {
             parts.append(URL(fileURLWithPath: cwd).lastPathComponent)
         }
         if let idle = agent.idleSeconds {

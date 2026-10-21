@@ -17,7 +17,8 @@ struct DetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let row, let owner {
-                        OwnerDetail(row: row, owner: owner, language: language)
+                        OwnerDetail(row: row, owner: owner, language: language, procs: model.procs(owner.id),
+                                    report: model.report, select: { model.select($0) })
                     } else if let row, let swarm = model.report?.swarms.first(where: { $0.id == row.id }) {
                         SwarmDetail(row: row, swarm: swarm, owners: model.report?.owners ?? [], language: language)
                     } else {
@@ -65,23 +66,30 @@ struct OwnerDetail: View {
     let row: PanelRow
     let owner: Owner
     let language: Language
+    /// The owner's processes from whoate_why; empty until it arrives (or when replaying).
+    let procs: [ProcBrief]
+    let report: Report?
+    /// Selects another owner (a pane's session) through AppModel.select.
+    var select: (String) -> Void
 
     var body: some View {
         DetailHeaderView(header: Detail.header(owner, row: row, language: language), row: row, language: language)
-        ForEach(Array(Detail.cards(owner, history: row.history, catalog: Advice.catalog, language: language).enumerated()),
+        ForEach(Array(Detail.cards(owner, history: row.history, catalog: Advice.catalog, language: language,
+                                   procs: procs, report: report).enumerated()),
                 id: \.offset) { _, card in
             switch card {
             case .session(let session): sessionCard(session)
+            case .paneSessions(let sessions): paneSessionsCard(sessions)
             case .system(let system): systemCard(system)
-            case .evidence(let lines): evidenceCard(lines)
+            case .why(let why): whyCard(why)
             case .curve:
                 box(L10n.text(.curve30, language)) {
-                    HistoryChart(points: row.history, color: Palette.tint(row.level),
-                                 unknown: Format.unreadable(row.history, current: row.unknownMemCount), language: language)
+                    HistoryChart(points: row.history, color: Palette.tint(row.level), language: language)
                         .frame(height: 140)
                         .rowFrame("detail", "trend")
                 }
             case .parts(let parts): partsCard(parts)
+            case .folders(let groups): foldersCard(groups)
             case .facts(let facts, let linuxNote): factsCard(facts, linuxNote: linuxNote)
             case .advice(let items): adviceCard(items)
             }
@@ -126,16 +134,34 @@ struct OwnerDetail: View {
             .lineLimit(3).fixedSize(horizontal: false, vertical: true)
     }
 
-    /// The restart command is text plus a copy button: whoate never runs it.
+    /// Sessions running in this pane (R3); a click opens the session's own details.
+    private func paneSessionsCard(_ sessions: [PaneSession]) -> some View {
+        box(L10n.text(.paneSessions, language)) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
+                    if index > 0 { Divider() }
+                    Button { select(session.ownerID) } label: {
+                        HStack(spacing: 8) {
+                            Text(session.title).lineLimit(1).truncationMode(.middle)
+                            Text(session.tool).foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
+                            MemoryText(memory: session.memory).foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).font(.callout).padding(.vertical, 6)
+                }
+            }
+        }
+    }
+
+    /// The restart command is selectable text only (R6): whoate never runs it.
     private func systemCard(_ system: SystemCard) -> some View {
         box(L10n.text(.systemCard, language)) {
             VStack(alignment: .leading, spacing: 8) {
                 if let command = system.command {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(command).font(.callout.monospaced()).textSelection(.enabled)
-                        Spacer(minLength: 8)
-                        Button(L10n.text(.copyCommand, language)) { copy(command) }
-                    }
+                    Text(command).font(.callout.monospaced()).textSelection(.enabled)
                 } else {
                     Text(L10n.text(.restartNotRun, language)).foregroundStyle(.secondary)
                 }
@@ -148,23 +174,35 @@ struct OwnerDetail: View {
         }
     }
 
-    private func evidenceCard(_ lines: [EvidenceLine]) -> some View {
+    /// One sentence, the parent chain when the grouping is not obvious, and the
+    /// evidence folded away (R8).
+    private func whyCard(_ why: WhyText) -> some View {
         box(L10n.text(.whyHere, language)) {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                    if index > 0 { Divider() }
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(line.title).font(.body.weight(.medium))
-                            Text(line.detail).font(.callout).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(why.sentence).fixedSize(horizontal: false, vertical: true)
+                if let chain = why.chain {
+                    Text(L10n.format(.whyChain, language, chain)).foregroundStyle(.secondary)
+                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                }
+                DisclosureGroup(L10n.format(.evidenceDetails, language, "\(why.details.count)")) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(why.details.enumerated()), id: \.offset) { index, line in
+                            if index > 0 { Divider() }
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(line.title).font(.body.weight(.medium))
+                                    Text(line.detail).foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer(minLength: 8)
+                                Pill(text: line.confidence, level: .ok)
+                            }
+                            .padding(.vertical, 8)
                         }
-                        Spacer(minLength: 8)
-                        Pill(text: line.confidence, level: .ok)
                     }
-                    .padding(.vertical, 8)
                 }
             }
+            .font(.callout)
         }
     }
 
@@ -177,8 +215,27 @@ struct OwnerDetail: View {
                         Text(part.displayName)
                             .lineLimit(1).truncationMode(.middle)
                         Spacer(minLength: 8)
-                        if part.unknownMemCount > 0 { UnknownMemMark(count: part.unknownMemCount, language: language) }
-                        Text(Format.bytes(part.memBytes)).monospacedDigit().foregroundStyle(.secondary)
+                        MemoryText(memory: Format.memory(part.memBytes, unknown: part.unknownMemCount, language))
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.callout).padding(.vertical, 6)
+                }
+            }
+        }
+    }
+
+    /// The Codex app's processes without a session, by working folder (R7).
+    private func foldersCard(_ groups: [FolderGroup]) -> some View {
+        box(L10n.text(.byFolder, language)) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                    if index > 0 { Divider() }
+                    HStack(spacing: 8) {
+                        Text(group.folder).lineLimit(1).truncationMode(.middle)
+                        Text(L10n.format(.processCount, language, "\(group.processes)")).foregroundStyle(.secondary)
+                        Spacer(minLength: 8)
+                        MemoryText(memory: Format.memory(group.memBytes, unknown: group.unknown, language))
+                            .foregroundStyle(.secondary)
                     }
                     .font(.callout).padding(.vertical, 6)
                 }
@@ -231,7 +288,8 @@ struct OwnerDetail: View {
     }
 }
 
-/// Primary action leftmost; the destructive one alone at the trailing edge (HIG Buttons).
+/// Only three actions (R6): jump to the pane, copy details for the user's AI
+/// (R4), and the red close alone at the trailing edge (R2, HIG Buttons).
 struct OwnerActions: View {
     @Bindable var model: AppModel
     let owner: Owner
@@ -248,27 +306,24 @@ struct OwnerActions: View {
                     let id = owner.id
                     Task { model.finishJump(await TmuxJump.perform(pane: pane, language: language), for: id) }
                 }
-                .buttonStyle(.borderedProminent)
                 .disabled(actions.pane == nil)
-            }
-            if let pane = actions.pane {
-                Button(L10n.text(.copyCommand, language)) { copy("whoate pane \(pane)") }
-                    .help("whoate pane \(pane)")
-            } else if actions.jumpShown {
-                Text(L10n.text(.notInTmux, language)).font(.callout).foregroundStyle(.secondary)
-            }
-            if let folder = actions.folder {
-                Button(L10n.text(.revealInFinder, language)) {
-                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: folder)])
+                if actions.pane == nil {
+                    Text(L10n.text(.notInTmux, language)).font(.callout).foregroundStyle(.secondary)
                 }
+            }
+            Button(L10n.text(.copyInfo, language)) {
+                copy(CopyInfo.text(owner: owner, procs: model.procs(owner.id), report: model.report, language: language))
+                model.markCopied(owner.id)
             }
             if let notice = model.notice {
                 Text(notice).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             }
             Spacer(minLength: 16)
+            // Destructive and red, never the default button; it only opens the confirmation (U-BEH-1).
             Button(L10n.format(.closeProcesses, language, "\(actions.close)"), role: .destructive) {
                 model.requestClose(owner.id)
             }
+            .buttonStyle(.borderedProminent).tint(.red)
             .disabled(actions.closeDisabled)
             .help(actions.closeDisabled ? L10n.text(.systemDoNotClose, language) : "")
         }
@@ -363,7 +418,6 @@ struct OverviewDetail: View {
 struct HistoryChart: View {
     let points: [HistoryPoint]
     let color: Color
-    let unknown: Int
     let language: Language
     var body: some View {
         if Format.trend(points, width: 1, height: 1) == .insufficient {
@@ -386,10 +440,6 @@ struct HistoryChart: View {
                         AxisGridLine()
                         AxisValueLabel { Text(Format.bytes(UInt64(max(0, value.as(Double.self) ?? 0)))) }
                     }
-                }
-                if unknown > 0 {
-                    Label(L10n.format(.unknownMem, language, "\(unknown)"), systemImage: "questionmark.circle")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
         }

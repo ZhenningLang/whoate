@@ -216,9 +216,10 @@ enum Phase08Tests {
         expect(WindowPolicy.activation(mainWindows: 1) == .regular)
         expect(WindowPolicy.open(mainWindowExists: true) == .bringToFront)
         expect(WindowPolicy.open(mainWindowExists: false) == .create)
-        expect(WindowPolicy.openLabel(mainWindowExists: true, .zh) == "显示主窗口")
-        expect(WindowPolicy.openLabel(mainWindowExists: false, .zh) == "打开 whoate")
-        expect(WindowPolicy.openLabel(mainWindowExists: true, .en) == "Show main window")
+        // R1 (phase 10 spec, owner 2026-10-21 14:3x): one word in both states.
+        expect(WindowPolicy.openLabel(mainWindowExists: true, .zh) == "完整面板")
+        expect(WindowPolicy.openLabel(mainWindowExists: false, .zh) == "完整面板")
+        expect(WindowPolicy.openLabel(mainWindowExists: true, .en) == "Full Panel")
         var applied: [NSApplication.ActivationPolicy] = []
         let windows = MainWindows(apply: { applied.append($0) })
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 80, height: 60), styleMask: [.titled, .closable],
@@ -248,7 +249,8 @@ enum Phase08Tests {
         expect(panel.contains("L10n.text(.quit, language)) { quit() }") && panel.contains(".keyboardShortcut(\"q\")"))
         expect(app.contains("CommandGroup(replacing: .appTermination)") && app.contains("delegate.quit()"))
         expect(!panel.contains("exit(") && !app.contains("NSApp.terminate"), "only QuitAction terminates")
-        expect(L10n.text(.quit, .zh) == "退出 whoate" && L10n.text(.quit, .en) == "Quit whoate")
+        // R1 (phase 10 spec, owner 2026-10-21 14:3x).
+        expect(L10n.text(.quit, .zh) == "退出" && L10n.text(.quit, .en) == "Quit")
     }
 
     static func automationTimersAreInertUnlessEnabled() {

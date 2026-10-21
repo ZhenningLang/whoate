@@ -6,9 +6,14 @@ public protocol RefreshEngine: Sendable {
     func setActive(_ active: Bool) -> Decoded<RefreshControl>
     /// The owner's raw history from the latest tick (no downsampling), or nil.
     func history(pid: Int32, owner: String) -> [HistoryPoint]?
+    /// History plus whoate_why's process list (R4, R8), from one call.
+    func detail(pid: Int32, owner: String) -> (history: [HistoryPoint], procs: [ProcBrief])?
 }
 extension RefreshEngine {
     public func history(pid: Int32, owner: String) -> [HistoryPoint]? { nil }
+    public func detail(pid: Int32, owner: String) -> (history: [HistoryPoint], procs: [ProcBrief])? {
+        history(pid: pid, owner: owner).map { ($0, []) }
+    }
 }
 
 public struct RefreshControl: Decodable, Sendable {

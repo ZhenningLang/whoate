@@ -9,6 +9,9 @@ with insights and an auto-generated title, an opencode session, an act-level
 orphan with a port, a watch-level Brave with 3 unreadable processes, a
 python3.13 group spread over 22 owners, a system process and a launchd
 service, and a host with cpu, wired, kernel zones, GPU and diagnostics.
+Round 3 (owner check 2026-10-21): a Codex session run by ChatGPT, tmux pane
+%22 running two agent sessions, and an opencode whose pane was closed (no
+session; grouped under the agent since the D1 change, not an orphan).
 History: 30 minutes at 20 s, the Claude Code session with one 120 s gap.
 
   design_report.py [out]    (default: tests/gui/design-report.json next to this file)
@@ -71,6 +74,13 @@ def agent(tool, session, name, source, title, prompt, reply, status, cwd, branch
             "first_prompt": prompt, "first_reply": reply, "status": status, "cwd": cwd, "branch": branch,
             "model": None, "cost_usd": None, "confidence": "certain", "updated_at_ms": (END - idle) * 1000,
             "last_activity_at": None, "idle_seconds": idle, "stale": False}
+
+
+def codex_agent(session, name, cwd, branch, updated_s):
+    """Codex sessions carry the session table's name, cwd and branch; never conversation text."""
+    return {"tool": "codex", "session_id": session, "name": name, "name_source": "codex", "title": None,
+            "first_prompt": None, "first_reply": None, "status": None, "cwd": cwd, "branch": branch,
+            "model": None, "cost_usd": None, "confidence": "certain", "updated_at_ms": updated_s * 1000, "stale": False}
 
 
 def report():
@@ -143,6 +153,43 @@ def report():
               evidence=[ev("pane_ancestor", "%22", "certain")],
               parts=[part("cargo", 0.2 * G, 1, 972001), part("zsh", 0.1 * G, 1, 972000)],
               hist=history(0.3 * G, 0.3 * G, cpu=0.2)),
+        owner("agent:codex:019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42", "agent_session", "重构导出模块", 0.7 * G, 3.1,
+              [960100, 960101, 960102],
+              verdict("ok", "default", "正常"),
+              origin={"tmux_pane": None, "pane_alive": None, "cwd": "/Users/demo/src/export-kit", "ports": None},
+              agent=codex_agent("019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42", "重构导出模块", "/Users/demo/src/export-kit",
+                                "refactor/export", END - 300),
+              evidence=[ev("agent_source", "codex", "certain"),
+                        ev("codex_thread_env", "019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42", "certain")],
+              parts=[part("python3.13", 0.5 * G, 2, 960100), part("node", 0.2 * G, 1, 960102)],
+              hist=history(0.6 * G, 0.7 * G, cpu=3)),
+        owner("agent:claude:5d1e8a90-2c4b-4f7e-8a1d-6b3c9e0f2a17", "agent_session", "补 README 示例", 0.5 * G, 0.6,
+              [973000, 973001],
+              verdict("ok", "default", "正常"),
+              origin={"tmux_pane": "%22", "pane_alive": True, "cwd": "/Users/demo/src/atlas", "ports": None,
+                      "window_name": "main", "pane_title": "claude"},
+              agent=agent("claude", "5d1e8a90-2c4b-4f7e-8a1d-6b3c9e0f2a17", "补 README 示例", "manual", "补 README 示例",
+                          "给 README 补两个用法示例", "好，先看现有的命令列表……", "idle", "/Users/demo/src/atlas", "main", 600),
+              evidence=[ev("pane_ancestor", "%22", "certain"), ev("agent_source", "claude", "certain")],
+              parts=[part("claude", 0.4 * G, 1, 973000), part("node", 0.1 * G, 1, 973001)],
+              hist=history(0.5 * G, 0.5 * G, cpu=0.6)),
+        owner("agent:opencode:ses_Lk92wQ", "agent_session", "检查文档死链", 0.2 * G, 0.3, [974000],
+              verdict("ok", "default", "正常"),
+              origin={"tmux_pane": "%22", "pane_alive": True, "cwd": "/Users/demo/src/atlas", "ports": None,
+                      "window_name": "main", "pane_title": "opencode"},
+              agent=agent("opencode", "ses_Lk92wQ", "检查文档死链", "manual", "检查文档死链", "检查 docs 目录的死链",
+                          "共找到 3 个失效链接……", "idle", "/Users/demo/src/atlas", "main", 900),
+              evidence=[ev("pane_ancestor", "%22", "certain"), ev("agent_source", "opencode", "certain")],
+              parts=[part("opencode", 0.2 * G, 1, 974000)],
+              hist=history(0.2 * G, 0.2 * G, cpu=0.3)),
+        owner("agent:opencode:pid:975000", "agent_session", "opencode", 0.4 * G, 0.1, [975000, 975001],
+              verdict("ok", "default", "正常"),
+              origin={"tmux_pane": "%301", "pane_alive": False, "cwd": "/Users/demo/src/old-api", "ports": None},
+              agent={**agent("opencode", None, None, None, None, None, None, None, "/Users/demo/src/old-api", None, 0),
+                     "confidence": "weak", "updated_at_ms": None, "idle_seconds": None},
+              evidence=[ev("tmux_environment", "%301", "certain"), ev("agent_source", "opencode", "weak")],
+              parts=[part("opencode", 0.3 * G, 1, 975000), part("node", 0.1 * G, 1, 975001)],
+              hist=history(0.4 * G, 0.4 * G, cpu=0.1)),
     ]
     members = ([{"id": f"agent:claude:session-{i:02d}", "count": c} for i, c in
                 enumerate([6, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 2, 2], 1)]

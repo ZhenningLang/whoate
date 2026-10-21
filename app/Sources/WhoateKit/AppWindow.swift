@@ -18,6 +18,7 @@ public enum WindowPolicy {
         mainWindowExists ? .bringToFront : .create
     }
 
+    /// R1 (owner 2026-10-21): "完整面板" whether or not the window exists yet.
     public static func openLabel(mainWindowExists: Bool, _ language: Language) -> String {
         L10n.text(mainWindowExists ? .showMain : .openWhoate, language)
     }

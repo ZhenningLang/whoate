@@ -92,6 +92,14 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Tests.titlesStayUniqueForThreeOrMoreAndSuffixCollisions", Phase10Tests.titlesStayUniqueForThreeOrMoreAndSuffixCollisions),
     ("Phase10Tests.allTotalCountsOwnersOnce", Phase10Tests.allTotalCountsOwnersOnce),
     ("Phase10Tests.cpuCurveBreaksWhereCpuIsMissing", Phase10Tests.cpuCurveBreaksWhereCpuIsMissing),
+    ("Phase10Round3Tests.footerSaysQuitAndFullPanel", Phase10Round3Tests.footerSaysQuitAndFullPanel),
+    ("Phase10Round3Tests.closeConfirmationCountsProcessesAndTheButtonsAreRed", Phase10Round3Tests.closeConfirmationCountsProcessesAndTheButtonsAreRed),
+    ("Phase10Round3Tests.paneDetailsListItsSessions", Phase10Round3Tests.paneDetailsListItsSessions),
+    ("Phase10Round3Tests.copiedDetailsCarryFactsButNoConversation", Phase10Round3Tests.copiedDetailsCarryFactsButNoConversation),
+    ("Phase10Round3Tests.unreadableMemoryReadsAsALowerBound", Phase10Round3Tests.unreadableMemoryReadsAsALowerBound),
+    ("Phase10Round3Tests.onlyThreeDetailButtonsRemain", Phase10Round3Tests.onlyThreeDetailButtonsRemain),
+    ("Phase10Round3Tests.codexSessionsAreAgentRowsAndTheAppGroupsByFolder", Phase10Round3Tests.codexSessionsAreAgentRowsAndTheAppGroupsByFolder),
+    ("Phase10Round3Tests.whyIsOneSentenceAndAChainWhenNotObvious", Phase10Round3Tests.whyIsOneSentenceAndAChainWhenNotObvious),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))

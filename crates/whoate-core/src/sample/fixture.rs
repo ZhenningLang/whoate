@@ -394,6 +394,14 @@ fn public_value(name: &str, value: &str) -> Option<String> {
 #[derive(Default)]
 pub struct Redactor {
     paths: BTreeMap<String, String>,
+    threads: BTreeMap<String, String>,
+}
+
+/// A redacted Codex session id: `thread-<n>`.
+fn safe_thread(value: &str) -> bool {
+    value
+        .strip_prefix("thread-")
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|c| c.is_ascii_digit()))
 }
 
 impl Redactor {
@@ -470,6 +478,41 @@ impl Redactor {
         }
     }
 
+    /// One process's argv under the fixture rules: URLs and control characters
+    /// become `<redacted>`, paths map to `~/redacted/path-N`, switch names stay
+    /// and switch values pass only a public whitelist.
+    pub fn redact_argv(&mut self, argv: &[String]) -> Vec<String> {
+        let mut previous_switch: Option<String> = None;
+        let mut output = Vec::with_capacity(argv.len());
+        for (index, argument) in argv.iter().enumerate() {
+            output.push(if index == 0 {
+                previous_switch = None;
+                if argument.contains('/') {
+                    self.path(argument)
+                } else if safe_comm(argument) {
+                    argument.clone()
+                } else {
+                    safe_name(argument)
+                }
+            } else if let Some(name) = switch_name(argument).map(str::to_owned) {
+                if let Some((_, value)) = argument.split_once('=') {
+                    let value = public_value(&name, value).unwrap_or_else(|| self.argument(value));
+                    previous_switch = None;
+                    format!("{name}={value}")
+                } else {
+                    previous_switch = Some(name.clone());
+                    name
+                }
+            } else {
+                previous_switch
+                    .take()
+                    .and_then(|name| public_value(&name, argument))
+                    .unwrap_or_else(|| self.argument(argument))
+            });
+        }
+        output
+    }
+
     pub fn snapshot(&mut self, mut snapshot: Snapshot) -> Snapshot {
         for issue in &mut snapshot.issues {
             issue.stage = "capture".into();
@@ -498,36 +541,11 @@ impl Redactor {
             if let Some(socket) = &mut proc.tmux {
                 *socket = "<redacted>".into();
             }
-            let mut previous_switch: Option<String> = None;
-            for (index, argument) in proc.argv.iter_mut().enumerate() {
-                if index == 0 {
-                    *argument = if argument.contains('/') {
-                        self.path(argument)
-                    } else {
-                        if safe_comm(argument) {
-                            argument.clone()
-                        } else {
-                            safe_name(argument)
-                        }
-                    };
-                    previous_switch = None;
-                } else if let Some(name) = switch_name(argument).map(str::to_owned) {
-                    if let Some((_, value)) = argument.split_once('=') {
-                        let value =
-                            public_value(&name, value).unwrap_or_else(|| self.argument(value));
-                        *argument = format!("{name}={value}");
-                        previous_switch = None;
-                    } else {
-                        *argument = name.clone();
-                        previous_switch = Some(name);
-                    }
-                } else {
-                    *argument = previous_switch
-                        .take()
-                        .and_then(|name| public_value(&name, argument))
-                        .unwrap_or_else(|| self.argument(argument));
-                }
+            if let Some(thread) = &mut proc.codex_thread_id {
+                let next = format!("thread-{}", self.threads.len() + 1);
+                *thread = self.threads.entry(thread.clone()).or_insert(next).clone();
             }
+            proc.argv = self.redact_argv(&proc.argv);
         }
         for pane in &mut snapshot.tmux_panes {
             pane.target = format!("session:{}", pane.pane_id);
@@ -611,6 +629,13 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
                 .is_some_and(|value| !tmux::valid_pane(value) && value != "<redacted>")
         {
             return Err(SampleError::new("privacy", "unsafe_tmux"));
+        }
+        if proc
+            .codex_thread_id
+            .as_deref()
+            .is_some_and(|value| !safe_thread(value))
+        {
+            return Err(SampleError::new("privacy", "unsafe_codex_thread"));
         }
     }
     for pane in &snapshot.tmux_panes {

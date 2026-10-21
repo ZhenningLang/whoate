@@ -5,10 +5,12 @@ use crate::{
     snapshot::{Proc, Snapshot},
 };
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     path::Path,
 };
 
+mod codex;
 mod terminals;
 
 fn ancestors<'a>(proc: &'a Proc, index: &BTreeMap<i32, &'a Proc>) -> (Vec<&'a Proc>, bool) {
@@ -104,6 +106,21 @@ fn agent_owner(
         agent.tool.clone(),
         agent.confidence,
     ));
+    if let Some(thread) = agent_proc
+        .codex_thread_id
+        .as_ref()
+        .filter(|_| agent.tool == "codex")
+    {
+        let detail = match &agent.session_id {
+            Some(root) if root != thread => format!("{thread} (subagent of {root})"),
+            _ => thread.clone(),
+        };
+        evidence.push(Evidence::new(
+            "codex_thread_env",
+            detail,
+            Confidence::Certain,
+        ));
+    }
     (
         format!("agent:{}:{key}", agent.tool),
         OwnerKind::AgentSession,
@@ -264,6 +281,36 @@ fn bundle_owns<'a>((id, label): (String, String), evidence: &mut Vec<Evidence>) 
     Unowned::App(id, label)
 }
 
+/// Codex sessions whose process has no Codex app on its chain are dropped (R7).
+/// Codex sessions count only when a Codex app started the session's first
+/// process: above the topmost process carrying this session id, not counting
+/// it. A Codex binary that inherited the id (the managed app-server daemon,
+/// adopted by launchd) does not vouch for itself.
+fn codex_under_app(
+    agents: &BTreeMap<i32, Agent>,
+    index: &BTreeMap<i32, &Proc>,
+    cfg: &ConfigReader,
+) -> BTreeMap<i32, Agent> {
+    let launched_by_codex = |proc: &Proc| {
+        let (chain, _) = ancestors(proc, index);
+        let top = chain
+            .iter()
+            .take_while(|p| p.codex_thread_id == proc.codex_thread_id)
+            .count();
+        chain[top..].iter().any(|p| {
+            p.exe_path
+                .as_deref()
+                .and_then(|exe| app(exe, cfg).ok().flatten())
+                .is_some_and(|(id, _)| codex::is_codex_app(&id))
+        })
+    };
+    let mut kept = agents.clone();
+    kept.retain(|pid, agent| {
+        agent.tool != "codex" || index.get(pid).is_some_and(|proc| launched_by_codex(proc))
+    });
+    kept
+}
+
 pub fn attribute(
     snap: &Snapshot,
     uid: u32,
@@ -271,6 +318,12 @@ pub fn attribute(
     agents: &BTreeMap<i32, Agent>,
 ) -> Vec<Owner> {
     let index: BTreeMap<_, _> = snap.procs.iter().map(|p| (p.pid, p)).collect();
+    let agents = if agents.values().any(|a| a.tool == "codex") {
+        Cow::Owned(codex_under_app(agents, &index, cfg))
+    } else {
+        Cow::Borrowed(agents)
+    };
+    let agents = &*agents;
     // Generic command errors may also come from top. Without a source-specific
     // signal we cannot prove that a missing pane has actually closed.
     let pane_table_known = !snap
@@ -370,12 +423,19 @@ pub fn attribute(
                     None,
                 )
             } else if pane_table_known {
-                (
-                    format!("orphan:{}", root.pid),
-                    OwnerKind::Orphan,
-                    root.comm.clone(),
-                    None,
-                )
+                // D1 ① also covers a closed pane (owner 2026-10-21 14:3x): an
+                // agent on the chain owns it; the closed pane stays as a fact.
+                match candidates.last().copied() {
+                    Some((agent_proc, agent)) => {
+                        agent_owner(agent_proc, agent, &mut origin, &mut evidence)
+                    }
+                    None => (
+                        format!("orphan:{}", root.pid),
+                        OwnerKind::Orphan,
+                        root.comm.clone(),
+                        None,
+                    ),
+                }
             } else {
                 evidence.push(Evidence::new(
                     "pane_status_unknown",
@@ -391,8 +451,7 @@ pub fn attribute(
             }
         } else if let Some((agent_proc, agent)) = candidates.last().copied() {
             // D1 = C ①: outside a pane, an agent on the chain still owns it,
-            // grouped by the agent's pid when it has no session. A closed-pane
-            // TMUX_PANE (certain) is checked first and wins over this weak name.
+            // grouped by the agent's pid when it has no session.
             agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else {
             let context = Chain {
@@ -497,7 +556,7 @@ pub fn attribute(
             (
                 match e.kind.as_str() {
                     "pane_ancestor" => 0,
-                    "agent_source" => 1,
+                    "agent_source" | "codex_thread_env" => 1,
                     "tmux_environment" => 2,
                     "runtime_home" | "responsible_terminal" => 3,
                     "app_bundle" => 4,

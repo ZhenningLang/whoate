@@ -21,20 +21,16 @@ enum Phase10Tests {
     static func partlyUnreadableCurvesDrawAndCarryOneN() throws {
         let partial = points(Array(stride(from: Int64(0), through: 60, by: 20)), unknown: 3)
         guard case .line = Format.trend(partial, width: 64, height: 16) else { return fail("partly readable still draws") }
-        expect(Format.unreadable(partial, current: 0) == 3, "from the drawn run")
-        expect(Format.unreadable(partial, current: 5) == 5, "the owner's current count when larger")
-        expect(Format.unreadable(points([0, 20, 40]), current: 0) == 0)
-        // Only the latest run counts: an old unreadable stretch before a gap does not.
-        let old = points([0, 20], unknown: 2) + points([200, 220, 240])
-        expect(Format.unreadable(old, current: 0) == 0)
+        // The number's mark is this tick's count only (QA41; round 3 conform review B1),
+        // so the old history-maximum assertions moved to Phase10Round3Tests.
         expect(L10n.format(.unknownMem, .zh, "3").hasPrefix("3 个进程读不到内存"))
         expect(L10n.format(.unknownMem, .en, "3").hasPrefix("3 processes unreadable"))
         expect(Format.trend(points([0, 20]), width: 64, height: 16) == .insufficient, "20 s is too short")
         expect(Format.trend(points([0, 50]), width: 64, height: 16) == .insufficient, "two points 50 s apart are not joined")
-        // The design report's Brave: the panel row's mark uses the same N as the curve.
+        // The design report's Brave: unreadable now, so its row reads "≥ 4.2G" with N = 3.
         let report = try designReport()
         let brave = try require(rows(report).first { $0.id == "app:com.brave.Browser" })
-        expect(Format.unreadable(brave.history, current: brave.unknownMemCount) == 3)
+        expect(brave.memory(.zh).text == "≥ 4.2G" && brave.memory(.zh).help?.hasPrefix("3 ") == true)
     }
 
     // QA9
@@ -65,8 +61,9 @@ enum Phase10Tests {
         expect(fields["项目"]?.hasSuffix("atlas · fix/orphan-chain") == true)
         expect(card.prompt != nil && card.reply != nil && card.confidence == "确定")
         expect(cards.contains(.curve) && cards.contains { if case .advice = $0 { true } else { false } })
-        guard case .evidence(let lines) = try require(cards.first(where: { if case .evidence = $0 { true } else { false } }))
-        else { return fail("evidence card") }
+        guard case .why(let why) = try require(cards.first(where: { if case .why = $0 { true } else { false } }))
+        else { return fail("why card") }
+        let lines = why.details
         expect(lines.first?.title == "在 tmux pane 里运行" || lines.contains { $0.title.contains("tmux") }, "plain words")
         expect(Words.evidence("made_up_kind", .zh) == "made_up_kind", "unknown codes stay visible")
         expect(Words.confidence(.weak, .en) == "Weak" && Words.status("waiting", .zh) == "等你回复")
@@ -86,9 +83,10 @@ enum Phase10Tests {
         expect(!Detail.cards(plain, history: [], catalog: catalog, language: .zh).contains { if case .system = $0 { true } else { false } })
         let source = String(decoding: try repoFile("app/Sources/Whoate/DetailView.swift"), as: UTF8.self)
         let systemCard = try require(source.components(separatedBy: "private func systemCard").last?
-            .components(separatedBy: "private func evidenceCard").first)
-        // Review CONFORM:B5: a copy button for the command, and nothing that runs it.
-        expect(systemCard.contains(#"L10n.text(.copyCommand, language)) { copy(command) }"#), "copy button")
+            .components(separatedBy: "private func whyCard").first)
+        // R6 (owner 2026-10-21 14:3x) removed the copy button: the command is selectable text, no button.
+        expect(systemCard.contains("Text(command)") && systemCard.contains(".textSelection(.enabled)"), "command text stays")
+        expect(!systemCard.contains("Button("), "the system card has no button")
         for runs in ["Process(", "NSWorkspace", "NSAppleScript", "openApplication"] {
             expect(!systemCard.contains(runs), "the system card never runs anything: \(runs)")
         }

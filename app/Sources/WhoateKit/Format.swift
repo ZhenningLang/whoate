@@ -12,6 +12,26 @@ public enum Format {
         return "\(value)B"
     }
 
+    /// A memory number and its hover text. With unreadable processes the sum is a
+    /// lower bound: "≥ 596M", and the hover says how many (R5, owner 2026-10-21).
+    public struct Memory: Equatable, Sendable {
+        public var text: String
+        public var help: String?
+    }
+    public static func memory(_ value: UInt64, unknown: Int, _ language: Language) -> Memory {
+        unknown > 0 ? Memory(text: "≥ " + bytes(value), help: L10n.format(.unknownMem, language, "\(unknown)"))
+            : Memory(text: bytes(value), help: nil)
+    }
+
+    nonisolated(unsafe) private static let minute: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f
+    }()
+    /// "2026-10-21 14:52" in the local time zone.
+    public static func localTime(_ date: Date) -> String { minute.string(from: date) }
+
     /// Signs are kept as given: a negative change means usage went up.
     public static func signedBytes(_ value: Int64) -> String {
         let magnitude = bytes(value.magnitude)
@@ -84,12 +104,6 @@ public enum Format {
             Point(x: Double(p.timestampS - first.timestampS) / span * width,
                   y: hi > lo ? height - (v - lo) / (hi - lo) * height : height / 2)
         })
-    }
-
-    /// Unreadable processes behind a curve and its number: the owner's current
-    /// count, or the largest count on the drawn run. Both marks use this one N.
-    public static func unreadable(_ points: [HistoryPoint], current: Int) -> Int {
-        max(current, latestRun(points).compactMap(\.unknownMemCount).max() ?? 0)
     }
 
     /// Detail chart: every continuous run in the last `window` seconds, split

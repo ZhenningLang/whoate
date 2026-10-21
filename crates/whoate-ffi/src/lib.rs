@@ -3,7 +3,7 @@
 //! kill identities, and never lets a panic cross the boundary.
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     ffi::{CString, c_char},
     panic::{AssertUnwindSafe, catch_unwind},
     sync::Mutex,
@@ -12,9 +12,10 @@ use std::{
 use whoate_core::{
     engine::{Clock, Engine},
     kill::{self, Backend, Identity, KillPlan, KillStatus, MacBackend, PidResult},
-    model::{HistoryPoint, Report},
+    model::{HistoryPoint, Owner, Report},
     sample::{
         SampleError, Sampler,
+        fixture::Redactor,
         host_cpu::{CpuMeter, PlatformCpu},
     },
     snapshot::Snapshot,
@@ -38,6 +39,8 @@ enum Source {
 }
 trait Tick {
     fn tick(&mut self) -> Result<(Report, Option<Snapshot>), SampleError>;
+    /// The snapshot behind the latest report, borrowed for whoate_why's process list.
+    fn snapshot(&self) -> Option<&Snapshot>;
     fn set_active(&mut self, active: bool);
     #[cfg(test)]
     fn series(&self, id: &str) -> Vec<HistoryPoint>;
@@ -51,6 +54,9 @@ impl<S: Sampler, C: Clock> Tick for (Engine<S, C>, bool) {
         // Only the native sampler's identities may authorize a later kill.
         let snapshot = self.1.then(|| self.0.latest_snapshot().cloned()).flatten();
         Ok((report, snapshot))
+    }
+    fn snapshot(&self) -> Option<&Snapshot> {
+        self.0.latest_snapshot()
     }
     #[cfg(test)]
     fn series(&self, id: &str) -> Vec<HistoryPoint> {
@@ -188,13 +194,48 @@ fn tick_json(engine: &mut WhoateEngine) -> Value {
     }
     value
 }
+/// R4/R8: every process of `owners` with its argv redacted by the fixture
+/// rules, then each one's ancestors up to launchd (pid, ppid and name only).
+fn proc_briefs(owners: &[Owner], snapshot: Option<&Snapshot>) -> Vec<Value> {
+    let Some(snapshot) = snapshot else {
+        return vec![];
+    };
+    let index: BTreeMap<_, _> = snapshot.procs.iter().map(|p| (p.pid, p)).collect();
+    let members: BTreeSet<i32> = owners.iter().flat_map(|o| o.pids.iter().copied()).collect();
+    let mut redactor = Redactor::default();
+    let mut output = vec![];
+    for p in members.iter().filter_map(|pid| index.get(pid)) {
+        output.push(json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm,
+            "mem_bytes": p.footprint_bytes, "cwd": p.cwd,
+            "argv": redactor.redact_argv(&p.argv), "in_owner": true}));
+    }
+    let mut seen = members.clone();
+    for pid in &members {
+        let mut parent = index.get(pid).map(|p| p.ppid);
+        while let Some(p) = parent
+            .filter(|ppid| *ppid > 1 && seen.insert(*ppid))
+            .and_then(|ppid| index.get(&ppid))
+        {
+            output.push(json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm, "in_owner": false}));
+            parent = Some(p.ppid);
+        }
+    }
+    output
+}
 fn why_json(engine: &mut WhoateEngine, pid: i32) -> Value {
-    let report = match engine.last.as_mut() {
-        Some(report) => report,
-        None => match engine.tick() {
-            Ok(report) => report,
-            Err(e) => return error(1, &e.to_string()),
-        },
+    if engine.last.is_none()
+        && let Err(e) = engine.tick()
+    {
+        return error(1, &e.to_string());
+    }
+    let WhoateEngine { last, source, .. } = engine;
+    let snapshot = match source {
+        Source::Live(engine) => engine.snapshot(),
+        #[cfg(debug_assertions)]
+        Source::Report(_) => None,
+    };
+    let Some(report) = last.as_mut() else {
+        return error(1, "no_report");
     };
     // Serialize a filtered view without cloning every owner's full history.
     let owners = std::mem::take(&mut report.owners);
@@ -216,7 +257,12 @@ fn why_json(engine: &mut WhoateEngine, pid: i32) -> Value {
     let value = if report.owners.is_empty() {
         error(3, "pid_not_found")
     } else {
-        serde_json::to_value(&*report).unwrap_or_else(|_| error(1, "serialize"))
+        let mut value = serde_json::to_value(&*report).unwrap_or_else(|_| error(1, "serialize"));
+        if let Some(object) = value.as_object_mut().filter(|o| o.contains_key("owners")) {
+            let procs = proc_briefs(&report.owners, snapshot);
+            object.insert("procs".into(), Value::Array(procs));
+        }
+        value
     };
     report.owners = owners;
     report.swarms = swarms;

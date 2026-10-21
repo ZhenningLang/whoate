@@ -385,3 +385,98 @@ fn qa6_app_bundle_directories_are_apps() {
     assert_eq!(owners[0].kind, OwnerKind::App);
     assert!(Path::new(&w.path(clone)).ends_with("Google Chrome.app.bundle"));
 }
+
+/// D1 改判, owner 2026-10-21 14:3x (phase 10 spec「owner 点验反馈与裁决」): an
+/// agent without a session whose TMUX_PANE names a closed pane belongs to the
+/// agent (D1 ①), not to the orphan rule; the closed pane stays as a fact.
+#[test]
+fn qa45_closed_pane_agent_without_session_belongs_to_the_agent() {
+    use whoate_core::{
+        history::History,
+        snapshot::{SampleIssue, TmuxPane},
+        verdict::{Language, rules},
+    };
+    let w = World::new();
+    let big = |mut p: Proc| {
+        p.footprint_bytes = Some(2 << 30);
+        p
+    };
+    let mut agent =
+        big(w.in_home(w.proc(994001, 1, "opencode", "/opt/homebrew/bin/opencode", None)));
+    agent.tmux_pane = Some("%gone".into());
+    let child = w.in_home(w.proc(994002, 994001, "node", "/opt/homebrew/bin/node", None));
+    // Control: the same shape without an agent on the chain stays a certain orphan.
+    let mut node = big(w.in_home(w.proc(994101, 1, "node", "/opt/homebrew/bin/node", None)));
+    node.tmux_pane = Some("%gone".into());
+    let node_child = w.proc(994102, 994101, "node", "/opt/homebrew/bin/node", None);
+    let mut agents = BTreeMap::new();
+    agents.insert(994001, Agent::unknown("opencode"));
+    let mut snap = Snapshot::historical(
+        "2026-10-21T15:00:00+08:00".into(),
+        vec![agent.clone(), child.clone(), node, node_child],
+    );
+    // A live pane elsewhere: the pane table was read, so %gone is known closed.
+    snap.tmux_panes.push(TmuxPane {
+        pane_id: "%live".into(),
+        target: "demo:0.0".into(),
+        window_name: None,
+        pane_title: None,
+        pane_pid: 994900,
+        cwd: None,
+    });
+    let owners = attribute(&snap, UID, &w.cfg, &agents);
+
+    let o = owner_of(&owners, 994001);
+    assert_eq!(
+        (o.id.as_str(), o.kind),
+        ("agent:opencode:pid:994001", OwnerKind::AgentSession)
+    );
+    assert_eq!(o.pids, vec![994001, 994002]);
+    let a = o.agent.as_ref().unwrap();
+    assert_eq!(
+        (a.tool.as_str(), a.session_id.as_deref()),
+        ("opencode", None)
+    );
+    let origin = o.origin.as_ref().unwrap();
+    assert_eq!(origin.pane_alive, Some(false));
+    assert_eq!(origin.tmux_pane.as_deref(), Some("%gone"));
+    assert!(kinds(o).contains(&("tmux_environment", Confidence::Certain)));
+    for language in [Language::Zh, Language::En] {
+        let v = rules::owner(o, &snap, &History::default(), false, false, language);
+        assert_ne!(v.rule, "orphan-heavy");
+        for word in [
+            "建议关闭",
+            "pane 已关闭",
+            "pane is closed",
+            "consider closing",
+        ] {
+            assert!(!v.text.contains(word), "{language:?}: {}", v.text);
+        }
+    }
+
+    let o = owner_of(&owners, 994101);
+    assert_eq!(
+        (o.id.as_str(), o.kind),
+        ("orphan:994101", OwnerKind::Orphan)
+    );
+    assert_eq!(o.pids, vec![994101, 994102]);
+    assert_eq!(kinds(o), vec![("tmux_environment", Confidence::Certain)]);
+    let v = rules::owner(o, &snap, &History::default(), false, false, Language::Zh);
+    assert_eq!(v.rule, "orphan-heavy");
+    assert!(v.text.contains("pane 已关闭"), "{}", v.text);
+
+    // Control: pane table unavailable — unchanged, service with pane_status_unknown.
+    let mut unknown = Snapshot::historical("2026-10-21T15:00:00+08:00".into(), vec![agent, child]);
+    unknown.issues.push(SampleIssue {
+        stage: "tmux".into(),
+        pid: None,
+        code: "failed".into(),
+    });
+    let owners = attribute(&unknown, UID, &w.cfg, &agents);
+    let o = owner_of(&owners, 994001);
+    assert_eq!(
+        (o.id.as_str(), o.kind),
+        ("service:994001", OwnerKind::Service)
+    );
+    assert!(kinds(o).contains(&("pane_status_unknown", Confidence::Weak)));
+}

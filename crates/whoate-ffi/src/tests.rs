@@ -673,3 +673,96 @@ fn phase10_ffi_downsample_keeps_the_largest_unreadable_count_per_segment() {
         "absent, not null, when all were read"
     );
 }
+
+/// R4/R8 (QA40): whoate_why lists the owner's processes with redacted argv and
+/// their ancestors up to launchd; a replayed report has none.
+#[test]
+fn phase10_ffi_why_lists_owner_processes_with_redacted_argv_and_ancestors() {
+    let uid = unsafe { libc::getuid() };
+    let mut server = Proc::identity(71900, 1, uid, Some(1), "tmux".into());
+    server.argv = vec!["tmux".into(), "new-session".into()];
+    let mut shell = Proc::identity(72000, 71900, uid, Some(2), "zsh".into());
+    shell.argv = vec!["-zsh".into()];
+    shell.cwd = Some("/Users/someone/work".into());
+    shell.footprint_bytes = Some(4096);
+    let mut node = Proc::identity(72001, 72000, uid, Some(3), "node".into());
+    node.argv = [
+        "node",
+        "/Users/someone/private/app.js",
+        "--token=https://secret.example/x",
+        "--port",
+        "5173",
+    ]
+    .map(String::from)
+    .to_vec();
+    node.cwd = Some("/Users/someone/work".into());
+    let mut snap = Snapshot::historical(
+        "2026-10-21T15:00:00+08:00".into(),
+        vec![server.clone(), shell.clone(), node.clone()],
+    );
+    snap.tmux_panes.push(whoate_core::snapshot::TmuxPane {
+        pane_id: "%41".into(),
+        target: "work:2.1".into(),
+        window_name: None,
+        pane_title: None,
+        pane_pid: 72000,
+        cwd: None,
+    });
+    let home = Temp::new();
+    let engine = replay(snap, &home.0);
+    let why = take(whoate_why(engine, 72001));
+    whoate_engine_free(engine);
+    evidence("replay-why-procs.json", &why);
+    assert_eq!(why["owners"][0]["id"], "pane:%41");
+    let procs = why["procs"].as_array().unwrap();
+    let by_pid = |pid: i64| procs.iter().find(|p| p["pid"] == pid).unwrap();
+    let mut redactor = Redactor::default();
+    for p in [&shell, &node] {
+        let brief = by_pid(p.pid as i64);
+        assert_eq!(brief["in_owner"], true);
+        assert_eq!(brief["ppid"], p.ppid);
+        assert_eq!(brief["comm"], p.comm.as_str());
+        assert_eq!(brief["cwd"], "/Users/someone/work");
+        assert_eq!(brief["argv"], json!(redactor.redact_argv(&p.argv)));
+    }
+    assert_eq!(by_pid(72000)["mem_bytes"], 4096);
+    assert_eq!(by_pid(72001)["mem_bytes"], Value::Null);
+    let ancestor = by_pid(71900);
+    assert_eq!(
+        ancestor,
+        &json!({"pid": 71900, "ppid": 1, "comm": "tmux", "in_owner": false})
+    );
+    assert_eq!(procs.len(), 3);
+    let argv = by_pid(72001)["argv"].to_string();
+    for leaked in [
+        "https://",
+        "secret.example",
+        "/Users/someone",
+        "private",
+        "app.js",
+    ] {
+        assert!(!argv.contains(leaked), "{leaked} in {argv}");
+    }
+    assert!(argv.contains("--port") && argv.contains("--token="));
+    let tick_owners = why["owners"].as_array().unwrap().len();
+    assert_eq!(tick_owners, 1);
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn phase10_ffi_replayed_report_has_no_process_list() {
+    let path = CString::new(
+        root()
+            .join("tests/fixtures/attribution/sample-v1.json")
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
+    let engine = fixture(path.as_ptr());
+    let tick = take(whoate_engine_tick(engine));
+    assert!(tick.get("procs").is_none(), "ticks never carry procs");
+    let pid = tick["owners"][0]["pids"][0].as_i64().unwrap() as i32;
+    let why = take(whoate_why(engine, pid));
+    whoate_engine_free(engine);
+    assert_eq!(why["procs"], json!([]));
+}

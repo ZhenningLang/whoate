@@ -190,8 +190,11 @@ fn phase02_attribution_edges_weak_names_follow_environment_before_session() {
         &t,
         Snapshot::historical("2026-10-14T19:40:00+08:00".into(), vec![p]),
     );
-    assert_eq!(report.owners[0].id, "orphan:990001");
-    assert_eq!(report.owners[0].agent, None);
+    // owner 2026-10-21 14:3x（phase 10 spec「owner 点验反馈与裁决」D1 改判）批准：闭窗会话按 D1 ① 归回 agent。
+    assert_eq!(report.owners[0].id, "agent:opencode:pid:990001");
+    let agent = report.owners[0].agent.as_ref().unwrap();
+    assert_eq!(agent.tool, "opencode");
+    assert_eq!(agent.session_id, None);
 }
 #[test]
 fn phase02_attribution_edges_pane_weak_wrapper_owns_native_child() {
@@ -341,6 +344,9 @@ fn phase02_conservation_real_and_reordered_all_pids_once() {
             .collect::<Vec<_>>()
     );
 }
+// owner 2026-10-21 14:3x（phase 10 spec「owner 点验反馈与裁决」D1 改判）批准：闭窗会话按 D1 ① 归回 agent，
+// oracle 的 orphan:30634 改为 agent:opencode:pid:30634（值 8 不变）。改名在下面读入后做，
+// fixture 文件本身不动：phase03/04/07 的契约测试逐字节冻结 tests/fixtures。
 #[test]
 fn phase02_swarm_real_frozen_68_members_and_31_process_backed_owners() {
     let t = Temp::new();
@@ -348,10 +354,13 @@ fn phase02_swarm_real_frozen_68_members_and_31_process_backed_owners() {
         "../../../../tests/fixtures/capture/snapshot-20261014-1940.json"
     ))
     .unwrap();
-    let oracle: serde_json::Value = serde_json::from_slice(include_bytes!(
+    let mut oracle: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../../../tests/fixtures/attribution/swarm-1940-oracle.json"
     ))
     .unwrap();
+    let owners = oracle["owners"].as_object_mut().unwrap();
+    let closed_pane = owners.remove("orphan:30634").unwrap();
+    owners.insert("agent:opencode:pid:30634".into(), closed_pane);
     let restore: BTreeSet<_> = oracle["restore_npm_exec_pids"]
         .as_array()
         .unwrap()

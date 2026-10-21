@@ -33,8 +33,9 @@ char *whoate_host_json(void);
  * Uses the same exclusive-engine threading rule as tick. */
 char *whoate_engine_set_active(WhoateEngine *engine, int32_t active);
 
-/* Report holding only the owner(s) containing pid, with full history.
- * Ticks once first if the engine has not ticked yet. */
+/* Report holding only the owner(s) containing pid, with full history, plus
+ * "procs": those owners' processes (argv redacted) and their ancestors up to
+ * launchd; empty when replaying a report. Ticks once first if needed. */
 char *whoate_why(WhoateEngine *engine, int32_t pid);
 
 /* Returns 0, 3 (a pid is missing), 4 (a pid was refused; wins over 3) or

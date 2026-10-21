@@ -201,9 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySelection(_ value: String) async {
         await waitForReport()
         guard model.report != nil else { return }
-        let (category, id) = MainWindowModel.select(value, rows: model.rows(limit: .max))
-        model.category = category
-        model.selectedOwnerID = id
+        model.select(value)
     }
 
     /// One line whenever the observable window/refresh state changes.

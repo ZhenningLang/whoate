@@ -37,6 +37,7 @@ impl whoate_core::sample::libproc::ProcessReader for WindowReader {
             argv: vec!["node".into()],
             tmux: None,
             tmux_pane: None,
+            codex_thread_id: None,
         })
     }
     fn responsible_pid(&mut self, _: i32) -> Option<i32> {

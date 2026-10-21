@@ -13,6 +13,28 @@ public enum RowNames {
         }
     }
 
+    /// Panel.title, except a Codex session without a name (R7): "Codex 会话 · <folder>".
+    public static func title(_ o: Owner, _ language: Language) -> String {
+        guard let agent = o.agent, agent.tool == "codex", (agent.name ?? "").isEmpty else { return Panel.title(o) }
+        let session = L10n.text(.codexSession, language)
+        guard let cwd = Detail.folder(o), cwd != "/" else { return session }
+        return session + " · " + URL(fileURLWithPath: cwd).lastPathComponent
+    }
+
+    /// "会话：A、B 等 3 个" for a pane running agent sessions (R3); nil without any.
+    public static func paneSessionsLine(_ pane: Owner, among owners: [Owner], language: Language) -> String? {
+        let titles = Detail.paneSessions(pane, among: owners, language: language).map(\.title)
+        guard !titles.isEmpty else { return nil }
+        var line = titles.prefix(2).joined(separator: language == .zh ? "、" : ", ")
+        if titles.count > 2 { line += " " + L10n.format(.andMore, language, "\(titles.count)") }
+        return L10n.format(.paneSessionsLine, language, line)
+    }
+
+    /// Kind word, or "tmux pane" for panes; nil for agent sessions.
+    public static func kindLabel(_ kind: OwnerKind, _ language: Language) -> String? {
+        kindWord(kind, language) ?? (kind == .tmuxPane ? L10n.text(.kindPane, language) : nil)
+    }
+
     public static func kindWord(_ kind: OwnerKind, _ language: Language) -> String? {
         switch kind {
         case .app: L10n.text(.kindApp, language)
@@ -27,10 +49,17 @@ public enum RowNames {
     public static func apply(_ rows: [PanelRow], report: Report, language: Language) -> [PanelRow] {
         let owners = Dictionary(report.owners.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let swarms = Dictionary(report.swarms.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        // Sessions by pane once, not one scan of every owner per pane row.
+        let byPane = Dictionary(grouping: report.owners.filter { $0.kind == .agentSession }) { $0.origin?.tmuxPane ?? "" }
         var named = rows.map { row -> PanelRow in
             var row = row
-            if let o = owners[row.id], o.kind == .app, let word = kindWord(.app, language) {
-                row.subtitle = appSubtitle(o, kind: word, language)
+            if let o = owners[row.id] {
+                if o.kind == .app, let word = kindWord(.app, language) { row.subtitle = appSubtitle(o, kind: word, language) }
+                row.title = title(o, language)
+                if o.kind == .tmuxPane, let pane = o.origin?.tmuxPane,
+                   let sessions = paneSessionsLine(o, among: byPane[pane] ?? [], language: language) {
+                    row.subtitle = row.subtitle.isEmpty ? sessions : row.subtitle + " · " + sessions
+                }
             }
             // The title already says "× 74": the subtitle spends its width on the owners.
             if let s = swarms[row.id], let owned = ownership(s, owners: owners, language: language) {

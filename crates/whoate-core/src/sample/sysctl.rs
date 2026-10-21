@@ -8,6 +8,8 @@ pub struct ProcArgs {
     pub argv: Vec<String>,
     pub tmux: Option<String>,
     pub tmux_pane: Option<String>,
+    /// The Codex session a tool call runs in (phase 10 R7).
+    pub codex_thread_id: Option<String>,
 }
 
 fn nul_string<'a>(bytes: &'a [u8], cursor: &mut usize) -> SampleResult<&'a [u8]> {
@@ -51,6 +53,7 @@ pub fn parse_procargs(bytes: &[u8]) -> SampleResult<ProcArgs> {
         argv,
         tmux: None,
         tmux_pane: None,
+        codex_thread_id: None,
     };
     while cursor < bytes.len() {
         let field = nul_string(bytes, &mut cursor)?;
@@ -61,6 +64,8 @@ pub fn parse_procargs(bytes: &[u8]) -> SampleResult<ProcArgs> {
             result.tmux_pane = Some(utf8(value)?);
         } else if let Some(value) = field.strip_prefix(b"TMUX=") {
             result.tmux = Some(utf8(value)?);
+        } else if let Some(value) = field.strip_prefix(b"CODEX_THREAD_ID=") {
+            result.codex_thread_id = Some(utf8(value)?).filter(|id| !id.is_empty());
         }
     }
     Ok(result)

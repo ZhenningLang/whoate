@@ -57,6 +57,8 @@ struct CloseFlowView: View {
 
     @ViewBuilder private func confirm(_ c: KillConfirmation) -> some View {
         Text(c.title).font(.title3.weight(.semibold)).lineLimit(2)
+        // R2: how many processes and how much memory, before the pid list.
+        Text(c.summary).font(.callout.weight(.medium)).fixedSize(horizontal: false, vertical: true)
         if c.isProtected {
             Label(L10n.text(.protectedHint, language), systemImage: "lock.fill")
                 .font(.callout.weight(.medium)).foregroundStyle(.secondary)
