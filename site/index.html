@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whoate · who ate my RAM?</title>
+<meta name="description" content="whoate shows whose processes are eating memory and CPU on your Mac: the coding-agent session, the tmux pane, the browser's tab processes, or the orphan a closed terminal left behind. Per-software insight for people, structured JSON for agents, zero tokens.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root {
+  --bg: #fbf6ec;
+  --surface: #f3ead8;
+  --fg: #2a2418;
+  --muted: #6b6150;
+  --border: #e2d6bd;
+  --accent: #a0740a;
+  --accent-ink: #7a5806;
+  --code-bg: #2a2418;
+  --code-fg: #f3ead8;
+  --code-dim: #b3a78f;
+  --code-key: #e7c46a;
+  --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --gutter: clamp(16px, 5vw, 64px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17140f;
+    --surface: #221e17;
+    --fg: #efe6d4;
+    --muted: #a99d86;
+    --border: #3a3326;
+    --accent: #d9a92e;
+    --accent-ink: #e7c46a;
+    --code-bg: #0f0d0a;
+    --code-fg: #efe6d4;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.6 var(--sans);
+}
+a { color: var(--accent-ink); text-underline-offset: 3px; }
+a:hover { color: var(--accent); }
+img { max-width: 100%; height: auto; display: block; }
+code, pre { font-family: var(--mono); font-size: 14px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter); }
+
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0; }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; color: var(--fg); text-decoration: none; }
+.brand img { width: 40px; height: 30px; }
+nav.links { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; }
+nav.links a { color: var(--muted); text-decoration: none; }
+nav.links a:hover { color: var(--fg); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 48px; align-items: center; padding: 48px 0 80px; }
+.hero h1 { font-size: clamp(40px, 6vw, 64px); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 24px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.lede { font-size: 20px; color: var(--muted); margin: 0 0 32px; max-width: 34em; }
+.lede strong { color: var(--fg); font-weight: 600; }
+.install { display: flex; align-items: center; gap: 12px; background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 12px 16px; overflow-x: auto; }
+.install code { white-space: nowrap; font-size: 15px; }
+.install .prompt { color: var(--code-dim); user-select: none; }
+.meta { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+.shot { border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 24px 48px -24px rgb(42 36 24 / 0.35); }
+
+section { padding: 80px 0; border-top: 1px solid var(--border); }
+.kicker { font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 12px; }
+h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 16px; max-width: 22em; }
+.intro { color: var(--muted); font-size: 18px; max-width: 40em; margin: 0 0 48px; }
+
+table.versus { width: 100%; border-collapse: collapse; font-size: 15px; }
+table.versus th { text-align: left; font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 16px 12px 0; border-bottom: 1px solid var(--border); }
+table.versus td { vertical-align: top; padding: 16px 16px 16px 0; border-bottom: 1px solid var(--border); }
+table.versus td:first-child { width: 18%; font-weight: 600; }
+table.versus td.raw { width: 32%; font-family: var(--mono); font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+table.versus td.said strong { display: block; }
+table.versus td.said span { color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); margin: 24px 0 0; }
+
+.agent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+pre.term { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 24px; overflow-x: auto; line-height: 1.55; }
+pre.term .c { color: var(--code-dim); }
+pre.term .k { color: var(--code-key); }
+ul.points { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; }
+ul.points li strong { display: block; font-size: 18px; margin-bottom: 4px; }
+ul.points li span { color: var(--muted); }
+table.exits { border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+table.exits td { padding: 4px 16px 4px 0; vertical-align: top; }
+table.exits td:first-child { font-family: var(--mono); color: var(--accent-ink); }
+
+.gallery { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: start; }
+.gallery figure { margin: 0; }
+.gallery figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; }
+.stack { display: grid; gap: 24px; }
+
+.steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; }
+.steps h3 { font-size: 20px; margin: 0 0 12px; }
+.steps p, .steps li { color: var(--muted); }
+.steps ol { padding-left: 20px; margin: 0; }
+.steps .install { margin: 12px 0; }
+kbd { font-family: var(--sans); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; color: var(--fg); }
+
+.zh { background: var(--surface); border-radius: 16px; padding: 48px var(--gutter); }
+.zh h2 { font-size: clamp(24px, 3vw, 32px); }
+.zh p { max-width: 42em; }
+.zh p, .zh li { color: var(--fg); }
+
+footer { padding: 48px 0 64px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; border-top: 1px solid var(--border); }
+footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .hero, .agent, .gallery, .steps { grid-template-columns: minmax(0, 1fr); }
+  .hero { padding: 24px 0 64px; gap: 32px; }
+  section { padding: 64px 0; }
+  table.versus thead { display: none; }
+  table.versus, table.versus tbody, table.versus tr, table.versus td { display: block; width: 100%; }
+  table.versus tr { padding: 16px 0; border-bottom: 1px solid var(--border); }
+  table.versus td, table.versus td:first-child, table.versus td.raw { width: 100%; padding: 4px 0; border: 0; }
+}
+@media (max-width: 480px) {
+  nav.links { display: none; }
+  .lede { font-size: 18px; }
+  .zh { border-radius: 12px; padding: 32px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#"><img src="favicon.svg" alt="" width="40" height="30">whoate</a>
+    <nav class="links" aria-label="Site">
+      <a href="#insight">Per-software insight</a>
+      <a href="#agents">For agents</a>
+      <a href="#install">Install</a>
+      <a href="#zh" lang="zh-CN">中文</a>
+      <a href="https://github.com/ZhenningLang/whoate">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Who <em>ate</em> my RAM?</h1>
+        <p class="lede">whoate tells you <strong>whose</strong> processes are eating memory and CPU on your Mac: the coding-agent session, the tmux pane, the browser's tab processes, the app, or the orphan a closed terminal left behind. Not just a process name.</p>
+        <div class="install"><span class="prompt">$</span><code>brew install zhenninglang/tap/whoate</code></div>
+        <p class="meta">Apple Silicon · macOS 14+ · MIT · menu bar app via <code>--cask</code> or <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a></p>
+      </div>
+      <img class="shot" src="img/main-agent-en-light.png" width="1600" height="1028" alt="whoate main window: a Claude Code session in a tmux pane, still growing, with its project, idle time, confidence and memory history">
+    </div>
+
+    <section id="insight">
+      <p class="kicker">Per-software insight</p>
+      <h2>It knows how each app splits into processes, and says so in that app's terms.</h2>
+      <p class="intro">Activity Monitor lists processes. whoate groups them by who started them and why they exist, using recognizers for the software developers actually run, then adds advice from a knowledge base where every entry cites its source.</p>
+      <table class="versus">
+        <thead><tr><th>Software</th><th>What the process list shows</th><th>What whoate says</th></tr></thead>
+        <tbody>
+          <tr><td>Coding agents</td><td class="raw">node, node, npx, python3, uv …</td><td class="said"><strong>Claude Code session in pane %12 · repo whoate</strong><span>Its MCP servers and dev servers grouped under the session, with session title and idle time.</span></td></tr>
+          <tr><td>Chrome, Brave</td><td class="raw">Google Chrome Helper (Aperitif Renderer) × 32</td><td class="said"><strong>Tab processes · Extensions · GPU · Network service</strong><span>Plus whether Memory Saver is on, read from the browser's own preferences.</span></td></tr>
+          <tr><td>Docker Desktop</td><td class="raw">com.apple.Virtualization.VirtualMachine</td><td class="said"><strong>The Linux VM, with per-container statistics</strong><span>Container figures stay separate: they are never added to the VM's footprint.</span></td></tr>
+          <tr><td>VS Code, JetBrains</td><td class="raw">Code Helper (Plugin), node, java …</td><td class="said"><strong>Extension hosts · TypeScript language server · file watchers</strong><span>Plus the settings that drive them, such as watcher exclusions or the JVM heap from your vmoptions.</span></td></tr>
+          <tr><td>Closed terminals</td><td class="raw">node (ppid 1)</td><td class="said"><strong>Orphan from a pane that no longer exists</strong><span>With the evidence, and a two-step close that never touches system processes.</span></td></tr>
+        </tbody>
+      </table>
+      <p class="note">Run <code>whoate insights --list</code> to see every knowledge-base entry with its source and the date it was checked. Add your own names and advice in <code>~/.config/whoate/rules.toml</code>.</p>
+    </section>
+
+    <section id="agents">
+      <p class="kicker">Made for agents · zero tokens</p>
+      <h2>One command, structured JSON, meaningful exit codes.</h2>
+      <p class="intro">Your coding agent asks whoate instead of guessing from <code>ps</code>. Diagnosis is rule-based and runs on your Mac: no model calls, no network, no tokens spent.</p>
+      <div class="agent">
+<pre class="term"><span class="c">$ whoate why 41873 --json    # trimmed example</span>
+{
+  <span class="k">"schema"</span>: "whoate/v1",
+  <span class="k">"owners"</span>: [{
+    <span class="k">"id"</span>: "app:com.google.Chrome",
+    <span class="k">"label"</span>: "Google Chrome",
+    <span class="k">"mem_bytes"</span>: 3221225472,
+    <span class="k">"parts"</span>: [
+      { <span class="k">"name"</span>: "Tab processes", <span class="k">"process_count"</span>: 14 },
+      { <span class="k">"name"</span>: "Extensions", <span class="k">"process_count"</span>: 5 }
+    ],
+    <span class="k">"insights"</span>: ["chrome.extensions"],
+    <span class="k">"verdict"</span>: { <span class="k">"level"</span>: "watch" }
+  }]
+}</pre>
+        <ul class="points">
+          <li><strong>A schema, not prose</strong><span>Every document says <code>"schema": "whoate/v1"</code>. Memory is in bytes, <code>null</code> means unknown, never zero.</span></li>
+          <li><strong>Exit codes an agent can branch on</strong>
+            <table class="exits">
+              <tr><td>0</td><td>normal</td></tr>
+              <tr><td>1</td><td>something needs action, or a fatal error</td></tr>
+              <tr><td>2</td><td>invalid arguments</td></tr>
+              <tr><td>3</td><td>target not found</td></tr>
+              <tr><td>4</td><td>refused for safety</td></tr>
+            </table>
+          </li>
+          <li><strong>Safe by default</strong><span>Conversation text stays out unless you pass <code>--prompts</code>. <code>whoate kill</code> previews first and refuses root and Apple system processes.</span></li>
+          <li><strong>Instructions included</strong><span><code>whoate agent-guide</code> prints a SKILL.md for Claude Code, Kilo or OpenCode.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="app">
+      <p class="kicker">The menu bar app</p>
+      <h2>For people: owners ranked, verdicts in plain language.</h2>
+      <p class="intro">The same engine behind a menu bar panel and a three-column window, in light and dark, English and Chinese.</p>
+      <div class="gallery">
+        <figure>
+          <img class="shot" src="img/main-browser-dark.png" width="1600" height="1028" alt="whoate main window in dark mode and Chinese: Brave Browser with its renderer, GPU and main processes and a memory curve">
+          <figcaption>A browser and its helper processes, in dark mode and Chinese.</figcaption>
+        </figure>
+        <div class="stack">
+          <figure>
+            <img class="shot" src="img/panel-en-light.png" width="840" height="1176" alt="whoate menu bar panel: memory pressure bar and owners ranked by memory, each with a verdict such as Consider closing or Still growing">
+            <figcaption>The menu bar panel.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="install">
+      <p class="kicker">Install</p>
+      <h2>Apple Silicon, macOS 14 or later.</h2>
+      <div class="steps">
+        <div>
+          <h3>Command line</h3>
+          <div class="install"><span class="prompt">$</span><code>brew install zhenninglang/tap/whoate</code></div>
+          <p>Then <code>whoate top</code>. The JSON Schema is installed under <code>$(brew --prefix)/share/whoate/</code>.</p>
+          <h3>Menu bar app</h3>
+          <div class="install"><span class="prompt">$</span><code>brew install --cask zhenninglang/tap/whoate</code></div>
+          <p>Or download the app zip from <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a>.</p>
+        </div>
+        <div>
+          <h3>First launch</h3>
+          <p>The app is not notarized (that needs a paid Apple Developer account), so macOS blocks the first launch once:</p>
+          <ol>
+            <li>Open whoate.app and click <kbd>Done</kbd> in the warning.</li>
+            <li>Open <strong>System Settings → Privacy &amp; Security</strong> and click <kbd>Open Anyway</kbd> next to the whoate message.</li>
+            <li>Confirm with your password or Touch ID.</li>
+          </ol>
+          <p>Or run <code>xattr -d com.apple.quarantine /Applications/whoate.app</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="zh" lang="zh-CN">
+      <div class="zh">
+        <h2>中文说明：谁吃了我的内存？</h2>
+        <p>whoate 告诉你占内存和 CPU 的进程属于谁：哪个编程助手会话、哪个 tmux pane、浏览器的标签页进程、哪个应用，还是终端关掉后留下的孤儿进程。</p>
+        <p><strong>按软件定制的洞察</strong>：按各个软件自己的结构解释进程，建议来自内置知识库，每条都附出处与核对日期。<strong>给 agent 用，零 token</strong>：一条命令输出结构化 JSON 和有含义的退出码，诊断在本机按规则完成，不调用模型、不联网。</p>
+        <p>安装：<code>brew install zhenninglang/tap/whoate</code>（菜单栏应用加 <code>--cask</code>）。应用未做 Apple 公证，首次打开被拦下时，打开「系统设置 → 隐私与安全性」，点「仍要打开」，或执行 <code>xattr -d com.apple.quarantine /Applications/whoate.app</code>。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>whoate · MIT License · reads your Mac locally, never phones home</span>
+    <nav aria-label="Project">
+      <a href="https://github.com/ZhenningLang/whoate">GitHub</a>
+      <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a>
+      <a href="https://github.com/ZhenningLang/whoate/blob/main/docs/install.md">Install guide</a>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>

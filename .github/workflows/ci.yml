@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # Explicit Apple Silicon image; macos-latest drifts between images.
+    runs-on: macos-26
+    env:
+      CARGO_TERM_COLOR: always
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Frozen contract tests read baselines with `git show <sha>:<path>`.
+          fetch-depth: 0
+
+      - name: Pin Rust 1.96.0
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal --component clippy,rustfmt
+          rustup default 1.96.0
+
+      - name: Toolchain versions
+        run: |
+          sw_vers
+          xcodebuild -version || true
+          swift --version
+          rustc --version
+          cargo clippy --version
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+      # No --all-features here: the live-acceptance tests need a real machine and a raw snapshot.
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      # app/Package.swift links target/<WHOATE_FFI_PROFILE>/libwhoate_ffi.a (default debug).
+      - name: swift build
+        run: |
+          cargo build -p whoate-ffi --locked
+          swift build --package-path app

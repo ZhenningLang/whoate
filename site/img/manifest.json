@@ -1,0 +1,32 @@
+{
+  "generator": "tests/gui/design_shots.py --strict",
+  "fixture": "tests/gui/design-report.json",
+  "fixture_sha256": "d1023b51f11ba10466e6e399e46c36b9a0ffe4f6238d91908e5e1bf8064b64c7",
+  "app_tree": "2e0909226dc021f3be44a0d42e32455e5a4cd8c4",
+  "images": [
+    {
+      "file": "main-agent-en-light.png",
+      "sha256": "8198b02c4c8e43cc77f8939653db727f16f5bc1c11f9cbf9432af0e108c73faa",
+      "shot": "main-agent-en-light",
+      "source_sha256": "a7742cb3175f0ca391896908827bc05c43ad1aab5c4be513fbd5db061546a221",
+      "width": 1600,
+      "height": 1028
+    },
+    {
+      "file": "panel-en-light.png",
+      "sha256": "8f8a3c703919798c336789ef5827ad32ecb040f9f224565117f859a5220f9a88",
+      "shot": "panel-en-light",
+      "source_sha256": "8f8a3c703919798c336789ef5827ad32ecb040f9f224565117f859a5220f9a88",
+      "width": 840,
+      "height": 1176
+    },
+    {
+      "file": "main-browser-dark.png",
+      "sha256": "0c04cbbc8640a8cdd9a17aa88ec8a9dbeb0029b90e01dc98ce4066ce19108b9e",
+      "shot": "main-browser-dark",
+      "source_sha256": "b78725aabf3f49ee795cfdf18d46d18b7273382ea663b79a3e0087f739919041",
+      "width": 1600,
+      "height": 1028
+    }
+  ]
+}
