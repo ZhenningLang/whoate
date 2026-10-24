@@ -19,7 +19,7 @@ owner to look at. hidden-open: hidden for 65 s (paused full ticks every 30 s),
 then the panel shows a line within 4 s; the 5 s control shows only
 "not enough samples".
 """
-import json, os, subprocess, sys, tempfile, time
+import json, os, re, subprocess, sys, tempfile, time
 from pathlib import Path
 import launch, ls_residue, screenshots
 
@@ -77,7 +77,50 @@ def ls_type(pid):
     return entry and entry["type"]
 
 
+# Someone using the Mac decides a focus check: a click into another app raises it
+# over whoate. Full run 2026-10-25 00:48: each of seven focus losses came right
+# after a trackpad click (unified log), and an A/B run of c60cd58 and 8969b17+ with
+# no input passed both. A run with keyboard or pointer input is evidence of
+# neither; its receipt is kept under another name and the scenario runs again.
+# Without input the assertions decide, whoever is frontmost.
+QUIET_S, QUIET_WAIT_S, FOCUS_RUNS = 3, 120, 3
+
+
+def hid_idle(run=subprocess.run):
+    """Seconds since the last keyboard, mouse or trackpad input (IOHIDSystem
+    HIDIdleTime); None when it cannot be read."""
+    out = run(["/usr/sbin/ioreg", "-c", "IOHIDSystem", "-d", "4", "-k", "HIDIdleTime"],
+              capture_output=True, text=True, timeout=10).stdout
+    m = re.search(r'"HIDIdleTime" = (\d+)', out)
+    return int(m.group(1)) / 1e9 if m else None
+
+
+def without_input(scenario, label, idle=hid_idle, sleep=time.sleep, clock=time.monotonic):
+    """scenario(attempt) -> (ok, receipt path). Waits for QUIET_S seconds without
+    input (at most QUIET_WAIT_S), runs, and reruns up to FOCUS_RUNS times while input
+    arrived during the run. All runs touched: not passed, reported as blocked."""
+    for attempt in range(1, FOCUS_RUNS + 1):
+        waited = clock()
+        while (idle() or 0) < QUIET_S and clock() - waited < QUIET_WAIT_S:
+            sleep(0.5)
+        began = clock()
+        ok, receipt = scenario(attempt)
+        quiet = idle()
+        touched = quiet is not None and quiet < clock() - began
+        print(f"{label} attempt={attempt} input_during_run={touched} idle_at_end={quiet}")
+        if not touched:
+            return ok
+        stem, ext = os.path.splitext(receipt)
+        os.replace(receipt, f"{stem}.human-input-{attempt}{ext}")
+    print(f"BLOCKED {label} human-input: keyboard or pointer input during all {FOCUS_RUNS} runs")
+    return False
+
+
 def activation(binary, out):
+    return without_input(lambda attempt: activation_once(binary, out), "QA12")
+
+
+def activation_once(binary, out):
     root = tempfile.mkdtemp(prefix="wwin-", dir="/private/tmp")
     state, log = f"{root}/state", f"{root}/schedule"
     env = private_env(root, WHOATE_UI_AUTOMATION="main-window", WHOATE_UI_STATE_FILE=state,
@@ -142,7 +185,7 @@ def activation(binary, out):
         print(f"QA12 {name}={ok}")
     print(f"QA12 full_after_focus={len(full_after)} max_gap={max(gaps, default=None)}")
     launch.cleanup(handle)
-    return all(checks.values())
+    return all(checks.values()), os.path.join(out, "qa12-activation.json")
 
 
 QUIT_LIMIT_S = 5

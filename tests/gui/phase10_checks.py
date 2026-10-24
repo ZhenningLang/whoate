@@ -23,7 +23,7 @@ list's visible part (AppKit table geometry).
 import json, math, os, sys, tempfile
 from pathlib import Path
 import launch
-from window_check import at, intersects, private_env, read_layout, states, write_receipt
+from window_check import at, intersects, private_env, read_layout, states, without_input, write_receipt
 
 DESIGN = Path(__file__).with_name("design-report.json")
 SHOW_AT, QUIT_AT = 4, 9
@@ -48,22 +48,9 @@ def run(binary, env, until):
     return handle, exited
 
 
-# Another app may take focus while the check runs (full run 2026-10-25 00:16: the
-# unified log shows One Markdown and then a Space switch to Ghostty becoming
-# frontmost). When the state at check time says another app is frontmost, that run
-# says nothing about whoate's key window: its receipt is kept and the scenario runs
-# again, at most PANEL_RUNS times. With whoate frontmost the assertion is unchanged.
-PANEL_RUNS = 3
-
-
 def panel(binary, out):
-    for attempt in range(1, PANEL_RUNS + 1):
-        ok, focus_lost = panel_once(binary, out, attempt)
-        if not focus_lost:
-            return ok
-        print(f"QA16 attempt {attempt}: another app was frontmost at check time ({focus_lost}); running again")
-    print(f"QA16 another app held focus in all {PANEL_RUNS} runs")
-    return False
+    # Input from someone using the Mac reruns the scenario (window_check.without_input).
+    return without_input(lambda attempt: panel_once(binary, out, attempt), "QA16")
 
 
 def panel_once(binary, out, attempt):
@@ -93,18 +80,17 @@ def panel_once(binary, out, attempt):
         "qa20_panel_rows_checked": bool(overlap) and all(overlap.values()),
         "quit_after_exited": exited,
     }
-    front = after.get("frontmost", "self")
-    focus_lost = front if front != "self" else None
-    name = "qa16-17-20-panel.json" if not focus_lost else f"qa16-17-20-panel.focus-lost-{attempt}.json"
-    write_receipt(out, name, {"pid": handle["pid"], "attempt": attempt, "frontmost_at_check": front,
-                              "states": rows_state, "footer": footer, "distance": distance, "rows": rows,
-                              "checks": checks})
+    # Who had focus at check time, for the receipt; it never decides the result.
+    front = after.get("frontmost", "-")
+    write_receipt(out, "qa16-17-20-panel.json", {"pid": handle["pid"], "attempt": attempt, "frontmost_at_check": front,
+                                                  "states": rows_state, "footer": footer, "distance": distance,
+                                                  "rows": rows, "checks": checks})
     print(f"QA17 footer quit={footer.get('quit')} showMain={footer.get('showMain')} centre_distance={distance:.1f}pt")
     print(f"QA20 panel rows_with_buttons={len(overlap)} {overlap}")
     print(f"QA16 attempt={attempt} frontmost_at_check={front}")
     for name, ok in checks.items():
         print(f"P10 {name}={ok}")
-    return all(checks.values()), focus_lost
+    return all(checks.values()), os.path.join(out, "qa16-17-20-panel.json")
 
 
 def main_window(binary, out):
