@@ -35,7 +35,8 @@ impl DockerSource for NoDocker {
     }
 }
 
-/// A file with `owners` replays as a whoate/v1 report; otherwise it is a
+/// A file with `owners` replays as a whoate/v1 report (its optional `procs`
+/// list answers whoate_why's process list); otherwise it is a
 /// Snapshot run through the full pipeline with an empty isolated home.
 /// Replayed identities never authorize whoate_kill. NULL on any failure.
 /// # Safety
@@ -54,9 +55,15 @@ fn open(path: *const c_char) -> Option<WhoateEngine> {
     let path = unsafe { CStr::from_ptr(path) }.to_str().ok()?;
     let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path).ok()?).ok()?;
     if value.get("owners").is_some() {
+        // Design reports may carry made-up processes for whoate_why (R10 screenshots).
+        let procs = value
+            .get("procs")
+            .and_then(|p| p.as_array())
+            .cloned()
+            .unwrap_or_default();
         let report: Report = serde_json::from_value(value).ok()?;
         return Some(WhoateEngine {
-            source: Source::Report(Box::new(report)),
+            source: Source::Report(Box::new(report), procs),
             last: None,
             scratch: None,
         });

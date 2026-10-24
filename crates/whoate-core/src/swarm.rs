@@ -134,6 +134,11 @@ fn build(signature: &str, members: &[&Proc], shape: Shape, owners: &BTreeMap<i32
         None
     };
     let service = signature.strip_prefix("service:");
+    let unknown_cpu = members
+        .iter()
+        .filter(|p| p.cpu_pct_sampled.is_none())
+        .count();
+    let readable_cpu: f64 = members.iter().filter_map(|p| p.cpu_pct_sampled).sum();
     Swarm {
         signature: signature.into(),
         label: service.unwrap_or(&members[0].comm).into(),
@@ -143,11 +148,10 @@ fn build(signature: &str, members: &[&Proc], shape: Shape, owners: &BTreeMap<i32
             .iter()
             .filter(|p| p.footprint_bytes.is_none())
             .count(),
-        cpu_pct: if members.iter().all(|p| p.cpu_pct_sampled.is_some()) {
-            Some(members.iter().filter_map(|p| p.cpu_pct_sampled).sum())
-        } else {
-            None
-        },
+        cpu_pct: (unknown_cpu == 0).then_some(readable_cpu),
+        // R12: the readable part when some members are unreadable (Owner has the same pair).
+        cpu_pct_readable: (unknown_cpu > 0 && unknown_cpu < members.len()).then_some(readable_cpu),
+        unknown_cpu_count: (unknown_cpu > 0).then_some(unknown_cpu),
         shape,
         owners: distribution
             .into_iter()

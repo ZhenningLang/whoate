@@ -55,6 +55,12 @@ public struct Automation: Equatable, Sendable {
     public var panelShowMainAfter: Double?
     /// Main window selection once data arrives: owner id, kind:orphan|agent|browser, or overview.
     public var select: String?
+    /// A second selection through the same path at WHOATE_UI_SELECT_AGAIN_AFTER seconds,
+    /// with the window already open: the R9 scroll check (a pane's session clicked).
+    public var selectAgain: String?
+    public var selectAgainAfter: Double?
+    /// main-window screenshots: scroll the details to this card (relation|cpu) once shown.
+    public var detailScroll: String?
     /// panel-window and main-window: start in this sort (memory|cpu).
     public var sort: SortKey?
     /// Template PDF for the menu bar logo when the app bundle has none (launch.py wrappers).
@@ -89,6 +95,9 @@ public struct Automation: Equatable, Sendable {
         showMainAgainAfter = seconds("WHOATE_UI_SHOW_MAIN_AGAIN_AFTER")
         panelShowMainAfter = seconds("WHOATE_UI_PANEL_SHOW_MAIN_AFTER")
         select = environment["WHOATE_UI_SELECT"]
+        selectAgain = environment["WHOATE_UI_SELECT_AGAIN"]
+        selectAgainAfter = seconds("WHOATE_UI_SELECT_AGAIN_AFTER")
+        detailScroll = environment["WHOATE_UI_DETAIL_SCROLL"]
         sort = environment["WHOATE_UI_SORT"].flatMap(SortKey.init(rawValue:))
         menuBarIcon = environment["WHOATE_UI_MENUBAR_ICON"]
     }

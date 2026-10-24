@@ -568,6 +568,8 @@ fn phase02_verdict_swarm_bilingual_action_and_rule_metadata() {
         mem_bytes: 104857600,
         unknown_mem_count: 0,
         cpu_pct: None,
+        cpu_pct_readable: None,
+        unknown_cpu_count: None,
         shape: Shape::Burst,
         owners: vec![SwarmOwner {
             id: "pane:demo".into(),

@@ -40,21 +40,24 @@ public struct Report: Decodable, Sendable, Equatable {
 }
 
 /// One process from whoate_why. Members carry memory, cwd and argv already
-/// redacted by the core's fixture rules; ancestors only pid, ppid and name.
+/// redacted by the core's fixture rules; ancestors pid, ppid, names and memory.
+/// `comm` is the kernel's short name (Claude Code's is its version); `name` is
+/// the core's readable one (R10).
 public struct ProcBrief: Decodable, Sendable, Equatable {
     public var pid: Int32
     public var ppid: Int32
     public var comm: String
+    public var name: String?
     public var inOwner: Bool
     public var memBytes: UInt64?
     public var cwd: String?
     public var argv: [String]?
     enum CodingKeys: String, CodingKey, CaseIterable {
-        case pid, ppid, comm, inOwner = "in_owner", memBytes = "mem_bytes", cwd, argv
+        case pid, ppid, comm, name, inOwner = "in_owner", memBytes = "mem_bytes", cwd, argv
     }
-    public init(pid: Int32, ppid: Int32, comm: String, inOwner: Bool, memBytes: UInt64? = nil,
+    public init(pid: Int32, ppid: Int32, comm: String, name: String? = nil, inOwner: Bool, memBytes: UInt64? = nil,
                 cwd: String? = nil, argv: [String]? = nil) {
-        (self.pid, self.ppid, self.comm, self.inOwner) = (pid, ppid, comm, inOwner)
+        (self.pid, self.ppid, self.comm, self.name, self.inOwner) = (pid, ppid, comm, name, inOwner)
         (self.memBytes, self.cwd, self.argv) = (memBytes, cwd, argv)
     }
 }
@@ -135,6 +138,10 @@ public struct Owner: Decodable, Sendable, Equatable, Identifiable {
     public var reclaimablePhysical: PhysicalEstimate?
     public var unknownMemCount: Int
     public var cpuPct: Double?
+    /// R12: with `cpuPct` nil, the readable processes' sum (a lower bound) and
+    /// how many could not be read. Both nil when every process was read.
+    public var cpuPctReadable: Double?
+    public var unknownCPUCount: Int?
     public var pids: [Int32]
     public var origin: Origin?
     public var agent: Agent?
@@ -147,6 +154,7 @@ public struct Owner: Decodable, Sendable, Equatable, Identifiable {
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id, kind, label, memBytes = "mem_bytes", reclaimablePhysical = "reclaimable_physical"
         case unknownMemCount = "unknown_mem_count", cpuPct = "cpu_pct", pids, origin, agent
+        case cpuPctReadable = "cpu_pct_readable", unknownCPUCount = "unknown_cpu_count"
         case evidence, parts, facts, insights, history, verdict
     }
     public init(from decoder: Decoder) throws {
@@ -158,6 +166,8 @@ public struct Owner: Decodable, Sendable, Equatable, Identifiable {
         reclaimablePhysical = try c.decodeIfPresent(PhysicalEstimate.self, forKey: .reclaimablePhysical)
         unknownMemCount = try c.decode(Int.self, forKey: .unknownMemCount)
         cpuPct = try c.decodeIfPresent(Double.self, forKey: .cpuPct)
+        cpuPctReadable = try c.decodeIfPresent(Double.self, forKey: .cpuPctReadable)
+        unknownCPUCount = try c.decodeIfPresent(Int.self, forKey: .unknownCPUCount)
         pids = try c.decode([Int32].self, forKey: .pids)
         origin = try c.decodeIfPresent(Origin.self, forKey: .origin)
         agent = try c.decodeIfPresent(Agent.self, forKey: .agent)
@@ -195,10 +205,12 @@ public struct Origin: Decodable, Sendable, Equatable {
     public var cwd: String?
     public var paneTitle: String?
     public var windowName: String?
+    /// The live pane's `session:window.pane` (R10).
+    public var tmuxTarget: String?
     public var ports: [UInt16]?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case tmuxPane = "tmux_pane", paneAlive = "pane_alive", cwd
-        case paneTitle = "pane_title", windowName = "window_name", ports
+        case paneTitle = "pane_title", windowName = "window_name", tmuxTarget = "tmux_target", ports
     }
 }
 
@@ -269,9 +281,13 @@ public struct HistoryPoint: Decodable, Sendable, Equatable {
     public var cpuPct: Double?
     /// Processes whose memory could not be read; memBytes counts the rest.
     public var unknownMemCount: Int?
+    /// Same as on Owner (R12): the readable CPU when `cpuPct` is nil.
+    public var cpuPctReadable: Double?
+    public var unknownCPUCount: Int?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case timestampS = "timestamp_s", memBytes = "mem_bytes", cpuPct = "cpu_pct"
         case unknownMemCount = "unknown_mem_count"
+        case cpuPctReadable = "cpu_pct_readable", unknownCPUCount = "unknown_cpu_count"
     }
 }
 
@@ -293,6 +309,9 @@ public struct Swarm: Decodable, Sendable, Equatable, Identifiable {
     public var memBytes: UInt64
     public var unknownMemCount: Int
     public var cpuPct: Double?
+    /// Same as on Owner (R12).
+    public var cpuPctReadable: Double?
+    public var unknownCPUCount: Int?
     public var shape: Shape
     public var owners: [Member]
     public var parents: [Int32]
@@ -303,7 +322,8 @@ public struct Swarm: Decodable, Sendable, Equatable, Identifiable {
     public var id: String { "swarm:\(signature)" }
     enum CodingKeys: String, CodingKey, CaseIterable {
         case signature, label, count, memBytes = "mem_bytes", unknownMemCount = "unknown_mem_count"
-        case cpuPct = "cpu_pct", shape, owners, parents, startedSpanS = "started_span_s", pids
+        case cpuPct = "cpu_pct", cpuPctReadable = "cpu_pct_readable", unknownCPUCount = "unknown_cpu_count"
+        case shape, owners, parents, startedSpanS = "started_span_s", pids
         case evidence, verdict
     }
 }

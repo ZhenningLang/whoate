@@ -70,9 +70,10 @@ struct WhoateApp: App {
         }
     }
 
-    /// An existing main window is raised; otherwise SwiftUI creates it.
+    /// An existing main window is raised; otherwise SwiftUI creates it. A panel
+    /// row's owner goes through AppModel.select: its category, scrolled into view (R9).
     private func open(_ ownerID: String?) {
-        if let ownerID { delegate.model.selectedOwnerID = ownerID }
+        if let ownerID { delegate.model.select(ownerID) }
         switch WindowPolicy.open(mainWindowExists: delegate.mainWindows.exists) {
         case .bringToFront: delegate.mainWindows.bringToFront()
         case .create:
@@ -163,6 +164,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if automation.mainWindow { at(0.5) { open(nil) } }
         if let select = automation.select { Task { await applySelection(select) } }
+        if let again = automation.selectAgain, let after = automation.selectAgainAfter {
+            at(after) { [model] in model.select(again) }
+        }
         if let after = automation.showMainAfter { at(after) { open(nil) } }
         if let after = automation.showMainAgainAfter { at(after) { open(nil) } }
         if let after = automation.panelShowMainAfter {
@@ -218,7 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 "policy=\(policy)", "active=\(NSApp.isActive)", "main_windows=\(mainWindows.count)",
                 "mode=\(model.fullRefresh ? "full" : "host")",
                 "panel_visible=\(panelWindow?.isVisible ?? false)",
-                "selected=\(model.selectedOwnerID ?? "-")",
+                "selected=\(model.selectedOwnerID ?? "-")", "category=\(model.category.rawValue)",
             ]
             if let main {
                 fields += [
@@ -227,6 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     "hides_on_deactivate=\(main.hidesOnDeactivate)", "level=\(main.level.rawValue)",
                     "behavior=\(main.collectionBehavior.rawValue)", "window=\(main.windowNumber)",
                 ]
+                fields += Self.listSelection(main)
             }
             let line = fields.joined(separator: "\t")
             if line != last {
@@ -238,6 +243,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             try? await Task.sleep(for: .milliseconds(200))
         }
+    }
+
+    /// Automation only (R9 check): the owner list's selected row, its row count, and
+    /// whether the row lies wholly inside the list's visible part. The list is the
+    /// second table from the left in the main window; the sidebar is the first.
+    static func listSelection(_ window: NSWindow) -> [String] {
+        func tables(_ view: NSView) -> [NSTableView] {
+            (view as? NSTableView).map { [$0] } ?? view.subviews.flatMap(tables)
+        }
+        guard let content = window.contentView else { return [] }
+        let found = tables(content).sorted { $0.convert($0.bounds, to: nil).minX < $1.convert($1.bounds, to: nil).minX }
+        guard found.count >= 2 else { return ["list=missing"] }
+        let list = found[1], row = list.selectedRow
+        let inside = row >= 0 && list.visibleRect.insetBy(dx: -1, dy: -1).contains(list.rect(ofRow: row))
+        return ["list_rows=\(list.numberOfRows)", "list_row=\(row)", "list_row_visible=\(inside)"]
     }
 
     /// Screenshot entry: the same PanelView in an ordinary titled window,

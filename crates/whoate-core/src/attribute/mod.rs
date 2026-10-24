@@ -376,6 +376,7 @@ pub fn attribute(
             origin.pane_alive = Some(true);
             origin.pane_title = pane.pane_title.clone();
             origin.window_name = pane.window_name.clone();
+            origin.tmux_target = Some(pane.target.clone());
             if origin.cwd.is_none() {
                 origin.cwd = pane.cwd.clone();
             }
@@ -393,6 +394,7 @@ pub fn attribute(
             if let Some(pane) = snap.tmux_panes.iter().find(|p| &p.pane_id == pane_id) {
                 origin.pane_title = pane.pane_title.clone();
                 origin.window_name = pane.window_name.clone();
+                origin.tmux_target = Some(pane.target.clone());
             }
             evidence.push(Evidence::new(
                 "tmux_environment",
@@ -527,6 +529,7 @@ pub fn attribute(
             target.pane_alive = origin.pane_alive;
             target.pane_title = origin.pane_title;
             target.window_name = origin.window_name;
+            target.tmux_target = origin.tmux_target;
         }
         // Deterministic context choice when several children provide cwd values.
         if let Some(cwd) = origin.cwd

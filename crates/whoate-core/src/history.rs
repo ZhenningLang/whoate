@@ -105,6 +105,8 @@ impl History {
                 mem_bytes: owner.mem_bytes,
                 cpu_pct: owner.cpu_pct,
                 unknown_mem_count: unknown,
+                cpu_pct_readable: owner.cpu_pct_readable,
+                unknown_cpu_count: owner.unknown_cpu_count,
             },
             delta,
         });

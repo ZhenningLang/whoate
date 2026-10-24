@@ -221,8 +221,14 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
                 }
             }
             recognizers::registry::finish(owner);
-            if members.iter().any(|p| p.cpu_pct_sampled.is_none()) {
-                owner.cpu_pct = None;
+            let unknown_cpu = members
+                .iter()
+                .filter(|p| p.cpu_pct_sampled.is_none())
+                .count();
+            if unknown_cpu > 0 {
+                // R12: cpu_pct stays null; the readable sum is kept beside it.
+                owner.cpu_pct_readable = owner.cpu_pct.take();
+                owner.unknown_cpu_count = Some(unknown_cpu);
             }
             if continuous {
                 if let Some(at) = swarm::timestamp_us(&current) {

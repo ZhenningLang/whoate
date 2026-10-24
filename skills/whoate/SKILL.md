@@ -40,6 +40,9 @@ Memory is in **bytes**, not MB; CPU is percent of one core and may exceed 100.
 Null means unknown, never zero. Empty arrays mean no recorded items.
 `unknown_mem_count` counts missing footprints: `mem_bytes` is only the known sum.
 An owner's CPU is null if any member lacks a valid CPU difference.
+Then optional `cpu_pct_readable` is the sum over the members that were read (a lower
+bound, absent when none was) and `unknown_cpu_count` how many were not; both keys are
+absent when every member was read. Swarms and history points carry the same pair.
 `system_procs.status` is fresh, stale or missing; `as_of` is the source timestamp.
 `taken_at` is RFC3339 with a timezone. Single queries have empty history;
 watch samples once per second and emits at the requested interval (minimum 1s).
@@ -121,7 +124,11 @@ stale or restricted activity cannot justify closing a session. The new activity 
 uses bounded timestamp metadata only; it does not decode or retain message contents.
 Existing prompt extraction retains its previous consent rules. Restricted first-pair
 capability never reads a tail for activity. Origin adds window_name and pane_title;
-human output escapes control characters and --redact hides both titles.
+human output escapes control characters and --redact hides both titles. A live pane's
+origin also carries optional `tmux_target` (`session:window.pane`, the same address a
+tmux pane owner uses as its label). The GUI's `whoate_why` process list gives each
+process an optional readable `name`: `comm` is the kernel's short name (Claude Code's
+is its version, others stop at 15–16 bytes).
 
 ## Termination is a separate authorization
 

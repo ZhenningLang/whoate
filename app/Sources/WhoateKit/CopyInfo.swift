@@ -30,7 +30,12 @@ public enum CopyInfo {
         let memory = Format.memory(owner.memBytes, unknown: owner.unknownMemCount, language).text
         add(.copyMemory, memory + (owner.unknownMemCount > 0
             ? L10n.format(.copyUnknown, language, "\(owner.unknownMemCount)") : ""))
-        add(.sortCPU, Format.cpu(owner.cpuPct))
+        let cpu = Format.cpu(owner.cpuPct, readable: owner.cpuPctReadable, unknown: owner.unknownCPUCount, language)
+        // "counted the rest" only when there is a rest: nothing readable is "—" with the count.
+        let rest = owner.cpuPctReadable != nil
+        add(.sortCPU, cpu.text + (cpu.help.map {
+            zh ? "（\($0)\(rest ? "，只计读得到的" : "")）" : " (\($0)\(rest ? "; counted the rest" : ""))"
+        } ?? ""))
         add(.copyCwd, Detail.folder(owner).map { Panel.abbreviate($0, home: home) })
         if let origin = owner.origin, let pane = origin.tmuxPane {
             var place = "pane \(pane)"
@@ -38,8 +43,15 @@ public enum CopyInfo {
             if origin.paneAlive == false { place += zh ? "，" : ", "; place += L10n.text(.paneClosed, language) }
             add(.copyTmux, place)
         }
-        let why = Detail.why(owner, procs: procs, language: language)
-        add(.copyReason, why.sentence + (why.chain.map { (zh ? "。" : ". ") + L10n.format(.whyChain, language, $0) } ?? ""))
+        // The relation card's tree and sentence, then the raw evidence the card leaves out (R10).
+        let relation = Detail.relation(owner, procs: procs, report: report, language: language)
+        add(.copyReason, relation.how + (relation.guess ? (zh ? "" : " ") + L10n.text(.relationGuess, language) : ""))
+        for line in relation.lines + relation.rest {
+            let parts = [line.name, line.role, line.exited ? L10n.text(.relationExited, language) : nil, line.memory?.text]
+            lines.append("  " + String(repeating: "  ", count: line.depth) + parts.compactMap { $0 }.joined(separator: "  "))
+        }
+        lines.append(L10n.text(.copyEvidence, language) + colon)
+        for e in owner.evidence { lines.append("  \(e.kind)  \(e.detail)  (\(e.confidence.rawValue))") }
         add(.copySuggestion, owner.verdict.level == .ok ? L10n.text(.normal, language) : owner.verdict.text)
 
         let members = procs.filter(\.inOwner).sorted { ($0.memBytes ?? 0, $1.pid) > ($1.memBytes ?? 0, $0.pid) }

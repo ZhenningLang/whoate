@@ -50,17 +50,19 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case notEnoughSamples, adviceCause, adviceAdvice, adviceSource
     case kindApp, kindOrphan, kindService, kindSystem, ownedBy, sessionsOf
     case categoryAll, categoryAgents, categoryApps, categoryOrphans, categorySystem, filterNeedsAction, filterGrowing
-    case sectionOwners, sectionFilters, ownersCount, sortedBy, last30Minutes, unknownMem, menuTight, menuCritical
+    case sectionOwners, sectionFilters, ownersCount, sortedBy, last30Minutes, unknownMem, unknownCPU, menuTight, menuCritical
     case kindPane, overview, memoryUsed, wired, kernelZones, gpuMemory, diagnostics, notFresh
     case session, sessionName, autoNamed, conversation, status, location, project, confidence
-    case whyHere, curve30, parts, advice, processesInSession, jumpToPane, copyInfo, copied
+    case relation, curve30, curveCPU30, parts, advice, processesInSession, jumpToPane, copyInfo, copied
     case notInTmux, closeProcesses, systemDoNotClose, swarmOwners, noSelection
     case noSession, idle, unavailable, gpuMissing, noTerminalApp, noTmuxClient, jumpFailed
     case systemCard, restartNotRun, facts, linuxNote
     case confirmSummary, confirmSummaryUnknown
     case paneSessions, paneSessionsLine, andMore, codexSession, byFolder, other
-    case whyOwnApp, whySession, whyCodex, whyPane, whyLauncher, whyNoSession, whyPaneClosed, whyOrphan
-    case whyResponsible, whyChain, evidenceDetails
+    case relationHow, relationGuess, relationRest, relationStarter, relationMarked, relationPane, relationPaneOnly, relationWindow
+    case relationPaneClosed, relationApp, relationSession, relationMCP, relationExited, copyEvidence
+    case howOwnApp, howSession, howCodex, howPane, howLauncher, howNoSession, howPaneClosed, howOrphan
+    case howResponsible, howOtherUser, howService, howDefault
     case copyHeader, copyOwner, copySession, copyKind, copyKindAgent, copyMemory, copyUnknown, copyCwd
     case copyTmux, copyWindow, copyReason, copySuggestion, copyProcesses, copyMore, copyNoArgv
     case lastActive
@@ -175,6 +177,7 @@ public enum L10n {
         .sortedBy: ("按%@", "by %@"),
         .last30Minutes: ("最近 30 分钟", "Last 30 minutes"),
         .unknownMem: ("%@ 个进程读不到内存", "%@ processes unreadable"),
+        .unknownCPU: ("%@ 个进程读不到 CPU", "CPU unreadable for %@ processes"),
         .menuTight: ("偏紧", "tight"),
         .menuCritical: ("紧张", "critical"),
         .kindPane: ("tmux pane", "tmux pane"),
@@ -193,8 +196,9 @@ public enum L10n {
         .location: ("位置", "Location"),
         .project: ("项目", "Project"),
         .confidence: ("可信度", "Confidence"),
-        .whyHere: ("为什么归到这里", "Why it is grouped here"),
+        .relation: ("进程关系", "Process tree"),
         .curve30: ("内存 · 最近 30 分钟", "Memory · last 30 minutes"),
+        .curveCPU30: ("CPU · 最近 30 分钟", "CPU · last 30 minutes"),
         .parts: ("组成", "Parts"),
         .advice: ("建议", "Suggestions"),
         .processesInSession: ("这个会话下的进程", "Processes in this session"),
@@ -225,17 +229,35 @@ public enum L10n {
         .codexSession: ("Codex 会话", "Codex session"),
         .byFolder: ("按工作目录分组", "By working folder"),
         .other: ("其他", "Other"),
-        .whyOwnApp: ("%@ 自己的进程", "%@'s own processes"),
-        .whySession: ("%@ 会话里的进程", "Processes in a %@ session"),
-        .whyCodex: ("Codex 会话里的进程（由 Codex 标记了会话）", "Processes in a Codex session (tagged by Codex)"),
-        .whyPane: ("tmux pane %@ 里的进程", "Processes in tmux pane %@"),
-        .whyLauncher: ("父进程已退出，系统记录由 %@ 启动", "Its parent has exited; macOS records it as started by %@"),
-        .whyNoSession: ("%@ 起的进程，没对上会话", "Started by %@; no session matched"),
-        .whyPaneClosed: ("启动它的 pane 已关闭", "the pane that started it is closed"),
-        .whyOrphan: ("启动它的程序已退出，进程被系统收养", "The program that started it has exited; macOS adopted the process"),
-        .whyResponsible: ("系统记录 %@ 为它负责", "macOS lists %@ as responsible for it"),
-        .whyChain: ("父进程链：%@", "Parent chain: %@"),
-        .evidenceDetails: ("证据明细（%@ 条）", "Evidence (%@)"),
+        // R10 (owner 2026-10-24): plain words only; no variable names, pane ids or bundle ids.
+        .relationHow: ("怎么判断的：%@", "How whoate decided: %@"),
+        .relationGuess: ("这是推测，可能不准。", "This is a guess and may be wrong."),
+        .relationRest: ("其余 %@ 个进程 共 %@", "%@ more processes, %@ in all"),
+        .relationStarter: ("启动它的进程", "The process that started it"),
+        .relationMarked: ("← 就是它", "← this one"),
+        .relationPane: ("tmux 分屏 %@", "tmux split %@"),
+        .relationPaneOnly: ("tmux 分屏", "tmux split"),
+        .relationWindow: ("（%@ 窗口）", " (%@ window)"),
+        .relationPaneClosed: ("tmux 分屏（已关闭）", "tmux split (closed)"),
+        .relationApp: ("%@（桌面应用）", "%@ (app)"),
+        .relationSession: ("「%@」", "“%@”"),
+        .relationMCP: ("外接小工具 %@", "MCP tool %@"),
+        .relationExited: ("已退出", "exited"),
+        .copyEvidence: ("原始证据", "Raw evidence"),
+        .howOwnApp: ("%@ 自己的进程。", "%@'s own processes."),
+        .howSession: ("这些进程都是这个 %@ 会话启动的。", "This %@ session started these processes."),
+        .howCodex: ("Codex 给这些进程标记了这个会话。", "Codex marked these processes with this session."),
+        .howPane: ("这些进程都是在这个分屏里启动的。", "These processes were all started in this split."),
+        .howLauncher: ("启动它的进程已经退出，macOS 记录是 %@ 让它运行的。",
+                       "The process that started it has exited; macOS records that %@ had it run."),
+        .howNoSession: ("这些进程是 %@ 启动的，但没对上具体会话。", "%@ started these processes, but no session matched."),
+        .howPaneClosed: ("它原来所在的分屏已经关闭。", " The split it ran in is closed."),
+        .howOrphan: ("启动它的程序已经退出，macOS 收养了这些进程。",
+                     "The program that started it has exited; macOS adopted these processes."),
+        .howResponsible: ("macOS 记录是 %@ 让它运行的。", "macOS records that %@ had it run."),
+        .howOtherUser: ("属于系统账户的进程。", "Processes of a system account."),
+        .howService: ("macOS 的后台服务，归不到具体软件。", "A macOS background service that belongs to no app."),
+        .howDefault: ("按进程的父子关系归到这里。", "Grouped here by parent and child processes."),
         .copyHeader: ("whoate 归属信息 · %@ · 帮我判断保留还是关闭。不含对话内容。",
                       "whoate owner info · %@ · Help me decide whether to keep or close it. No conversation content."),
         .copyOwner: ("软件/会话", "Software/session"),

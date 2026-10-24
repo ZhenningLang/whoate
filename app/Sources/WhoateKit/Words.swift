@@ -1,25 +1,10 @@
-// Plain words for the engine's internal codes in details: evidence kinds,
-// agent status and confidence (design round 1, coder finding 3). An unknown
-// code is shown as it is, never hidden.
+// Plain words for the engine's internal codes in details: agent status and
+// confidence (design round 1, coder finding 3). An unknown code is shown as it
+// is, never hidden. Evidence kinds are never shown since R10; the process
+// relation card says how in a sentence, and the raw evidence is only copied.
 import Foundation
 
 public enum Words {
-    static let evidence: [String: (zh: String, en: String)] = [
-        "pane_ancestor": ("在 tmux pane 里运行", "Runs inside a tmux pane"),
-        "agent_source": ("助手的会话记录里有它", "Listed in the agent's session record"),
-        "tmux_environment": ("环境变量 TMUX_PANE 指向这个 pane", "TMUX_PANE points at this pane"),
-        "runtime_home": ("开发运行时，工作目录在用户目录下", "A dev runtime working in your home folder"),
-        "app_bundle": ("可执行文件在这个应用包里", "Its executable is inside this app"),
-        "responsible_app": ("系统记录这个应用为它负责", "macOS lists this app as responsible for it"),
-        "responsible_launcher": ("由它启动", "Started by it"),
-        "responsible_terminal": ("从终端启动，终端窗口已不在", "Started from a terminal"),
-        "responsible_unavailable": ("查不到负责它的应用", "No responsible app found"),
-        "app_metadata": ("应用信息读取失败", "Could not read the app's info"),
-        "other_uid": ("属于其他用户", "Belongs to another user"),
-        "service_fallback": ("归不到具体软件，按后台服务处理", "No owner found; treated as a background service"),
-        "pane_status_unknown": ("这次没读到 tmux pane 列表", "tmux pane list unavailable this time"),
-        "codex_thread_env": ("Codex 在环境变量里标记了会话", "Codex tagged its session in the environment"),
-    ]
     static let status: [String: (zh: String, en: String)] = [
         "working": ("正在干活", "Working"),
         "idle": ("空闲", "Idle"),
@@ -29,9 +14,6 @@ public enum Words {
         "archived": ("已归档", "Archived"),
     ]
 
-    public static func evidence(_ kind: String, _ language: Language) -> String {
-        evidence[kind].map { language == .zh ? $0.zh : $0.en } ?? kind
-    }
     public static func status(_ code: String, _ language: Language) -> String {
         status[code].map { language == .zh ? $0.zh : $0.en } ?? code
     }

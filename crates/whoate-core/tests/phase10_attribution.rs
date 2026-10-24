@@ -480,3 +480,49 @@ fn qa45_closed_pane_agent_without_session_belongs_to_the_agent() {
     );
     assert!(kinds(o).contains(&("pane_status_unknown", Confidence::Weak)));
 }
+
+/// R10 (conform review B2, round 4): an agent that is the pane's own process
+/// leaves no `pane:` owner, yet its origin still names the split
+/// (`session:window.pane`) for the process tree. Without a live pane there is none.
+#[test]
+fn qa50_an_agent_at_the_pane_root_keeps_the_pane_address() {
+    let w = World::new();
+    let claude = w.proc(
+        990101,
+        1,
+        "2.1.306",
+        "/Users/someone/.local/share/claude/versions/2.1.306",
+        None,
+    );
+    let node = w.proc(990102, 990101, "node", "/opt/homebrew/bin/node", None);
+    let mut snap = Snapshot::historical("2026-10-24T23:30:00+08:00".into(), vec![claude, node]);
+    snap.tmux_panes.push(whoate_core::snapshot::TmuxPane {
+        pane_id: "%216".into(),
+        target: "main:5.2".into(),
+        window_name: Some("gzh".into()),
+        pane_title: None,
+        pane_pid: 990101,
+        cwd: None,
+    });
+    let agents = BTreeMap::from([(990101, Agent::unknown("claude"))]);
+    let owners = attribute(&snap, UID, &w.cfg, &agents);
+    assert_eq!(owners.len(), 1, "{owners:?}");
+    let origin = owners[0].origin.as_ref().unwrap();
+    assert_eq!(owners[0].kind, OwnerKind::AgentSession);
+    assert_eq!(origin.tmux_target.as_deref(), Some("main:5.2"));
+    assert_eq!(origin.window_name.as_deref(), Some("gzh"));
+    let json = serde_json::to_value(origin).unwrap();
+    assert_eq!(json["tmux_target"], "main:5.2");
+
+    snap.tmux_panes.clear();
+    let owners = attribute(&snap, UID, &w.cfg, &agents);
+    let origin = owners[0].origin.as_ref().unwrap();
+    assert_eq!(origin.tmux_target, None);
+    assert!(
+        serde_json::to_value(origin)
+            .unwrap()
+            .get("tmux_target")
+            .is_none(),
+        "absent, not null"
+    );
+}

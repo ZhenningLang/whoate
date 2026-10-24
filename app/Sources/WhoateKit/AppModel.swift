@@ -36,6 +36,16 @@ public final class AppModel {
     public var selectedOwnerID: String? { didSet { if selectedOwnerID != oldValue { notice = nil } } }
     /// Main window sidebar selection.
     public var category: MainCategory = .all
+    /// A selection made by whoate rather than by a click in the list (a pane's
+    /// session, a panel row, automation): the list scrolls it to the centre (R9).
+    /// `serial` changes on every request, so the same row can be asked twice.
+    public struct ScrollRequest: Equatable, Sendable {
+        public var id: String
+        public var serial: Int
+    }
+    public private(set) var scrollRequest: ScrollRequest?
+    /// The last request the list carried out (view state lives here: no @State under CLT).
+    @ObservationIgnored public var scrolledSerial = 0
     /// The action bar's message for the selected owner: a tmux jump result (no client,
     /// no terminal, failure; nil after success) or "copied".
     public private(set) var notice: String?
@@ -128,11 +138,14 @@ public final class AppModel {
 
     public func owner(_ id: String) -> Owner? { report?.owners.first { $0.id == id } }
 
-    /// WHOATE_UI_SELECT and a pane's session list (R3) share this one selection path.
+    /// WHOATE_UI_SELECT, a pane's session list (R3) and a panel row opening the main
+    /// window share this one selection path: the row's category, then a scroll to it (R9).
+    /// A click in the list sets `selectedOwnerID` directly and never scrolls.
     public func select(_ value: String) {
         let (category, id) = MainWindowModel.select(value, rows: rows(limit: .max))
         self.category = category
         selectedOwnerID = id
+        if let id { scrollRequest = ScrollRequest(id: id, serial: (scrollRequest?.serial ?? 0) + 1) }
     }
 
     /// "已复制" in the action bar's message for two seconds (R4).

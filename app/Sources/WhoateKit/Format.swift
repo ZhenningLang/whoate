@@ -12,8 +12,8 @@ public enum Format {
         return "\(value)B"
     }
 
-    /// A memory number and its hover text. With unreadable processes the sum is a
-    /// lower bound: "≥ 596M", and the hover says how many (R5, owner 2026-10-21).
+    /// A memory (or CPU, R12) number and its hover text. With unreadable processes the
+    /// sum is a lower bound: "≥ 596M", and the hover says how many (R5, owner 2026-10-21).
     public struct Memory: Equatable, Sendable {
         public var text: String
         public var help: String?
@@ -43,6 +43,19 @@ public enum Format {
         guard let value else { return "—" }
         return value >= 10 ? String(format: "%.0f%%", value) : String(format: "%.1f%%", value)
     }
+
+    /// A CPU number and its hover, by the memory rule (R12, owner 2026-10-24): with
+    /// unreadable processes the readable sum is a lower bound, "≥ 12%"; with none
+    /// readable "—". `unknown` is the count beside a nil `value`.
+    public static func cpu(_ value: Double?, readable: Double?, unknown: Int?, _ language: Language) -> Memory {
+        let help = unknown.flatMap { $0 > 0 ? L10n.format(.unknownCPU, language, "\($0)") : nil }
+        if let value { return Memory(text: cpu(value), help: nil) }
+        guard let readable, help != nil else { return Memory(text: "—", help: help) }
+        return Memory(text: "≥ " + cpu(readable), help: help)
+    }
+
+    /// The value a CPU curve draws: the point's CPU, else its readable part (R12).
+    static func cpuValue(_ p: HistoryPoint) -> Double? { p.cpuPct ?? p.cpuPctReadable }
 
     public static func duration(_ seconds: UInt64, _ language: Language) -> String {
         let (d, h, m) = (seconds / 86400, seconds % 86400 / 3600, seconds % 3600 / 60)
@@ -80,10 +93,11 @@ public enum Format {
 
     /// Only the latest continuous run of raw history (AppModel.histories, never a
     /// tick's downsampled copy) is drawn; older or isolated points are never joined.
-    /// `metric` .cpu draws CPU percent; points without a CPU value are left out.
+    /// `metric` .cpu draws CPU percent (the readable part where some processes were
+    /// unreadable, R12); points without any CPU value are left out.
     public static func trend(_ points: [HistoryPoint], width: Double, height: Double,
                              metric: SortKey = .memory) -> Trend {
-        let value: (HistoryPoint) -> Double? = metric == .cpu ? { $0.cpuPct } : { Double($0.memBytes) }
+        let value: (HistoryPoint) -> Double? = metric == .cpu ? { cpuValue($0) } : { Double($0.memBytes) as Double? }
         // The latest run of samples, then the points with a value, split again:
         // a missing value is a gap too, and a stale stretch never stands in for
         // a missing tail (its last value must be within gapLimit of the newest sample).
@@ -108,17 +122,28 @@ public enum Format {
 
     /// Detail chart: every continuous run in the last `window` seconds, split
     /// at gaps longer than `gapLimit` so the chart leaves a hole, never a bridge.
-    public static func runs(_ points: [HistoryPoint]) -> [[HistoryPoint]] {
+    /// For CPU (R11) a point without a value is a hole too, never a zero.
+    public static func runs(_ points: [HistoryPoint], metric: SortKey = .memory) -> [[HistoryPoint]] {
         guard let end = points.last?.timestampS else { return [] }
         var runs: [[HistoryPoint]] = []
+        var broken = true
         for p in points where p.timestampS >= end - window {
-            if let last = runs.last?.last, p.timestampS - last.timestampS <= gapLimit {
+            if metric == .cpu, cpuValue(p) == nil { broken = true; continue }
+            if !broken, let last = runs.last?.last, p.timestampS - last.timestampS <= gapLimit {
                 runs[runs.count - 1].append(p)
             } else {
                 runs.append([p])
             }
+            broken = false
         }
         return runs
+    }
+
+    /// Detail charts (R11; review A, round 4): drawn when any run in the window has
+    /// two points. The panel's freshness rule (`trend`) would hide 30 minutes of
+    /// history whenever the newest stretch is missing or short.
+    public static func drawable(_ points: [HistoryPoint], metric: SortKey = .memory) -> Bool {
+        runs(points, metric: metric).contains { $0.count >= 2 }
     }
 
     static func latestRun(_ points: [HistoryPoint]) -> [HistoryPoint] {

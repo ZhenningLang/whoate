@@ -99,7 +99,13 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round3Tests.unreadableMemoryReadsAsALowerBound", Phase10Round3Tests.unreadableMemoryReadsAsALowerBound),
     ("Phase10Round3Tests.onlyThreeDetailButtonsRemain", Phase10Round3Tests.onlyThreeDetailButtonsRemain),
     ("Phase10Round3Tests.codexSessionsAreAgentRowsAndTheAppGroupsByFolder", Phase10Round3Tests.codexSessionsAreAgentRowsAndTheAppGroupsByFolder),
-    ("Phase10Round3Tests.whyIsOneSentenceAndAChainWhenNotObvious", Phase10Round3Tests.whyIsOneSentenceAndAChainWhenNotObvious),
+    ("Phase10Round4Tests.jumpOpensTheRowsCategory", Phase10Round4Tests.jumpOpensTheRowsCategory),
+    ("Phase10Round4Tests.relationIsAPlainTree", Phase10Round4Tests.relationIsAPlainTree),
+    ("Phase10Round4Tests.bigTreesMergeAndFold", Phase10Round4Tests.bigTreesMergeAndFold),
+    ("Phase10Round4Tests.rootsKeepTheirOwnParents", Phase10Round4Tests.rootsKeepTheirOwnParents),
+    ("Phase10Round4Tests.relationShowsNoTechnicalIdentifiers", Phase10Round4Tests.relationShowsNoTechnicalIdentifiers),
+    ("Phase10Round4Tests.detailsDrawACpuCurveWithHoles", Phase10Round4Tests.detailsDrawACpuCurveWithHoles),
+    ("Phase10Round4Tests.cpuReadsAsALowerBound", Phase10Round4Tests.cpuReadsAsALowerBound),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))
@@ -144,6 +150,7 @@ let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
     ("Phase10Tests.mainWindowRowsGetHistories", Phase10Tests.mainWindowRowsGetHistories),
     ("Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow", { try Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow() }),
     ("Phase10Tests.scrolledIntoViewRowsGetHistories", Phase10Tests.scrolledIntoViewRowsGetHistories),
+    ("Phase10Round4Tests.onlyWhoatesSelectionsScroll", Phase10Round4Tests.onlyWhoatesSelectionsScroll),
 ]
 for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
     failures = []

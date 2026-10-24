@@ -34,8 +34,9 @@ pub struct WhoateEngine {
 }
 enum Source {
     Live(Box<dyn Tick>),
+    /// A replayed report and the fixture's own made-up `procs` list (empty when absent).
     #[cfg(debug_assertions)]
-    Report(Box<Report>),
+    Report(Box<Report>, Vec<Value>),
 }
 trait Tick {
     fn tick(&mut self) -> Result<(Report, Option<Snapshot>), SampleError>;
@@ -82,7 +83,7 @@ impl WhoateEngine {
                 report
             }
             #[cfg(debug_assertions)]
-            Source::Report(report) => (**report).clone(),
+            Source::Report(report, _) => (**report).clone(),
         };
         Ok(self.last.insert(report))
     }
@@ -91,7 +92,7 @@ impl WhoateEngine {
         match &self.source {
             Source::Live(engine) => engine.series(id),
             #[cfg(debug_assertions)]
-            Source::Report(_) => vec![],
+            Source::Report(..) => vec![],
         }
     }
 }
@@ -194,8 +195,32 @@ fn tick_json(engine: &mut WhoateEngine) -> Value {
     }
     value
 }
-/// R4/R8: every process of `owners` with its argv redacted by the fixture
-/// rules, then each one's ancestors up to launchd (pid, ppid and name only).
+/// R10: a readable program name. `comm` is the kernel's short name: Claude
+/// Code's is its version ("2.1.306"), others stop at 15 or 16 bytes ("Brave
+/// Browser He"). An agent tool's own name wins; else the executable's or
+/// argv[0]'s file name when `comm` is a cut-off prefix of it; else `comm`.
+fn display_name(p: &whoate_core::snapshot::Proc) -> String {
+    if let Some(tool) = whoate_core::sources::tool(p) {
+        return tool.into();
+    }
+    let file = |path: &str| {
+        std::path::Path::new(path)
+            .file_name()?
+            .to_str()
+            .map(str::to_owned)
+    };
+    let full = [
+        p.exe_path.as_deref().and_then(file),
+        p.argv.first().and_then(|a| file(a)),
+    ];
+    full.into_iter()
+        .flatten()
+        .find(|name| p.comm.len() >= 15 && name.len() > p.comm.len() && name.starts_with(&p.comm))
+        .unwrap_or_else(|| p.comm.clone())
+}
+/// R4/R8/R10: every process of `owners` with its argv redacted by the fixture
+/// rules, then each one's ancestors up to launchd (pid, ppid, names and memory;
+/// no argv or cwd).
 fn proc_briefs(owners: &[Owner], snapshot: Option<&Snapshot>) -> Vec<Value> {
     let Some(snapshot) = snapshot else {
         return vec![];
@@ -205,9 +230,11 @@ fn proc_briefs(owners: &[Owner], snapshot: Option<&Snapshot>) -> Vec<Value> {
     let mut redactor = Redactor::default();
     let mut output = vec![];
     for p in members.iter().filter_map(|pid| index.get(pid)) {
-        output.push(json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm,
+        output.push(
+            json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm, "name": display_name(p),
             "mem_bytes": p.footprint_bytes, "cwd": p.cwd,
-            "argv": redactor.redact_argv(&p.argv), "in_owner": true}));
+            "argv": redactor.redact_argv(&p.argv), "in_owner": true}),
+        );
     }
     let mut seen = members.clone();
     for pid in &members {
@@ -216,8 +243,38 @@ fn proc_briefs(owners: &[Owner], snapshot: Option<&Snapshot>) -> Vec<Value> {
             .filter(|ppid| *ppid > 1 && seen.insert(*ppid))
             .and_then(|ppid| index.get(&ppid))
         {
-            output.push(json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm, "in_owner": false}));
+            output.push(
+                json!({"pid": p.pid, "ppid": p.ppid, "comm": p.comm, "name": display_name(p),
+                "mem_bytes": p.footprint_bytes, "in_owner": false}),
+            );
             parent = Some(p.ppid);
+        }
+    }
+    output
+}
+/// Debug replay (R10 screenshots): the fixture's `procs` entries for `owners`'
+/// members and their ancestors, in the same shape as `proc_briefs`.
+fn replayed_procs(owners: &[Owner], procs: &[Value]) -> Vec<Value> {
+    let pid = |p: &Value| p["pid"].as_i64();
+    let index: BTreeMap<_, _> = procs.iter().filter_map(|p| Some((pid(p)?, p))).collect();
+    let members: BTreeSet<i64> = owners
+        .iter()
+        .flat_map(|o| o.pids.iter().map(|p| i64::from(*p)))
+        .collect();
+    let mut output: Vec<Value> = members
+        .iter()
+        .filter_map(|p| index.get(p))
+        .map(|p| (*p).clone())
+        .collect();
+    let mut seen = members.clone();
+    for member in &members {
+        let mut parent = index.get(member).and_then(|p| p["ppid"].as_i64());
+        while let Some(p) = parent
+            .filter(|ppid| *ppid > 1 && seen.insert(*ppid))
+            .and_then(|ppid| index.get(&ppid))
+        {
+            output.push((*p).clone());
+            parent = p["ppid"].as_i64();
         }
     }
     output
@@ -229,10 +286,10 @@ fn why_json(engine: &mut WhoateEngine, pid: i32) -> Value {
         return error(1, &e.to_string());
     }
     let WhoateEngine { last, source, .. } = engine;
-    let snapshot = match source {
-        Source::Live(engine) => engine.snapshot(),
+    let (snapshot, replayed): (Option<&Snapshot>, Option<&Vec<Value>>) = match source {
+        Source::Live(engine) => (engine.snapshot(), None),
         #[cfg(debug_assertions)]
-        Source::Report(_) => None,
+        Source::Report(_, procs) => (None, Some(procs)),
     };
     let Some(report) = last.as_mut() else {
         return error(1, "no_report");
@@ -259,7 +316,10 @@ fn why_json(engine: &mut WhoateEngine, pid: i32) -> Value {
     } else {
         let mut value = serde_json::to_value(&*report).unwrap_or_else(|_| error(1, "serialize"));
         if let Some(object) = value.as_object_mut().filter(|o| o.contains_key("owners")) {
-            let procs = proc_briefs(&report.owners, snapshot);
+            let procs = match replayed {
+                Some(procs) => replayed_procs(&report.owners, procs),
+                None => proc_briefs(&report.owners, snapshot),
+            };
             object.insert("procs".into(), Value::Array(procs));
         }
         value
@@ -412,7 +472,7 @@ pub unsafe extern "C" fn whoate_engine_set_active(
         match &mut engine.source {
             Source::Live(engine) => engine.set_active(active != 0),
             #[cfg(debug_assertions)]
-            Source::Report(_) => {}
+            Source::Report(..) => {}
         }
         json!({"schema":"whoate/control-v1","active":active != 0})
     })

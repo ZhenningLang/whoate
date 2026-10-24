@@ -319,6 +319,8 @@ fn phase05_ffi_downsample_even_spacing_keeps_last() {
             mem_bytes: i as u64,
             cpu_pct: None,
             unknown_mem_count: None,
+            cpu_pct_readable: None,
+            unknown_cpu_count: None,
         })
         .collect();
     let short = downsample(&points, 60);
@@ -659,6 +661,8 @@ fn phase10_ffi_downsample_keeps_the_largest_unreadable_count_per_segment() {
                 6 => Some(1),
                 _ => None,
             },
+            cpu_pct_readable: None,
+            unknown_cpu_count: None,
         })
         .collect();
     let short = downsample(&points, 60);
@@ -728,9 +732,10 @@ fn phase10_ffi_why_lists_owner_processes_with_redacted_argv_and_ancestors() {
     assert_eq!(by_pid(72000)["mem_bytes"], 4096);
     assert_eq!(by_pid(72001)["mem_bytes"], Value::Null);
     let ancestor = by_pid(71900);
+    // Ancestors carry names and memory (R10), never argv or cwd.
     assert_eq!(
         ancestor,
-        &json!({"pid": 71900, "ppid": 1, "comm": "tmux", "in_owner": false})
+        &json!({"pid": 71900, "ppid": 1, "comm": "tmux", "name": "tmux", "mem_bytes": null, "in_owner": false})
     );
     assert_eq!(procs.len(), 3);
     let argv = by_pid(72001)["argv"].to_string();
@@ -746,6 +751,85 @@ fn phase10_ffi_why_lists_owner_processes_with_redacted_argv_and_ancestors() {
     assert!(argv.contains("--port") && argv.contains("--token="));
     let tick_owners = why["owners"].as_array().unwrap().len();
     assert_eq!(tick_owners, 1);
+}
+
+/// R10 on real `comm` values (review B:B1, round 4): the kernel names Claude Code
+/// by its version and cuts other names at 16 bytes. `name` restores the program
+/// name from the agent tool, the executable or argv[0]; a short name stays as it is.
+#[test]
+fn phase10_ffi_why_names_processes_whose_kernel_name_is_a_version_or_cut_off() {
+    let uid = unsafe { libc::getuid() };
+    let mut shell = Proc::identity(73000, 1, uid, Some(1), "zsh".into());
+    shell.footprint_bytes = Some(12 << 20);
+    let mut claude = Proc::identity(73001, 73000, uid, Some(2), "2.1.306".into());
+    claude.exe_path = Some("/Users/someone/.local/share/claude/versions/2.1.306".into());
+    claude.argv = vec!["claude".into()];
+    let helper_path = "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/\
+                       Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)";
+    let mut helper = Proc::identity(73002, 73001, uid, Some(3), "Brave Browser He".into());
+    helper.exe_path = Some(helper_path.into());
+    let mut cut = Proc::identity(73003, 73001, uid, Some(4), "com.apple.WebKi".into());
+    cut.argv = vec![
+        "/System/Library/Frameworks/WebKit.framework/XPCServices/com.apple.WebKit.WebContent"
+            .into(),
+    ];
+    let mut other = Proc::identity(73004, 73001, uid, Some(5), "Brave Browser He".into());
+    other.exe_path = Some("/Applications/Unrelated.app/Contents/MacOS/Unrelated".into());
+    let snap = Snapshot::historical(
+        "2026-10-24T23:30:00+08:00".into(),
+        vec![shell, claude, helper, cut, other],
+    );
+    let home = Temp::new();
+    let engine = replay(snap, &home.0);
+    let why = take(whoate_why(engine, 73001));
+    whoate_engine_free(engine);
+    let procs = why["procs"].as_array().unwrap();
+    let name = |pid: i64| procs.iter().find(|p| p["pid"] == pid).unwrap()["name"].clone();
+    assert_eq!(name(73001), "claude", "a version comm names the agent tool");
+    assert_eq!(
+        name(73002),
+        "Brave Browser Helper (Renderer)",
+        "cut-off comm: the executable's file name"
+    );
+    assert_eq!(
+        name(73003),
+        "com.apple.WebKit.WebContent",
+        "cut-off comm: argv[0]'s file name"
+    );
+    assert_eq!(
+        name(73004),
+        "Brave Browser He",
+        "no longer name that starts with comm: comm stays"
+    );
+    assert_eq!(name(73000), "zsh");
+}
+/// R10 screenshots: a design report's made-up `procs` answer whoate_why in replay,
+/// filtered to the owner's members and their ancestors.
+#[cfg(debug_assertions)]
+#[test]
+fn phase10_ffi_replayed_report_returns_its_own_process_list() {
+    let mut report: Value = serde_json::from_slice(
+        &std::fs::read(root().join("tests/fixtures/attribution/sample-v1.json")).unwrap(),
+    )
+    .unwrap();
+    let pid = report["owners"][0]["pids"][0].as_i64().unwrap();
+    let member =
+        json!({"pid": pid, "ppid": 4242, "comm": "demo", "in_owner": true, "mem_bytes": 1});
+    let parent = json!({"pid": 4242, "ppid": 1, "comm": "zsh", "in_owner": false});
+    let unrelated = json!({"pid": 9999, "ppid": 1, "comm": "other", "in_owner": false});
+    report["procs"] = json!([unrelated, parent, member]);
+    let dir = std::env::temp_dir().join(format!("whoate-ffi-procs-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("report.json");
+    std::fs::write(&file, serde_json::to_vec(&report).unwrap()).unwrap();
+    let path = CString::new(file.to_str().unwrap()).unwrap();
+    let engine = fixture(path.as_ptr());
+    let tick = take(whoate_engine_tick(engine));
+    assert!(tick.get("procs").is_none(), "ticks never carry procs");
+    let why = take(whoate_why(engine, pid as i32));
+    whoate_engine_free(engine);
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(why["procs"], json!([member, parent]));
 }
 
 #[cfg(debug_assertions)]

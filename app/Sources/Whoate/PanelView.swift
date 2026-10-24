@@ -236,7 +236,7 @@ struct Pill: View {
     }
 }
 
-/// The row's number: memory ("≥ 596M" when some processes are unreadable, R5) or CPU.
+/// The row's number: memory ("≥ 596M" when some processes are unreadable, R5) or CPU (same rule, R12).
 struct ValueText: View {
     let row: PanelRow
     let sort: SortKey
@@ -245,12 +245,12 @@ struct ValueText: View {
         if sort == .memory {
             MemoryText(memory: row.memory(language)).font(.headline)
         } else {
-            Text(Format.cpu(row.cpuPct)).font(.headline).monospacedDigit()
+            MemoryText(memory: row.cpu(language)).font(.headline)
         }
     }
 }
 
-/// A memory number from Format.memory; hover tells how many processes were unreadable.
+/// A number from Format.memory or Format.cpu; hover tells how many processes were unreadable.
 struct MemoryText: View {
     let memory: Format.Memory
     var body: some View {

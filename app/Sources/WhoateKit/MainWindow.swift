@@ -71,13 +71,20 @@ public enum MainWindowModel {
     }
 
     /// WHOATE_UI_SELECT: an owner id, kind:orphan|agent|browser, or overview.
+    /// An owner id opens the category of its kind (R9, owner 2026-10-24); a
+    /// process group or an id not in `rows` falls back to "all".
     public static func select(_ value: String, rows: [PanelRow]) -> (MainCategory, String?) {
         switch value {
         case "overview": return (.all, nil)
         case "kind:orphan": return (.orphans, rows.first { $0.kind == .orphan }?.id)
         case "kind:agent": return (.agents, rows.first { $0.kind == .agentSession }?.id)
         case "kind:browser": return (.apps, rows.first(where: isBrowser)?.id)
-        default: return (.all, value)
+        default: return (rows.first { $0.id == value }.flatMap { category(of: $0) } ?? .all, value)
         }
+    }
+
+    /// The kind category that lists `row`; nil for process groups and unknown kinds.
+    public static func category(of row: PanelRow) -> MainCategory? {
+        [MainCategory.tmux, .agents, .apps, .orphans, .system].first { matches(row, $0) }
     }
 }

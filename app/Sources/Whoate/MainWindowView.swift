@@ -126,16 +126,30 @@ struct OwnerListView: View {
             .font(.subheadline).foregroundStyle(.secondary)
             .padding(.horizontal, 16).padding(.vertical, 8)
             Divider()
-            List(selection: $model.selectedOwnerID) {
-                ForEach(rows) { row in
-                    MainRowView(row: row, sort: model.sort, language: language).tag(row.id)
-                        // Rows on screen get full histories on the next refresh.
-                        .onAppear { model.setMainRow(row.id, visible: true) }
-                        .onDisappear { model.setMainRow(row.id, visible: false) }
+            ScrollViewReader { proxy in
+                List(selection: $model.selectedOwnerID) {
+                    ForEach(rows) { row in
+                        MainRowView(row: row, sort: model.sort, language: language).tag(row.id)
+                            // Rows on screen get full histories on the next refresh.
+                            .onAppear { model.setMainRow(row.id, visible: true) }
+                            .onDisappear { model.setMainRow(row.id, visible: false) }
+                    }
                 }
+                .listStyle(.inset)
+                .onHover { model.setListHovered($0) }
+                .onChange(of: model.scrollRequest) { scroll(proxy) }
+                .onAppear { scroll(proxy) }
             }
-            .listStyle(.inset)
-            .onHover { model.setListHovered($0) }
+        }
+    }
+
+    /// R9: a selection whoate made (not a click here) is scrolled to the centre once.
+    /// The category's rows are laid out first; the second try covers a window still opening.
+    private func scroll(_ proxy: ScrollViewProxy) {
+        guard let request = model.scrollRequest, request.serial != model.scrolledSerial else { return }
+        model.scrolledSerial = request.serial
+        for delay in [0.05, 0.4] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { proxy.scrollTo(request.id, anchor: .center) }
         }
     }
 }
@@ -157,7 +171,7 @@ struct MainRowView: View {
                 Spacer(minLength: 8)
                 Group {
                     if sort == .memory {
-                        Text("CPU " + Format.cpu(row.cpuPct)).monospacedDigit()
+                        HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
                     } else {
                         MemoryText(memory: row.memory(language))
                     }

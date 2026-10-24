@@ -61,11 +61,11 @@ enum Phase10Tests {
         expect(fields["项目"]?.hasSuffix("atlas · fix/orphan-chain") == true)
         expect(card.prompt != nil && card.reply != nil && card.confidence == "确定")
         expect(cards.contains(.curve) && cards.contains { if case .advice = $0 { true } else { false } })
-        guard case .why(let why) = try require(cards.first(where: { if case .why = $0 { true } else { false } }))
-        else { return fail("why card") }
-        let lines = why.details
-        expect(lines.first?.title == "在 tmux pane 里运行" || lines.contains { $0.title.contains("tmux") }, "plain words")
-        expect(Words.evidence("made_up_kind", .zh) == "made_up_kind", "unknown codes stay visible")
+        // Since R10 the evidence is a sentence in the process relation card (Phase10Round4Tests).
+        guard case .relation(let relation) = try require(cards.first(where: { if case .relation = $0 { true } else { false } }))
+        else { return fail("relation card") }
+        expect(relation.how == "这些进程都是这个 Claude Code 会话启动的。", relation.how)
+        expect(Words.status("made_up_status", .zh) == "made_up_status", "unknown codes stay visible")
         expect(Words.confidence(.weak, .en) == "Weak" && Words.status("waiting", .zh) == "等你回复")
     }
 
@@ -83,7 +83,7 @@ enum Phase10Tests {
         expect(!Detail.cards(plain, history: [], catalog: catalog, language: .zh).contains { if case .system = $0 { true } else { false } })
         let source = String(decoding: try repoFile("app/Sources/Whoate/DetailView.swift"), as: UTF8.self)
         let systemCard = try require(source.components(separatedBy: "private func systemCard").last?
-            .components(separatedBy: "private func whyCard").first)
+            .components(separatedBy: "private func relationCard").first)
         // R6 (owner 2026-10-21 14:3x) removed the copy button: the command is selectable text, no button.
         expect(systemCard.contains("Text(command)") && systemCard.contains(".textSelection(.enabled)"), "command text stays")
         expect(!systemCard.contains("Button("), "the system card has no button")

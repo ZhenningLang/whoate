@@ -14,22 +14,28 @@ struct DetailView: View {
         let row = model.selectedOwnerID.flatMap { id in model.rows(limit: .max).first { $0.id == id } }
         let owner = row.flatMap { model.owner($0.id) }
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    if let row, let owner {
-                        OwnerDetail(row: row, owner: owner, language: language, procs: model.procs(owner.id),
-                                    report: model.report, select: { model.select($0) })
-                    } else if let row, let swarm = model.report?.swarms.first(where: { $0.id == row.id }) {
-                        SwarmDetail(row: row, swarm: swarm, owners: model.report?.owners ?? [], language: language)
-                    } else {
-                        OverviewDetail(host: model.report?.host, language: language)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if let row, let owner {
+                            OwnerDetail(row: row, owner: owner, language: language, procs: model.procs(owner.id),
+                                        report: model.report, select: { model.select($0) })
+                        } else if let row, let swarm = model.report?.swarms.first(where: { $0.id == row.id }) {
+                            SwarmDetail(row: row, swarm: swarm, owners: model.report?.owners ?? [], language: language)
+                        } else {
+                            OverviewDetail(host: model.report?.host, language: language)
+                        }
                     }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // The visible part of the scrolled content (automation layout check).
+                .rowFrame("detail", "viewport")
+                // Screenshots only (WHOATE_UI_DETAIL_SCROLL): bring a card below the fold into view,
+                // whether the selection came before or after this view.
+                .onChange(of: model.selectedOwnerID) { automationScroll(proxy) }
+                .onAppear { automationScroll(proxy) }
             }
-            // The visible part of the scrolled content (automation layout check).
-            .rowFrame("detail", "viewport")
             // Actions stay in view at the bottom of the column, whatever the scroll position.
             if let owner {
                 Divider()
@@ -37,6 +43,13 @@ struct DetailView: View {
                     .rowFrame("detail", "buttons")
             }
         }
+    }
+}
+
+extension DetailView {
+    func automationScroll(_ proxy: ScrollViewProxy) {
+        guard let card = WhoateApp.automation.detailScroll, model.selectedOwnerID != nil else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { proxy.scrollTo(card, anchor: .top) }
     }
 }
 
@@ -53,7 +66,8 @@ struct DetailHeaderView: View {
             HStack(spacing: 12) {
                 Pill(row: row)
                 ValueText(row: row, sort: .memory, language: language)
-                Text("CPU " + Format.cpu(row.cpuPct)).font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
+                    .font(.callout).foregroundStyle(.secondary)
             }
             if let verdict = header.verdict {
                 Text(verdict).font(.callout).fixedSize(horizontal: false, vertical: true)
@@ -81,13 +95,20 @@ struct OwnerDetail: View {
             case .session(let session): sessionCard(session)
             case .paneSessions(let sessions): paneSessionsCard(sessions)
             case .system(let system): systemCard(system)
-            case .why(let why): whyCard(why)
+            case .relation(let relation): relationCard(relation).id("relation")
             case .curve:
                 box(L10n.text(.curve30, language)) {
                     HistoryChart(points: row.history, color: Palette.tint(row.level), language: language)
                         .frame(height: 140)
                         .rowFrame("detail", "trend")
                 }
+                // R11: CPU under memory, same 30 minutes; unreadable points are holes, never 0.
+                box(L10n.text(.curveCPU30, language)) {
+                    HistoryChart(points: row.history, color: Palette.tint(row.level), language: language, metric: .cpu)
+                        .frame(height: 100)
+                        .rowFrame("detail", "trendCPU")
+                }
+                .id("cpu")
             case .parts(let parts): partsCard(parts)
             case .folders(let groups): foldersCard(groups)
             case .facts(let facts, let linuxNote): factsCard(facts, linuxNote: linuxNote)
@@ -174,35 +195,42 @@ struct OwnerDetail: View {
         }
     }
 
-    /// One sentence, the parent chain when the grouping is not obvious, and the
-    /// evidence folded away (R8).
-    private func whyCard(_ why: WhyText) -> some View {
-        box(L10n.text(.whyHere, language)) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(why.sentence).fixedSize(horizontal: false, vertical: true)
-                if let chain = why.chain {
-                    Text(L10n.format(.whyChain, language, chain)).foregroundStyle(.secondary)
-                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                }
-                DisclosureGroup(L10n.format(.evidenceDetails, language, "\(why.details.count)")) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(why.details.enumerated()), id: \.offset) { index, line in
-                            if index > 0 { Divider() }
-                            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(line.title).font(.body.weight(.medium))
-                                    Text(line.detail).foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                Spacer(minLength: 8)
-                                Pill(text: line.confidence, level: .ok)
-                            }
-                            .padding(.vertical, 8)
+    /// The process tree, top-down (R10): where the owner came from, its parents,
+    /// its processes with what they are for and their memory; past the limit one
+    /// folded line. Then how whoate decided, plain words only.
+    private func relationCard(_ relation: Relation) -> some View {
+        box(L10n.text(.relation, language)) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(relation.lines.enumerated()), id: \.offset) { _, line in relationLine(line) }
+                if let summary = relation.restSummary {
+                    DisclosureGroup(summary) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(Array(relation.rest.enumerated()), id: \.offset) { _, line in relationLine(line) }
                         }
                     }
+                    .foregroundStyle(.secondary)
                 }
+                Text(L10n.format(.relationHow, language, relation.how)
+                     + (relation.guess ? (language == .zh ? "" : " ") + L10n.text(.relationGuess, language) : ""))
+                    .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.top, 4)
             }
             .font(.callout)
+            .rowFrame("detail", "relation")
+        }
+    }
+
+    private func relationLine(_ line: RelationLine) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            // Tree guides in the system font; one step is 16 pt (app/DESIGN.md §2 spacing).
+            if line.depth > 0 {
+                Text("└─").foregroundStyle(.tertiary).padding(.leading, CGFloat(line.depth - 1) * 16)
+            }
+            Text(line.name).lineLimit(1).truncationMode(.middle)
+            if let role = line.role { Text(role).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail) }
+            Spacer(minLength: 8)
+            if line.exited { Text(L10n.text(.relationExited, language)).foregroundStyle(.secondary) }
+            if let memory = line.memory { MemoryText(memory: memory).foregroundStyle(.secondary) }
+            if line.marked { Text(L10n.text(.relationMarked, language)).foregroundStyle(Color.accentColor) }
         }
     }
 
@@ -413,23 +441,26 @@ struct OverviewDetail: View {
     }
 }
 
-/// Swift Charts: one line per continuous run, so a gap stays a gap. Shown only
-/// when the panel's curve function (Format.trend) would draw a line too.
+/// Swift Charts: one line per continuous run, so a gap stays a gap. Shown when
+/// any run in the last 30 minutes can be drawn (Format.drawable), even if the
+/// newest stretch is missing. `metric` .cpu draws CPU percent (R11), the readable
+/// part where some processes were unreadable (R12).
 struct HistoryChart: View {
     let points: [HistoryPoint]
     let color: Color
     let language: Language
+    var metric: SortKey = .memory
     var body: some View {
-        if Format.trend(points, width: 1, height: 1) == .insufficient {
+        if !Format.drawable(points, metric: metric) {
             Text(L10n.text(.notEnoughSamples, language)).font(.callout).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 Chart {
-                    ForEach(Array(Format.runs(points).enumerated()), id: \.offset) { index, run in
+                    ForEach(Array(Format.runs(points, metric: metric).enumerated()), id: \.offset) { index, run in
                         ForEach(run, id: \.timestampS) { p in
                             LineMark(x: .value("t", Date(timeIntervalSince1970: TimeInterval(p.timestampS))),
-                                     y: .value("bytes", Double(p.memBytes)), series: .value("run", index))
+                                     y: .value("value", Self.value(p, metric)), series: .value("run", index))
                                 .foregroundStyle(color)
                                 .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                         }
@@ -438,10 +469,17 @@ struct HistoryChart: View {
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisGridLine()
-                        AxisValueLabel { Text(Format.bytes(UInt64(max(0, value.as(Double.self) ?? 0)))) }
+                        AxisValueLabel {
+                            let v = max(0, value.as(Double.self) ?? 0)
+                            Text(metric == .cpu ? Format.cpu(v) : Format.bytes(UInt64(v)))
+                        }
                     }
                 }
             }
         }
+    }
+
+    static func value(_ p: HistoryPoint, _ metric: SortKey) -> Double {
+        metric == .cpu ? p.cpuPct ?? p.cpuPctReadable ?? 0 : Double(p.memBytes)
     }
 }

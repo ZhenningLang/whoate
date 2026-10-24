@@ -23,6 +23,9 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var insights: [String] = []
     /// Processes whose memory could not be read; number and curve count the rest.
     public var unknownMemCount = 0
+    /// With `cpuPct` nil: the readable processes' CPU and how many were unreadable (R12).
+    public var cpuReadable: Double?
+    public var unknownCPUCount: Int?
     /// Owner kind and verdict rule (nil for process groups), for main window filters.
     public var kind: OwnerKind?
     public var rule: String?
@@ -34,6 +37,11 @@ extension PanelRow {
     /// (R5; round 3 conform review B1).
     public func memory(_ language: Language) -> Format.Memory {
         Format.memory(memBytes, unknown: unknownMemCount, language)
+    }
+    /// The row's CPU: "≥ 12%" over the readable processes when some are not (R12).
+    /// CPU order still uses `cpuPct` only (spec R12: sorting unchanged).
+    public func cpu(_ language: Language) -> Format.Memory {
+        Format.cpu(cpuPct, readable: cpuReadable, unknown: unknownCPUCount, language)
     }
 }
 
@@ -61,14 +69,15 @@ public enum Panel {
                 pillLevel: o.verdict.level == .ok && !o.insights.isEmpty && !isProtected(o) ? .watch : o.verdict.level,
                 history: histories.map { $0[o.id] ?? [] } ?? o.history,
                 closable: o.verdict.level == .act && !isProtected(o), insights: o.insights,
-                unknownMemCount: o.unknownMemCount, kind: o.kind, rule: o.verdict.rule)
+                unknownMemCount: o.unknownMemCount, cpuReadable: o.cpuPctReadable, unknownCPUCount: o.unknownCPUCount,
+                kind: o.kind, rule: o.verdict.rule)
         }
         let swarms = report.swarms.map { s in
             PanelRow(
                 id: s.id, source: .swarm, title: "\(s.label) × \(s.count)", memBytes: s.memBytes,
                 cpuPct: s.cpuPct, subtitle: subtitle(s, language), level: s.verdict.level,
                 pill: pill(s, language), pillLevel: s.verdict.level, history: [], closable: false,
-                unknownMemCount: s.unknownMemCount)
+                unknownMemCount: s.unknownMemCount, cpuReadable: s.cpuPctReadable, unknownCPUCount: s.unknownCPUCount)
         }
         return Array((owners + swarms).sorted { a, b in
             switch sort {

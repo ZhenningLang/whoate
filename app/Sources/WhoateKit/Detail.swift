@@ -32,18 +32,34 @@ public struct SystemCard: Equatable, Sendable {
     public var safety: String
 }
 
-public struct EvidenceLine: Equatable, Sendable {
-    public var title: String
-    public var detail: String
-    public var confidence: String
+/// One line of the process relation tree (R10): a program, what it is for when
+/// whoate can tell, and its memory. Where the owner came from has no memory; its
+/// parents outside the owner show theirs when read; an exited parent says so.
+public struct RelationLine: Equatable, Sendable {
+    public var depth: Int
+    public var name: String
+    public var role: String?
+    public var memory: Format.Memory?
+    public var exited = false
+    /// The owner's only process, below its parents: "← this one".
+    public var marked = false
+    public init(depth: Int, name: String, role: String? = nil, memory: Format.Memory? = nil,
+                exited: Bool = false, marked: Bool = false) {
+        (self.depth, self.name, self.role, self.memory, self.exited, self.marked) = (depth, name, role, memory, exited, marked)
+    }
 }
 
-/// "Why it is grouped here" (R8): one sentence; the parent chain only when the
-/// grouping is not obvious; the evidence lines, folded away by the view.
-public struct WhyText: Equatable, Sendable {
-    public var sentence: String
-    public var chain: String?
-    public var details: [EvidenceLine]
+/// "进程关系" (R10, owner 2026-10-24): a top-down tree from where the owner came
+/// from to its processes, past `relationLimit` lines folded into `rest`, and one
+/// plain sentence on how whoate decided. No technical identifiers anywhere.
+public struct Relation: Equatable, Sendable {
+    public var lines: [RelationLine]
+    public var rest: [RelationLine]
+    /// "其余 N 个进程 共 X" for `rest`; nil when nothing is folded.
+    public var restSummary: String?
+    public var how: String
+    /// inferred or weak: "这是推测，可能不准".
+    public var guess: Bool
 }
 
 /// An agent session running in a tmux pane (R3); selecting it opens its own row.
@@ -67,7 +83,7 @@ public enum Card: Equatable, Sendable {
     case session(SessionCard)
     case paneSessions([PaneSession])
     case system(SystemCard)
-    case why(WhyText)
+    case relation(Relation)
     case curve
     case parts([Part])
     case folders([FolderGroup])
@@ -109,7 +125,8 @@ public enum Detail {
     }
 
     /// `procs` and `report` come with the selected owner's whoate_why; without
-    /// them the chain, the pane's sessions and the folder groups are absent.
+    /// them the pane's sessions and the folder groups are absent, and the process
+    /// relation shows the owner's parts instead of its tree.
     public static func cards(_ owner: Owner, history: [HistoryPoint], catalog: [String: Insight],
                              language: Language, procs: [ProcBrief] = [], report: Report? = nil) -> [Card] {
         var cards: [Card] = []
@@ -123,7 +140,9 @@ public enum Detail {
                 launchd: system.launchd.text(language), sideEffects: system.sideEffects.text(language),
                 safety: system.restartSafety.text(language))))
         }
-        if !owner.evidence.isEmpty { cards.append(.why(why(owner, procs: procs, language: language))) }
+        if !owner.evidence.isEmpty || !procs.isEmpty {
+            cards.append(.relation(relation(owner, procs: procs, report: report, language: language)))
+        }
         if !history.isEmpty { cards.append(.curve) }
         if !owner.parts.isEmpty { cards.append(.parts(owner.parts.sorted { $0.memBytes > $1.memBytes })) }
         if case let groups = folders(owner, procs: procs, language: language), !groups.isEmpty {
@@ -183,8 +202,9 @@ public enum Detail {
     // ceiling: eight folder groups, then "Other"; the card is for spotting the big
     // folders. Raise it if the owner asks to see more.
     public static let folderLimit = 8
-    // ceiling: six steps of the parent chain; deeper chains keep both ends.
-    public static let chainLimit = 6
+    // ceiling: about twelve tree lines (owner 2026-10-24 R10), the rest folded
+    // into one line that expands. Raise it if owners ask to see more at once.
+    public static let relationLimit = 12
 
     /// Agent sessions whose origin is this pane, largest first (R3). `owners` may be
     /// pre-grouped by pane (RowNames.apply does this once per list).
@@ -222,65 +242,231 @@ public enum Detail {
             memBytes: rest.reduce(0) { $0 + $1.memBytes }, unknown: rest.reduce(0) { $0 + $1.unknown })]
     }
 
-    /// R8: an obvious grouping (inside the app, a certain session, a live pane) is one
-    /// sentence; anything inferred, weak or adopted also gets the parent chain.
-    public static func why(_ owner: Owner, procs: [ProcBrief], language: Language) -> WhyText {
-        var seen = Set<String>()
-        let details = owner.evidence.filter { seen.insert($0.kind + "\u{0}" + $0.detail).inserted }.map {
-            EvidenceLine(title: Words.evidence($0.kind, language), detail: $0.detail,
-                         confidence: Words.confidence($0.confidence, language))
+    /// R10: where the owner came from (its tmux split, its app, an exited parent),
+    /// the parents above its processes, then its processes by parent, largest first.
+    /// Same-name siblings without children merge into one "×N" line. Without `procs`
+    /// (not fetched yet, or a replay) the owner's parts stand in for the processes.
+    public static func relation(_ owner: Owner, procs: [ProcBrief], report: Report?, language: Language) -> Relation {
+        let owners = report?.owners ?? []
+        var items = origin(owner, owners: owners, language: language).map { Item(line: $0) }
+        let members = procs.filter(\.inOwner)
+        if members.isEmpty {
+            let depth = items.count
+            items += owner.parts.sorted { $0.memBytes > $1.memBytes }.map { part in
+                Item(line: RelationLine(depth: depth, name: partName(part.name, language)
+                                            + (part.processCount > 1 ? " ×\(part.processCount)" : ""),
+                                        memory: Format.memory(part.memBytes, unknown: part.unknownMemCount, language)),
+                     count: part.processCount, bytes: part.memBytes, unknown: part.unknownMemCount)
+            }
+        } else {
+            items += tree(owner, procs: procs, members: members, owners: owners, depth: items.count, language: language)
         }
+        if owner.pids.count == 1, items.count > 1, let index = items.lastIndex(where: { $0.count > 0 }) {
+            items[index].line.marked = true
+        }
+        let (how, guess) = how(owner, owners: owners, language: language)
+        guard items.count > relationLimit else {
+            return Relation(lines: items.map(\.line), rest: [], restSummary: nil, how: how, guess: guess)
+        }
+        let rest = items[(relationLimit - 1)...]
+        let summary = L10n.format(.relationRest, language, "\(rest.reduce(0) { $0 + $1.count })",
+                                  Format.memory(rest.reduce(0) { $0 + $1.bytes }, unknown: rest.reduce(0) { $0 + $1.unknown },
+                                                language).text)
+        return Relation(lines: items.prefix(relationLimit - 1).map(\.line), rest: rest.map(\.line),
+                        restSummary: summary, how: how, guess: guess)
+    }
+
+    /// A tree line and the processes it stands for (0 for lines above the owner).
+    struct Item {
+        var line: RelationLine
+        var count = 0, bytes: UInt64 = 0, unknown = 0
+    }
+
+    /// The top of the tree: the tmux split the owner runs in, or the app itself.
+    static func origin(_ owner: Owner, owners: [Owner], language: Language) -> [RelationLine] {
+        if let origin = owner.origin, let pane = origin.tmuxPane {
+            if origin.paneAlive == false {
+                return [RelationLine(depth: 0, name: L10n.text(.relationPaneClosed, language))]
+            }
+            // The core's pane address; reports from before it fall back to the pane owner's name.
+            let target = origin.tmuxTarget ?? (owner.kind == .tmuxPane ? owner.label
+                : owners.first { $0.kind == .tmuxPane && $0.origin?.tmuxPane == pane }?.label)
+            let window = origin.windowName.map { L10n.format(.relationWindow, language, $0) } ?? ""
+            let split = target.map { L10n.format(.relationPane, language, $0) } ?? L10n.text(.relationPaneOnly, language)
+            return [RelationLine(depth: 0, name: split + window)]
+        }
+        if owner.kind == .app { return [RelationLine(depth: 0, name: L10n.format(.relationApp, language, owner.label))] }
+        return []
+    }
+
+    /// One step above the owner's processes: a parent outside the owner, or a parent
+    /// that has exited (`pid` nil; `ppid` is what its child still records). launchd
+    /// adopts children of different parents alike, so an adopted root's exited step
+    /// also names that root (`root`) and is never shared with another root.
+    struct Above: Hashable {
+        var pid: Int32?
+        var ppid: Int32
+        var root: Int32? = nil
+    }
+
+    static func tree(_ owner: Owner, procs: [ProcBrief], members: [ProcBrief], owners: [Owner], depth: Int,
+                     language: Language) -> [Item] {
+        let byPID = Dictionary(procs.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
+        let inOwner = Set(members.map(\.pid))
+        let children = Dictionary(grouping: members.filter { inOwner.contains($0.ppid) }, by: \.ppid)
+        let roots = members.filter { !inOwner.contains($0.ppid) }
+        let parts = Dictionary(owner.parts.flatMap { part in part.pids.map { ($0, part.name) } }, uniquingKeysWith: { a, _ in a })
+        let ownerOf = Dictionary(owners.flatMap { o in o.pids.map { ($0, o) } }, uniquingKeysWith: { a, _ in a })
+        let kinds = Set(owner.evidence.map(\.kind))
+        // The session's own process: by its tool name when the core resolved it (the
+        // kernel names Claude Code by its version), else the session's largest root.
+        let sessionRoot: Int32? = owner.agent.flatMap { agent in
+            owner.kind != .agentSession ? nil
+                : (roots.first { name($0).lowercased().hasPrefix(agent.tool.lowercased()) } ?? roots.max { larger($1, $0) })?.pid
+        }
+
+        // Each root's own parents, top-down; the tmux server is the split line at the top.
+        // A missing parent has exited. A root adopted by launchd (ppid 1) gets an exited
+        // starter only when the owner says so: an orphan, a closed pane, or a launcher
+        // that ran it; launchd's own services and an app's main process do not.
+        func above(_ root: ProcBrief) -> [Above] {
+            var path: [Above] = [], current = root, seen: Set<Int32> = [root.pid]
+            while current.ppid > 1 {
+                guard let parent = byPID[current.ppid] else { path.append(Above(pid: nil, ppid: current.ppid)); break }
+                if parent.comm == "tmux", owner.origin?.tmuxPane != nil { break }
+                guard seen.insert(parent.pid).inserted else { break }
+                path.append(Above(pid: parent.pid, ppid: parent.ppid))
+                current = parent
+            }
+            let adopted = owner.kind == .orphan || owner.origin?.paneAlive == false
+                || (kinds.contains("responsible_launcher") && name(root) != owner.label)
+            if path.isEmpty, root.ppid <= 1, adopted { path.append(Above(pid: nil, ppid: root.ppid, root: root.pid)) }
+            return path.reversed()
+        }
+
+        func role(_ p: ProcBrief) -> String? {
+            if p.pid == sessionRoot { return L10n.format(.relationSession, language, RowNames.title(owner, language)) }
+            guard let part = parts[p.pid], part.lowercased() != name(p).lowercased(),
+                  !["会话", "Session"].contains(part) else { return nil }
+            return partName(part, language)
+        }
+        // Same-parent siblings without children merge by name and role.
+        func emit(_ siblings: [ProcBrief], _ depth: Int, into items: inout [Item]) {
+            var groups: [[ProcBrief]] = []
+            var index: [String: Int] = [:]
+            for p in siblings {
+                guard children[p.pid] == nil else { groups.append([p]); continue }
+                let key = name(p) + "\u{0}" + (role(p) ?? "")
+                if let i = index[key] { groups[i].append(p) } else { index[key] = groups.count; groups.append([p]) }
+            }
+            for group in groups.sorted(by: { (bytes($0), $1[0].pid) > (bytes($1), $0[0].pid) }) {
+                let p = group[0], unknown = group.filter { $0.memBytes == nil }.count
+                let title = name(p) + (group.count > 1 ? " ×\(group.count)" : "")
+                items.append(Item(line: RelationLine(depth: depth, name: title, role: role(p),
+                                                     memory: Format.memory(bytes(group), unknown: unknown, language)),
+                                  count: group.count, bytes: bytes(group), unknown: unknown))
+                if group.count == 1, let kids = children[p.pid] { emit(kids, depth + 1, into: &items) }
+            }
+        }
+
+        // A forest: roots that share parents share those lines; each parent line lists
+        // the roots under it (grouped by their real parent, so never merged across parents).
+        let paths = Dictionary(uniqueKeysWithValues: roots.map { ($0.pid, above($0)) })
+        func emitLevel(_ prefix: [Above], _ depth: Int, into items: inout [Item]) {
+            let here = roots.filter { paths[$0.pid]! == prefix }
+            let next = Dictionary(grouping: roots.filter { paths[$0.pid]!.count > prefix.count
+                                                           && Array(paths[$0.pid]!.prefix(prefix.count)) == prefix }) {
+                paths[$0.pid]![prefix.count]
+            }
+            var blocks: [(bytes: UInt64, items: [Item])] = []
+            if !here.isEmpty {
+                var block: [Item] = []
+                emit(here, depth, into: &block)
+                blocks.append((bytes(here), block))
+            }
+            for (step, under) in next {
+                var block = [Item(line: aboveLine(step, depth: depth, top: prefix.isEmpty))]
+                emitLevel(prefix + [step], depth + 1, into: &block)
+                blocks.append((bytes(under), block))
+            }
+            for block in blocks.sorted(by: { $0.bytes > $1.bytes }) { items += block.items }
+        }
+        func aboveLine(_ step: Above, depth: Int, top: Bool) -> RelationLine {
+            guard let pid = step.pid, let parent = byPID[pid] else {
+                return RelationLine(depth: depth, name: L10n.text(.relationStarter, language), exited: true)
+            }
+            // The topmost parent that is an app's process reads as the app.
+            if top, let app = ownerOf[pid], app.kind == .app {
+                return RelationLine(depth: depth, name: L10n.format(.relationApp, language, app.label))
+            }
+            return RelationLine(depth: depth, name: name(parent),
+                                memory: parent.memBytes.map { Format.memory($0, unknown: 0, language) })
+        }
+        var items: [Item] = []
+        emitLevel([], depth, into: &items)
+        return items
+    }
+
+    /// The core's readable name (`name`), else the kernel's short `comm`, without a bundle-id prefix.
+    static func name(_ p: ProcBrief) -> String { plainName(p.name ?? p.comm) }
+    static func bytes(_ group: [ProcBrief]) -> UInt64 { group.reduce(0) { $0 + ($1.memBytes ?? 0) } }
+
+    static func larger(_ a: ProcBrief, _ b: ProcBrief) -> Bool { (a.memBytes ?? 0, b.pid) > (b.memBytes ?? 0, a.pid) }
+
+    /// A recognizer's part name in plain words: "MCP: fetch" → "外接小工具 fetch".
+    static func partName(_ name: String, _ language: Language) -> String {
+        name.hasPrefix("MCP: ") ? L10n.format(.relationMCP, language, String(name.dropFirst(5))) : plainName(name)
+    }
+
+    /// Program names without a bundle-id prefix: "com.apple.WebKit.WebContent" → "WebContent".
+    static func plainName(_ name: String) -> String {
+        name.hasPrefix("com.") ? String(name.split(separator: ".").last ?? Substring(name)) : name
+    }
+
+    /// "怎么判断的" in one plain sentence, and whether it is a guess (the deciding
+    /// evidence is inferred or weak). The raw evidence goes only into CopyInfo.
+    static func how(_ owner: Owner, owners: [Owner], language: Language) -> (String, Bool) {
         let kinds = Set(owner.evidence.map(\.kind))
         let name = RowNames.title(owner, language)
         let closed = owner.origin?.paneAlive == false
-        var obvious = false
-        let sentence: String
+        func weakest(_ wanted: Set<String>?) -> Confidence? {
+            let ranks: [Confidence: Int] = [.certain: 0, .unknown: 1, .inferred: 2, .weak: 3]
+            return owner.evidence.filter { wanted?.contains($0.kind) ?? true }.map(\.confidence)
+                .max { ranks[$0, default: 1] < ranks[$1, default: 1] }
+        }
+        var sentence: String, decided: Confidence?
         if kinds.contains("responsible_launcher") {
-            let launcher = owner.agent.map { RowNames.tool($0.tool) } ?? name
-            sentence = L10n.format(.whyLauncher, language, launcher)
+            sentence = L10n.format(.howLauncher, language, owner.agent.map { RowNames.tool($0.tool) } ?? name)
+            decided = weakest(["responsible_launcher"])
         } else if let agent = owner.agent, owner.kind == .agentSession {
             let tool = RowNames.tool(agent.tool)
-            if agent.sessionId == nil {
-                sentence = L10n.format(.whyNoSession, language, tool)
-                    + (closed ? (language == .zh ? "；" : "; ") + L10n.text(.whyPaneClosed, language) : "")
-            } else {
-                obvious = agent.confidence == .certain
-                sentence = kinds.contains("codex_thread_env") ? L10n.text(.whyCodex, language)
-                    : L10n.format(.whySession, language, tool)
-            }
-        } else if owner.kind == .tmuxPane, !closed, let pane = owner.origin?.tmuxPane {
-            obvious = true
-            sentence = L10n.format(.whyPane, language, pane)
+            sentence = agent.sessionId == nil ? L10n.format(.howNoSession, language, tool)
+                : kinds.contains("codex_thread_env") ? L10n.text(.howCodex, language) : L10n.format(.howSession, language, tool)
+            if closed { sentence += L10n.text(.howPaneClosed, language) }
+            decided = agent.confidence
+        } else if owner.kind == .tmuxPane, !closed {
+            sentence = L10n.text(.howPane, language)
+            decided = weakest(["pane_ancestor", "tmux_environment"])
         } else if owner.kind == .orphan {
-            sentence = L10n.text(.whyOrphan, language)
-                + (closed ? (language == .zh ? "；" : "; ") + L10n.text(.whyPaneClosed, language) : "")
+            sentence = L10n.text(.howOrphan, language) + (closed ? L10n.text(.howPaneClosed, language) : "")
+            decided = weakest(nil)
         } else if kinds.contains("responsible_app") {
-            sentence = L10n.format(.whyResponsible, language, name)
+            sentence = L10n.format(.howResponsible, language, name)
+            decided = weakest(["responsible_app"])
         } else if owner.kind == .app, kinds.contains("app_bundle") {
-            obvious = owner.evidence.allSatisfy { $0.kind == "app_bundle" && $0.confidence == .certain }
-            sentence = L10n.format(.whyOwnApp, language, name)
+            sentence = L10n.format(.howOwnApp, language, name)
+            decided = weakest(["app_bundle"])
+        } else if kinds.contains("other_uid") {
+            sentence = L10n.text(.howOtherUser, language)
+            decided = weakest(["other_uid"])
+        } else if kinds.contains("service_fallback") {
+            sentence = L10n.text(.howService, language)
+            decided = weakest(["service_fallback"])
         } else {
-            sentence = details.first?.title ?? ""
+            sentence = L10n.text(.howDefault, language)
+            decided = weakest(nil)
         }
-        return WhyText(sentence: sentence, chain: obvious ? nil : chain(owner, procs: procs), details: details)
-    }
-
-    /// Top-down parent chain ending at one of the owner's root processes: the
-    /// largest root that has a parent below launchd, else the largest root.
-    /// Longer than `chainLimit` steps: the first two, "…", the last three.
-    public static func chain(_ owner: Owner, procs: [ProcBrief]) -> String? {
-        let byPID = Dictionary(procs.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
-        let members = procs.filter(\.inOwner)
-        let roots = members.filter { byPID[$0.ppid]?.inOwner != true }
-        let ranked = roots.sorted { ($0.memBytes ?? 0, $1.pid) > ($1.memBytes ?? 0, $0.pid) }
-        guard let root = ranked.first(where: { byPID[$0.ppid] != nil }) ?? ranked.first else { return nil }
-        var names = [root.comm], seen: Set<Int32> = [root.pid], current = root
-        while current.ppid > 1, let parent = byPID[current.ppid], seen.insert(parent.pid).inserted {
-            names.insert(parent.comm, at: 0)
-            current = parent
-        }
-        if names.count > chainLimit { names = Array(names.prefix(2)) + ["…"] + Array(names.suffix(3)) }
-        return names.joined(separator: " → ")
+        return (sentence, decided == .inferred || decided == .weak)
     }
 
     /// System overview, as label/value lines per section.

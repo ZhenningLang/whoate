@@ -348,12 +348,15 @@ fn phase04_engine_large_report_matches_the_pre_index_pipeline_field_for_field() 
             }
         }
         recognizers::registry::finish(owner);
-        if expected_snapshot
+        // Phase 10 round 4 R12: cpu_pct still null; the readable sum and count beside it.
+        let unknown_cpu = expected_snapshot
             .procs
             .iter()
-            .any(|p| owner.pids.contains(&p.pid) && p.cpu_pct_sampled.is_none())
-        {
-            owner.cpu_pct = None;
+            .filter(|p| owner.pids.contains(&p.pid) && p.cpu_pct_sampled.is_none())
+            .count();
+        if unknown_cpu > 0 {
+            owner.cpu_pct_readable = owner.cpu_pct.take();
+            owner.unknown_cpu_count = Some(unknown_cpu);
         }
         owner.verdict = verdict::rules::owner(
             owner,

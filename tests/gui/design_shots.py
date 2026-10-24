@@ -9,7 +9,8 @@ only the window number the app itself wrote, with `screencapture -l<id> -x -o`.
 
 Shots, each in light and dark: menu bar item gallery, panel, panel in CPU
 mode (D4), main window on the agent session, the orphan, the browser and the
-overview; the agent screen and the panel also in English (light).
+overview; the agent screen and the panel also in English (light). Round 4
+adds the agent's process tree and Brave's CPU curve, scrolled into view.
 
 The report's taken_at / as_of are moved to now before each run, so the footer
 age reads like a live one; owner data and history are unchanged.
@@ -41,12 +42,17 @@ SHOTS = [
     ("main-overview", "main", "main-window", {"WHOATE_UI_SELECT": "overview"}, 5.0),
     # Round 3 (R3): a pane running two agent sessions.
     ("main-pane", "main", "main-window", {"WHOATE_UI_SELECT": "pane:%22"}, 5.0),
+    # Round 4: the process tree (R10) and the CPU curve with readable-only CPU (R11, R12),
+    # scrolled into view in the details.
+    ("main-agent-tree", "main", "main-window", {"WHOATE_UI_SELECT": "kind:agent", "WHOATE_UI_DETAIL_SCROLL": "relation"}, 6.0),
+    ("main-browser-cpu", "main", "main-window", {"WHOATE_UI_SELECT": "kind:browser", "WHOATE_UI_DETAIL_SCROLL": "cpu"}, 6.0),
 ]
 ENGLISH = {"panel", "main-agent"}
 # Owner id prefix (or test) the selected row must have, per main window shot.
 SELECTED = {"main-agent": lambda i: i.startswith("agent:"), "main-orphan": lambda i: i.startswith("orphan:"),
             "main-browser": lambda i: i == "app:com.brave.Browser", "main-overview": lambda i: i == "-",
-            "main-pane": lambda i: i == "pane:%22"}
+            "main-pane": lambda i: i == "pane:%22", "main-agent-tree": lambda i: i.startswith("agent:"),
+            "main-browser-cpu": lambda i: i == "app:com.brave.Browser"}
 
 
 def fresh_fixture(path):

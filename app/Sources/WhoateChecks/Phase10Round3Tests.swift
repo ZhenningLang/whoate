@@ -106,9 +106,9 @@ enum Phase10Round3Tests {
         expect(sessions.first?.memory.text == "≥ 500M" && sessions.last?.memory.text == "300M")
         let cards = Detail.cards(pane, history: [], catalog: [:], language: .zh, report: report)
         expect(cards.contains(.paneSessions(sessions)))
-        // A click selects through the same path as WHOATE_UI_SELECT.
+        // A click selects through the same path as WHOATE_UI_SELECT; since R9 it opens "agent sessions".
         let rows = Phase10Tests.rows(report)
-        expect(MainWindowModel.select(sessions[0].ownerID, rows: rows) == (.all, "agent:codex:t-a"))
+        expect(MainWindowModel.select(sessions[0].ownerID, rows: rows) == (.agents, "agent:codex:t-a"))
         let detail = try source("DetailView.swift")
         expect(detail.contains("Button { select(session.ownerID) }") && detail.contains("select: { model.select($0) }"))
         let subtitle = try require(rows.first { $0.id == "pane:%41" }).subtitle
@@ -231,46 +231,5 @@ enum Phase10Round3Tests {
         expect(Detail.folders(other, procs: procs, language: .zh).isEmpty, "only the Codex app")
         expect(Detail.cards(app, history: [], catalog: [:], language: .zh, procs: procs)
             .contains { if case .folders = $0 { true } else { false } })
-    }
-
-    // QA44
-    static func whyIsOneSentenceAndAChainWhenNotObvious() throws {
-        let preview = try decodeValue(Owner.self, ownerJSON("app:com.apple.Preview", mem: 1, overrides: [
-            "label": "Preview", "evidence": [evidence("app_bundle", "com.apple.Preview")]]))
-        expect(Detail.why(preview, procs: [], language: .zh) == WhyText(
-            sentence: "Preview 自己的进程", chain: nil,
-            details: [EvidenceLine(title: Words.evidence("app_bundle", .zh), detail: "com.apple.Preview", confidence: "确定")]))
-
-        let chatgpt = try decodeValue(Owner.self, ownerJSON("app:com.openai.codex", mem: 1, overrides: [
-            "label": "ChatGPT", "evidence": [evidence("app_bundle", "com.openai.codex"),
-                                             evidence("responsible_launcher", "com.openai.codex", "inferred")]]))
-        let browser = [proc(10, 1, "agent-browser", member: false), proc(11, 10, "Google Chrome", member: true, mem: 500),
-                       proc(5, 1, "ChatGPT", member: true, mem: 100)]
-        let why = Detail.why(chatgpt, procs: browser, language: .zh)
-        expect(why.sentence.contains("由 ChatGPT 启动") && why.chain == "agent-browser → Google Chrome", "\(why)")
-
-        let orphan = try decodeValue(Owner.self, ownerJSON("orphan:7", mem: 1, kind: "orphan", overrides: [
-            "evidence": [evidence("runtime_home", "x", "weak")]]))
-        expect(Detail.why(orphan, procs: [], language: .zh).sentence.contains("被系统收养"))
-        expect(Detail.why(orphan, procs: [], language: .zh).chain == nil, "no procs: the sentence alone")
-
-        let closed = try decodeValue(Owner.self, ownerJSON("agent:opencode:pid:9", mem: 1, kind: "agent_session", overrides: [
-            "origin": ["tmux_pane": "%gone", "pane_alive": false],
-            "agent": agent("opencode", session: nil, confidence: "weak"),
-            "evidence": [evidence("tmux_environment", "%gone"), evidence("agent_source", "opencode", "weak"),
-                         evidence("agent_source", "opencode", "weak")]]))
-        let closedWhy = Detail.why(closed, procs: [], language: .zh)
-        expect(closedWhy.sentence.contains("pane 已关闭") && closedWhy.sentence.contains("opencode"), closedWhy.sentence)
-        expect(closedWhy.details.count == 2, "the repeated evidence line is shown once")
-
-        let long: [ProcBrief] = (0..<8).map { (i: Int) -> ProcBrief in
-            let pid = Int32(200 + i)
-            return proc(pid, i == 0 ? 1 : pid - 1, "p\(i)", member: i == 7, mem: 1)
-        }
-        let chain = try require(Detail.why(orphan, procs: long, language: .zh).chain)
-        expect(chain == "p0 → p1 → … → p5 → p6 → p7", chain)
-
-        let card = try slice(try source("DetailView.swift"), from: "private func whyCard", to: "private func partsCard")
-        expect(card.contains("DisclosureGroup(L10n.format(.evidenceDetails") && !card.contains("isExpanded"), "folded by default")
     }
 }

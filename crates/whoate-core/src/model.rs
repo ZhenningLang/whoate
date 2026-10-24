@@ -76,6 +76,10 @@ impl Evidence {
 pub struct Origin {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pane_title: Option<String>,
+    /// The live pane's `session:window.pane` (R10): details name the split even
+    /// when no `pane:` owner exists, e.g. an agent that is the pane's own process.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tmux_target: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub window_name: Option<String>,
     pub tmux_pane: Option<String>,
@@ -141,7 +145,15 @@ pub struct Owner {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reclaimable_physical: Option<PhysicalEstimate>,
     pub unknown_mem_count: usize,
+    /// Null when any process's CPU could not be read: "not known", never a sum of the rest.
     pub cpu_pct: Option<f64>,
+    /// R12: with unreadable processes, the sum over the readable ones (a lower
+    /// bound) and how many were unreadable. Both absent when every process was
+    /// read, so `cpu_pct` keeps its meaning and older output is byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_pct_readable: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unknown_cpu_count: Option<usize>,
     pub pids: Vec<i32>,
     pub origin: Option<Origin>,
     pub agent: Option<Agent>,
@@ -164,6 +176,8 @@ impl Owner {
             reclaimable_physical: None,
             unknown_mem_count: 0,
             cpu_pct: None,
+            cpu_pct_readable: None,
+            unknown_cpu_count: None,
             pids: vec![],
             origin: None,
             agent: None,
@@ -223,6 +237,11 @@ pub struct HistoryPoint {
     /// Absent when every process was read, so older output is byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unknown_mem_count: Option<usize>,
+    /// The owner's `cpu_pct_readable` and `unknown_cpu_count` at this point (R12).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_pct_readable: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unknown_cpu_count: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -295,6 +314,11 @@ pub struct Swarm {
     pub mem_bytes: u64,
     pub unknown_mem_count: usize,
     pub cpu_pct: Option<f64>,
+    /// Same meaning as on `Owner` (R12).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_pct_readable: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unknown_cpu_count: Option<usize>,
     pub shape: Shape,
     pub owners: Vec<SwarmOwner>,
     pub parents: Vec<i32>,

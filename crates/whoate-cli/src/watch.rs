@@ -314,9 +314,13 @@ mod tests {
             serde_json::json!([{"timestamp_s":1791978002_i64,"mem_bytes":10,"cpu_pct":0.0,"unknown_mem_count":1}])
         );
         assert_eq!(select(2, "pane:%42")["cpu_pct"], serde_json::Value::Null);
+        // Phase 10 round 4 R12 (owner 2026-10-24): cpu_pct stays null; the readable
+        // part and the unreadable count are added beside it, never in its place.
+        assert_eq!(select(2, "pane:%42")["unknown_cpu_count"], 1);
         assert_eq!(
             select(2, "pane:%42")["history"],
-            serde_json::json!([{"timestamp_s":1791978003_i64,"mem_bytes":140,"cpu_pct":null}])
+            serde_json::json!([{"timestamp_s":1791978003_i64,"mem_bytes":140,"cpu_pct":null,
+                                "cpu_pct_readable":0.0,"unknown_cpu_count":1}])
         );
         assert!(!text.contains("WATCH_PRIVATE_SENTINEL"));
         for frame in &frames {
