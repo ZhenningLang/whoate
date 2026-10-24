@@ -223,6 +223,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 "mode=\(model.fullRefresh ? "full" : "host")",
                 "panel_visible=\(panelWindow?.isVisible ?? false)",
                 "selected=\(model.selectedOwnerID ?? "-")", "category=\(model.category.rawValue)",
+                // Which app has focus: checks tell another app taking it from a key-window bug.
+                "frontmost=\(Self.frontmost())",
             ]
             if let main {
                 fields += [
@@ -243,6 +245,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             try? await Task.sleep(for: .milliseconds(200))
         }
+    }
+
+    /// Automation only: "self" when whoate is the frontmost app, else "other:<bundle id>".
+    static func frontmost() -> String {
+        let front = NSWorkspace.shared.frontmostApplication
+        if front?.processIdentifier == ProcessInfo.processInfo.processIdentifier { return "self" }
+        return "other:" + (front?.bundleIdentifier ?? "-")
     }
 
     /// Automation only (R9 check): the owner list's selected row, its row count, and

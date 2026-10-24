@@ -48,7 +48,25 @@ def run(binary, env, until):
     return handle, exited
 
 
+# Another app may take focus while the check runs (full run 2026-10-25 00:16: the
+# unified log shows One Markdown and then a Space switch to Ghostty becoming
+# frontmost). When the state at check time says another app is frontmost, that run
+# says nothing about whoate's key window: its receipt is kept and the scenario runs
+# again, at most PANEL_RUNS times. With whoate frontmost the assertion is unchanged.
+PANEL_RUNS = 3
+
+
 def panel(binary, out):
+    for attempt in range(1, PANEL_RUNS + 1):
+        ok, focus_lost = panel_once(binary, out, attempt)
+        if not focus_lost:
+            return ok
+        print(f"QA16 attempt {attempt}: another app was frontmost at check time ({focus_lost}); running again")
+    print(f"QA16 another app held focus in all {PANEL_RUNS} runs")
+    return False
+
+
+def panel_once(binary, out, attempt):
     root = tempfile.mkdtemp(prefix="wp10-", dir="/private/tmp")
     state, layout_file = f"{root}/state", f"{root}/layout"
     env = private_env(root, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_STATE_FILE=state,
@@ -75,13 +93,18 @@ def panel(binary, out):
         "qa20_panel_rows_checked": bool(overlap) and all(overlap.values()),
         "quit_after_exited": exited,
     }
-    write_receipt(out, "qa16-17-20-panel.json", {"pid": handle["pid"], "states": rows_state, "footer": footer,
-                                                  "distance": distance, "rows": rows, "checks": checks})
+    front = after.get("frontmost", "self")
+    focus_lost = front if front != "self" else None
+    name = "qa16-17-20-panel.json" if not focus_lost else f"qa16-17-20-panel.focus-lost-{attempt}.json"
+    write_receipt(out, name, {"pid": handle["pid"], "attempt": attempt, "frontmost_at_check": front,
+                              "states": rows_state, "footer": footer, "distance": distance, "rows": rows,
+                              "checks": checks})
     print(f"QA17 footer quit={footer.get('quit')} showMain={footer.get('showMain')} centre_distance={distance:.1f}pt")
     print(f"QA20 panel rows_with_buttons={len(overlap)} {overlap}")
+    print(f"QA16 attempt={attempt} frontmost_at_check={front}")
     for name, ok in checks.items():
         print(f"P10 {name}={ok}")
-    return all(checks.values())
+    return all(checks.values()), focus_lost
 
 
 def main_window(binary, out):

@@ -277,9 +277,14 @@ enum Phase08Tests {
     /// U-DEC-4: English view-model text has no CJK, apart from data fields.
     static func englishTextHasNoCJK() throws {
         let known = try require(Engine.insights().first)
+        // A working folder under HOME with CJK in a middle segment: the subtitle shows it
+        // abbreviated to "~/…" (full run 2026-10-25, a real orphan's folder).
+        let cjkFolder = NSHomeDirectory() + "/Downloads/cloud-workspace/0 创作/工作区/2026-10-20_skill评测导读"
         var reports = [try decodeValue(Report.self, reportJSON(owners: [
             try session("d", name: "7-74", source: "derived", title: "部署 Claw"),
             ownerJSON("o", mem: 2, level: "act", rule: "orphan-heavy", kind: "orphan", overrides: ["insights": [known.id]]),
+            ownerJSON("c", mem: 3, kind: "orphan", pids: [7, 8], overrides: [
+                "origin": ["tmux_pane": "%8", "pane_alive": false, "cwd": cjkFolder, "ports": [51000]]]),
         ]))]
         reports.append(try JSONDecoder().decode(Report.self, from: repoFile("tests/fixtures/attribution/sample-v1.json")))
         if let path = ProcessInfo.processInfo.environment["WHOATE_EN_TICK_FILE"] {
@@ -295,6 +300,8 @@ enum Phase08Tests {
                          o.origin?.paneTitle].compactMap { $0 }
                 data += o.parts.map(\.name)
                 data += o.origin?.cwd.map { [URL(fileURLWithPath: $0).lastPathComponent] } ?? []
+                // Subtitles show folders abbreviated to "~/…": that form is user data too.
+                data += [o.origin?.cwd, o.agent?.cwd].compactMap { $0.map { Panel.abbreviate($0) } }
             }
             data += report.swarms.map(\.label)
             var texts = [Panel.header(report.host, sort: .cpu, .en).headline, Panel.header(report.host, sort: .memory, .en).headline,
