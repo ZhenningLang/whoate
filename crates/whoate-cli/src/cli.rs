@@ -244,6 +244,8 @@ mod tests {
         r.swarms[0].owners.push(SwarmOwner {
             id: "orphan:940002".into(),
             count: 1,
+            mem_bytes: None,
+            cpu_pct: None,
         });
         let mut snap = Snapshot::historical(r.taken_at.clone(), vec![]);
         snap.tmux_panes.push(TmuxPane {

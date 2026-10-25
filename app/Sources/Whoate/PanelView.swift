@@ -83,7 +83,7 @@ struct PanelView: View {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 { Divider().padding(.leading, 16) }
                     PanelRowView(row: row, language: language, sort: model.sort,
-                                 openMain: openMain, close: { model.requestClose(row.id) },
+                                 openMain: openMain, close: { model.requestClose(row.id, from: .panel) },
                                  doubleClick: { openMain(model.panelTarget(row)) },
                                  expanded: Binding(get: { model.expandedAdvice == row.id },
                                                    set: { model.expandedAdvice = $0 ? row.id : nil }))
@@ -322,6 +322,9 @@ struct RowFrames: PreferenceKey {
     }
     /// Automation only (WHOATE_UI_PANEL_DOUBLE_CLICKS): the panel's latest frames, to aim the clicks.
     nonisolated(unsafe) static var panel: [String: CGRect] = [:]
+    /// Automation only (R16 check): the main window's latest frames, for the state file.
+    nonisolated(unsafe) static var main: [String: CGRect] = [:]
+    nonisolated(unsafe) static var sheet: [String: CGRect] = [:]
     static func write(_ frames: [String: CGRect], to path: String) {
         let now = Date().timeIntervalSince1970
         let lines = frames.sorted { $0.key < $1.key }.map { key, r in

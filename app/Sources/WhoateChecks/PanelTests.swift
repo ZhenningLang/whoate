@@ -154,7 +154,8 @@ enum PanelTests {
         expect(row.level == .ok && row.pillLevel == .watch, "advice is highlighted without changing the level")
         let swarm = try decodeValue(Swarm.self, swarmJSON("mcp", mem: 61 * (40 << 20), count: 61))
         expect(Panel.subtitle(swarm, .zh) == "61 份 · 单个约 40M")
-        expect(Panel.pill(swarm, .zh) == "关掉闲置归属可一起释放")
+        // Phase 10 R19 (owner 2026-10-25): a spread group is used by several apps, nothing to free.
+        expect(Panel.pill(swarm, .zh) == "多个应用在用")
     }
 
     static func headerPressureAndSystemAge() throws {

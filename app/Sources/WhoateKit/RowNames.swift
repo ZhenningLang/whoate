@@ -13,8 +13,20 @@ public enum RowNames {
         }
     }
 
-    /// Panel.title, except a Codex session without a name (R7): "Codex 会话 · <folder>".
+    /// R17: git's fsmonitor daemon, attributed to its repository by the core.
+    public static func isGitMonitor(_ o: Owner) -> Bool { o.evidence.contains { $0.kind == "git_fsmonitor" } }
+    /// Its repository's folder name; nil when the core could not read the repository.
+    public static func gitMonitorRepo(_ o: Owner) -> String? {
+        guard o.id.hasPrefix("service:git-fsmonitor:"), let cwd = o.origin?.cwd else { return nil }
+        return URL(fileURLWithPath: cwd).lastPathComponent
+    }
+
+    /// Panel.title, except a Codex session without a name (R7): "Codex 会话 · <folder>",
+    /// and git's fsmonitor (R17): "git 文件监视 · <repository>".
     public static func title(_ o: Owner, _ language: Language) -> String {
+        if isGitMonitor(o) {
+            return gitMonitorRepo(o).map { L10n.format(.gitMonitorOf, language, $0) } ?? L10n.text(.gitMonitor, language)
+        }
         guard let agent = o.agent, agent.tool == "codex", (agent.name ?? "").isEmpty else { return Panel.title(o) }
         let session = L10n.text(.codexSession, language)
         guard let cwd = Detail.folder(o), cwd != "/" else { return session }
@@ -62,8 +74,13 @@ public enum RowNames {
                 }
             }
             // The title already says "× 74": the subtitle spends its width on the owners.
-            if let s = swarms[row.id], let owned = ownership(s, owners: owners, language: language) {
-                row.subtitle = owned
+            if let s = swarms[row.id] {
+                // R19: a spread group counts processes per user, the unit its details list uses.
+                if Spread.isSpread(s) {
+                    row.subtitle = Spread.subtitle(s, owners: owners, language: language)
+                } else if let owned = ownership(s, owners: owners, language: language) {
+                    row.subtitle = owned
+                }
             }
             return row
         }

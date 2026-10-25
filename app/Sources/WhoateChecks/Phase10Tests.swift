@@ -168,7 +168,7 @@ enum Phase10Tests {
 
     // QA15
     @MainActor static func menuBarImageIsAlwaysATemplate() throws {
-        let logo = NSImage(size: NSSize(width: 18, height: 14))
+        let logo = NSImage(size: NSSize(width: 18, height: 18))
         for style in MenuBarItem.AlertStyle.allCases {
             for pressure in ["normal", "warn", "critical", "unknown"] {
                 let host = try decodeValue(Host.self, ["mem_total_bytes": 1, "mem_used_bytes": 1, "compressed_bytes": 0,

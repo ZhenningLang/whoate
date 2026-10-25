@@ -3,19 +3,41 @@
 import Foundation
 
 public struct KillConfirmation: Equatable, Sendable {
+    /// One line of the confirmation's list (R16): program name, memory, pid.
+    public struct Process: Equatable, Sendable {
+        public var pid: Int32
+        public var name: String
+        public var memBytes: UInt64?
+        public var memory: String
+    }
     public var ownerID: String
     public var title: String
     public var pids: [Int32]
+    /// Every pid, biggest first; names and memory from the owner's whoate_why when it
+    /// has arrived, else from the owner's parts (memory only for a one-process part).
+    public var processes: [Process]
     public var estimateBytes: UInt64?
     public var estimate: String
     /// "将结束 3 个进程，预计腾出 1.2G" (R2): the count and the estimate in one line.
     public var summary: String
     public var isProtected: Bool
 
-    public init(owner: Owner, language: Language) {
+    public init(owner: Owner, language: Language, procs: [ProcBrief] = []) {
         ownerID = owner.id
         title = L10n.format(.confirmTitle, language, owner.label)
         pids = owner.pids
+        processes = owner.pids.map { pid in
+            let name: String, bytes: UInt64?
+            if let p = procs.first(where: { $0.pid == pid }) {
+                (name, bytes) = (p.name ?? p.comm, p.memBytes)
+            } else if let part = owner.parts.first(where: { $0.pids.contains(pid) }) {
+                (name, bytes) = (part.name, part.pids.count == 1 ? part.memBytes : nil)
+            } else {
+                (name, bytes) = (owner.label, owner.pids.count == 1 ? owner.memBytes : nil)
+            }
+            return Process(pid: pid, name: name, memBytes: bytes,
+                           memory: bytes.map(Format.bytes) ?? L10n.text(.notMeasured, language))
+        }.sorted { ($0.memBytes ?? 0, $1.pid) > ($1.memBytes ?? 0, $0.pid) }
         estimateBytes = owner.reclaimablePhysical?.bytes
         if let bytes = estimateBytes {
             estimate = Format.bytes(bytes)

@@ -85,8 +85,9 @@ public enum MainWindowModel {
 
     /// R14 (owner 2026-10-25): what a double-clicked panel row selects in the main
     /// window. The row itself when the list has it; for a process group that is gone,
-    /// its member owner with the most memory in total (a swarm's `owners` carry counts,
-    /// not each owner's share); nil (window only) when neither is listed.
+    /// its member owner with the most memory in total (R14 ruling; since R19 a swarm's
+    /// `owners` may also carry each owner's share, not used here); nil (window only)
+    /// when neither is listed.
     public static func panelTarget(_ row: PanelRow, rows: [PanelRow]) -> String? {
         if rows.contains(where: { $0.id == row.id }) { return row.id }
         let members = Set(row.members)

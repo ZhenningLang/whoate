@@ -3,7 +3,7 @@
 use super::{SampleError, SampleResult, tmux};
 use crate::snapshot::{Proc, SampleIssue, Snapshot, TmuxPane};
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Deserialize)]
 struct Archive {
@@ -242,6 +242,10 @@ const APP_STRUCTURE: &[&str] = &[
     "lib",
     "share",
     "site-packages",
+    // A git dir's own structure (R17 `git_dir`): kept so a redacted snapshot still
+    // tells a repository's `.git` from its worktrees' `.git/worktrees/<name>`.
+    ".git",
+    "worktrees",
 ];
 const PUBLIC_ARGS: &[&str] = &[
     "-m",
@@ -262,6 +266,175 @@ const PUBLIC_ARGS: &[&str] = &[
     "jupyter",
     "kernel",
 ];
+
+/// git's own commands (`git help -a`, git 2.4x/2.5x); R18 keeps them readable in
+/// copied argv. A fixed list: anything else in that position stays private.
+const GIT_SUBCOMMANDS: &[&str] = &[
+    "add",
+    "am",
+    "annotate",
+    "apply",
+    "archive",
+    "bisect",
+    "blame",
+    "branch",
+    "bundle",
+    "cat-file",
+    "check-attr",
+    "check-ignore",
+    "check-mailmap",
+    "check-ref-format",
+    "checkout",
+    "checkout-index",
+    "cherry",
+    "cherry-pick",
+    "clean",
+    "clone",
+    "commit",
+    "commit-graph",
+    "commit-tree",
+    "config",
+    "count-objects",
+    "credential",
+    "credential-cache",
+    "credential-osxkeychain",
+    "credential-store",
+    "daemon",
+    "describe",
+    "diff",
+    "diff-files",
+    "diff-index",
+    "diff-tree",
+    "difftool",
+    "fetch",
+    "fetch-pack",
+    "filter-branch",
+    "for-each-ref",
+    "for-each-repo",
+    "format-patch",
+    "fsck",
+    "fsmonitor--daemon",
+    "gc",
+    "grep",
+    "hash-object",
+    "help",
+    "http-backend",
+    "index-pack",
+    "init",
+    "log",
+    "ls-files",
+    "ls-remote",
+    "ls-tree",
+    "maintenance",
+    "merge",
+    "merge-base",
+    "merge-file",
+    "merge-tree",
+    "mergetool",
+    "mktag",
+    "mktree",
+    "multi-pack-index",
+    "mv",
+    "notes",
+    "pack-objects",
+    "pack-refs",
+    "prune",
+    "pull",
+    "push",
+    "range-diff",
+    "read-tree",
+    "rebase",
+    "receive-pack",
+    "reflog",
+    "remote",
+    "remote-http",
+    "remote-https",
+    "repack",
+    "replace",
+    "rerere",
+    "reset",
+    "restore",
+    "rev-list",
+    "rev-parse",
+    "revert",
+    "rm",
+    "send-pack",
+    "shortlog",
+    "show",
+    "show-branch",
+    "show-ref",
+    "sparse-checkout",
+    "stash",
+    "status",
+    "submodule",
+    "switch",
+    "symbolic-ref",
+    "tag",
+    "unpack-objects",
+    "update-index",
+    "update-ref",
+    "upload-pack",
+    "var",
+    "verify-pack",
+    "worktree",
+    "write-tree",
+];
+/// git global options whose value is the next argument (never a subcommand). The
+/// position scan skips their value; the long ones also pass as switch names anyway.
+const GIT_VALUE_OPTIONS: &[&str] = &[
+    "-C",
+    "-c",
+    "--git-dir",
+    "--work-tree",
+    "--namespace",
+    "--exec-path",
+];
+
+fn is_git(argv: &[String]) -> bool {
+    argv.first()
+        .is_some_and(|exe| exe.rsplit('/').next() == Some("git"))
+}
+
+/// R18: argv positions that stay readable for git: the global option names that
+/// take a value (`-C`, `-c`, not their values), the first positional when it is a
+/// git command, and `run|start|stop|status` right after `fsmonitor--daemon`.
+/// Same answer on the raw and the redacted argv, so the redactor and
+/// `validate_safe` agree.
+fn git_public_positions(argv: &[String]) -> BTreeSet<usize> {
+    let mut public = BTreeSet::new();
+    if !is_git(argv) {
+        return public;
+    }
+    let mut skip_value = false;
+    for (index, argument) in argv.iter().enumerate().skip(1) {
+        if skip_value {
+            skip_value = false;
+        } else if argument.starts_with('-') {
+            skip_value = GIT_VALUE_OPTIONS.contains(&argument.as_str());
+            if skip_value {
+                public.insert(index);
+            }
+        } else {
+            if GIT_SUBCOMMANDS.contains(&argument.as_str()) {
+                public.insert(index);
+                if argument == "fsmonitor--daemon"
+                    && argv
+                        .get(index + 1)
+                        .is_some_and(|a| ["run", "start", "stop", "status"].contains(&a.as_str()))
+                {
+                    public.insert(index + 1);
+                }
+            }
+            break;
+        }
+    }
+    public
+}
+
+/// R18: a plain number as a git switch value (`--ipc-threads=8`) stays readable.
+fn git_number(git: bool, value: &str) -> bool {
+    git && !value.is_empty() && value.len() <= 9 && value.bytes().all(|b| b.is_ascii_digit())
+}
 
 fn docker_identifier(value: &str) -> bool {
     value.strip_prefix("com.docker.").is_some_and(|suffix| {
@@ -481,9 +654,11 @@ impl Redactor {
     /// One process's argv under the fixture rules: URLs and control characters
     /// become `<redacted>`, paths map to `~/redacted/path-N`, switch names stay
     /// and switch values pass only a public whitelist.
+    /// git (R18): its command name and plain-number switch values stay readable.
     pub fn redact_argv(&mut self, argv: &[String]) -> Vec<String> {
         let mut previous_switch: Option<String> = None;
         let mut output = Vec::with_capacity(argv.len());
+        let (git, git_public) = (is_git(argv), git_public_positions(argv));
         for (index, argument) in argv.iter().enumerate() {
             output.push(if index == 0 {
                 previous_switch = None;
@@ -496,17 +671,25 @@ impl Redactor {
                 }
             } else if let Some(name) = switch_name(argument).map(str::to_owned) {
                 if let Some((_, value)) = argument.split_once('=') {
-                    let value = public_value(&name, value).unwrap_or_else(|| self.argument(value));
+                    let value = public_value(&name, value)
+                        .or_else(|| git_number(git, value).then(|| value.to_owned()))
+                        .unwrap_or_else(|| self.argument(value));
                     previous_switch = None;
                     format!("{name}={value}")
                 } else {
                     previous_switch = Some(name.clone());
                     name
                 }
+            } else if git_public.contains(&index) {
+                previous_switch = None;
+                argument.clone()
             } else {
                 previous_switch
                     .take()
-                    .and_then(|name| public_value(&name, argument))
+                    .and_then(|name| {
+                        public_value(&name, argument)
+                            .or_else(|| git_number(git, argument).then(|| argument.clone()))
+                    })
                     .unwrap_or_else(|| self.argument(argument))
             });
         }
@@ -531,6 +714,10 @@ impl Redactor {
                 *path = self.path(path);
             }
             if let Some(path) = &mut proc.cwd {
+                *path = self.directory(path);
+            }
+            // R17: the git dir a fsmonitor daemon serves is a private path like cwd.
+            if let Some(path) = &mut proc.git_dir {
                 *path = self.directory(path);
             }
             if let Some(pane) = &mut proc.tmux_pane
@@ -580,12 +767,16 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
         if !safe_comm(&proc.comm) {
             return Err(SampleError::new("privacy", "unsafe_comm"));
         }
-        for path in [&proc.exe_path, &proc.cwd].into_iter().flatten() {
+        for path in [&proc.exe_path, &proc.cwd, &proc.git_dir]
+            .into_iter()
+            .flatten()
+        {
             if !valid_path(path) {
                 return Err(SampleError::new("privacy", "unsafe_path"));
             }
         }
         let mut previous_switch = None;
+        let (git, git_public) = (is_git(&proc.argv), git_public_positions(&proc.argv));
         for (i, argument) in proc.argv.iter().enumerate() {
             if argument.contains("://")
                 || argument.contains("/Users/")
@@ -603,18 +794,25 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
                 |value: &str| value == "<redacted>" || valid_path(value) || public_argument(value);
             if let Some(name) = switch_name(argument) {
                 if let Some((_, value)) = argument.split_once('=') {
-                    if !value_safe(value) && public_value(name, value).as_deref() != Some(value) {
+                    if !value_safe(value)
+                        && public_value(name, value).as_deref() != Some(value)
+                        && !git_number(git, value)
+                    {
                         return Err(SampleError::new("privacy", "unsafe_switch_value"));
                     }
                     previous_switch = None;
                 } else {
                     previous_switch = Some(name);
                 }
+            } else if git_public.contains(&i) {
+                previous_switch = None;
             } else {
-                let public = previous_switch
-                    .take()
-                    .and_then(|name| public_value(name, argument));
-                if !value_safe(argument) && public.as_deref() != Some(argument.as_str()) {
+                let after_switch = previous_switch.take();
+                let public = after_switch.and_then(|name| public_value(name, argument));
+                if !value_safe(argument)
+                    && public.as_deref() != Some(argument.as_str())
+                    && !(after_switch.is_some() && git_number(git, argument))
+                {
                     return Err(SampleError::new("privacy", "unsafe_positional_value"));
                 }
             }

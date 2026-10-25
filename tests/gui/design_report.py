@@ -59,10 +59,12 @@ def part(name, mem, count, first_pid, unknown=0):
 
 
 def owner(id, kind, label, mem, cpu, pids, verdict, origin=None, agent=None, evidence=(), parts=(), insights=(),
-          hist=(), unknown=0, cpu_unknown=None):
+          hist=(), unknown=0, cpu_unknown=None, reclaimable=None):
     o = {"id": id, "kind": kind, "label": label, "mem_bytes": int(mem), "unknown_mem_count": unknown,
          "cpu_pct": cpu, "pids": pids, "origin": origin, "agent": agent, "evidence": list(evidence),
          "parts": list(parts), "facts": [], "insights": list(insights), "history": list(hist), "verdict": verdict}
+    if reclaimable is not None:
+        o["reclaimable_physical"] = {"bytes": int(reclaimable), "unknown_count": 0, "basis": "rss", "reason": None}
     if cpu_unknown is not None:  # R12: `cpu` is then only the readable part
         o["cpu_pct"], o["cpu_pct_readable"], o["unknown_cpu_count"] = None, cpu, cpu_unknown
     return o
@@ -141,7 +143,9 @@ def report():
               evidence=[ev("tmux_environment", "%266", "certain"),
                                                 ev("runtime_home", "runtime in HOME; launchd ancestry", "weak")],
               parts=[part("node", 9.5 * G, 3, 948211), part("esbuild", 0.2 * G, 1, 948219)],
-              hist=ramp_then_flat(9.7 * G)),
+              hist=ramp_then_flat(9.7 * G),
+              # R16 screenshots: the close confirmation's "frees about X" needs an estimate.
+              reclaimable=9.1 * G),
         owner("app:com.brave.Browser", "app", "Brave Browser", 4.2 * G, 6.4, list(range(951000, 951019)),
               verdict("watch", "fast-growth", "近 30 分钟 +600M，渲染进程 14 个。"),
               evidence=[ev("app_bundle", "com.brave.Browser", "certain")],
@@ -258,6 +262,23 @@ def report():
              "pids": list(range(990000, 990000 + count)),
              "evidence": [ev("same_executable", "可执行文件相同：python3.13", "certain")],
              "verdict": verdict("ok", "swarm-spread", "分散在多个归属里，各自 1–6 份。")}
+    # R19: WebKit content processes spread over apps and three launchd-adopted ones no app
+    # claims (the owner's real shape, 2026-10-25), with each owner's memory and CPU.
+    webkit_members = [{"id": "app:com.openai.codex", "count": 4, "mem_bytes": int(0.45 * G), "cpu_pct": 1.2},
+                      {"id": "app:com.anthropic.claudefordesktop", "count": 3, "mem_bytes": 310 * M, "cpu_pct": 0.4},
+                      {"id": "app:com.brave.Browser", "count": 2, "mem_bytes": 120 * M, "cpu_pct": 0.1},
+                      {"id": "service:7101", "count": 1, "mem_bytes": 90 * M, "cpu_pct": 0.0},
+                      {"id": "service:7102", "count": 1, "mem_bytes": 80 * M, "cpu_pct": 0.0},
+                      {"id": "service:7103", "count": 1, "mem_bytes": 70 * M, "cpu_pct": 0.2}]
+    webkit_count = sum(m["count"] for m in webkit_members)
+    webkit = {"signature": '["com.apple.WebKit"]', "label": "com.apple.WebKit", "count": webkit_count,
+              "mem_bytes": sum(m["mem_bytes"] for m in webkit_members), "unknown_mem_count": 0, "cpu_pct": 1.9,
+              "shape": "spread", "owners": webkit_members, "parents": [1], "started_span_s": 7200.0,
+              "pids": list(range(996000, 996000 + webkit_count)),
+              "evidence": [ev("same_executable", "com.apple.WebKit.WebContent", "certain")],
+              "verdict": verdict("watch", "swarm-spread",
+                                 f"各归属分别启动 com.apple.WebKit，共 {webkit_count} 份 {sum(m['mem_bytes'] for m in webkit_members) / M:.1f} MiB；"
+                                 "关掉闲置归属能一起释放")}
     taken = "2026-10-21T00:20:00+08:00"
     host = {"mem_total_bytes": 48 * G, "mem_used_bytes": 44_237_000_000, "compressed_bytes": 9 * G,
             "wired_bytes": 5 * G, "swap_used_bytes": 6 * G, "pressure": "warn",
@@ -272,7 +293,7 @@ def report():
             "memory_diagnostics": [verdict("watch", "swap-high", "swap 已用 6.0G。内存偏紧时，先关闲置会话和孤儿进程收益最大。")],
             "cpu": {"status": "fresh", "usage_pct": 37.5, "load_1m": 6.2, "logical_cores": 12, "reason": None}}
     return {"schema": "whoate/v1", "taken_at": taken, "host": host,
-            "system_procs": {"status": "fresh", "as_of": taken}, "owners": owners, "swarms": [swarm], "issues": [],
+            "system_procs": {"status": "fresh", "as_of": taken}, "owners": owners, "swarms": [swarm, webkit], "issues": [],
             "procs": procs()}
 
 

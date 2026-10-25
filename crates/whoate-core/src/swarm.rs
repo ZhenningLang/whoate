@@ -113,14 +113,28 @@ pub fn timestamp_us(snap: &Snapshot) -> Option<u64> {
     u64::try_from(t.unix_timestamp_nanos() / 1000).ok()
 }
 fn build(signature: &str, members: &[&Proc], shape: Shape, owners: &BTreeMap<i32, &str>) -> Swarm {
-    let mut distribution: BTreeMap<String, usize> = BTreeMap::new();
+    let mut distribution: BTreeMap<String, SwarmOwner> = BTreeMap::new();
     let mut parents = BTreeSet::new();
     let mut pids = BTreeSet::new();
     for p in members {
         pids.insert(p.pid);
         parents.insert(p.ppid);
         if let Some(id) = owners.get(&p.pid) {
-            *distribution.entry((*id).into()).or_default() += 1;
+            let entry = distribution
+                .entry((*id).into())
+                .or_insert_with(|| SwarmOwner {
+                    id: (*id).into(),
+                    count: 0,
+                    mem_bytes: None,
+                    cpu_pct: None,
+                });
+            entry.count += 1;
+            if let Some(mem) = p.footprint_bytes {
+                entry.mem_bytes = Some(entry.mem_bytes.unwrap_or(0) + mem);
+            }
+            if let Some(cpu) = p.cpu_pct_sampled {
+                entry.cpu_pct = Some(entry.cpu_pct.unwrap_or(0.0) + cpu);
+            }
         }
     }
     let starts: Vec<_> = members.iter().filter_map(|p| p.start_time).collect();
@@ -153,10 +167,7 @@ fn build(signature: &str, members: &[&Proc], shape: Shape, owners: &BTreeMap<i32
         cpu_pct_readable: (unknown_cpu > 0 && unknown_cpu < members.len()).then_some(readable_cpu),
         unknown_cpu_count: (unknown_cpu > 0).then_some(unknown_cpu),
         shape,
-        owners: distribution
-            .into_iter()
-            .map(|(id, count)| SwarmOwner { id, count })
-            .collect(),
+        owners: distribution.into_values().collect(),
         parents: parents.into_iter().collect(),
         started_span_s: span,
         pids: pids.into_iter().collect(),

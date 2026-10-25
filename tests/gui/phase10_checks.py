@@ -7,6 +7,7 @@ against the debug build replaying tests/gui/design-report.json.
   phase10_checks.py reopen <Whoate> <evidence dir>        QA22 close → reopen → regular
   phase10_checks.py jump <debug Whoate> <evidence dir>    QA49 (R9) category and scroll
   phase10_checks.py dblclick <debug Whoate> <evidence dir>  QA55 (R14) double-click a panel row
+  phase10_checks.py closesheet <debug Whoate> <evidence dir>  QA57 (R16) the close confirmation sheet
 
 panel: the panel's own "show main window" action runs at 4 s; before it the
 panel window is visible, after it the panel window is hidden and one main
@@ -25,10 +26,21 @@ dblclick (R14, owner 2026-10-25): real mouse events posted into the panel window
 Owner run: a double-click on Brave's advice pill opens nothing, then one on Brave's
 row brings the main window to the front with Brave selected under "apps", in view,
 and the panel put away. Swarm run: the python3.13 process group row (no buttons)
-is selected under "all". Both runs also read the window title (R13): the window
-keeps the name "whoate" and the system still draws it next to the app icon; the
-toolbar keeps its height and the sort control stays at the right edge (hiding the
-title measured 38 pt and 526 pt from the edge, against 52 pt and 6 pt).
+is selected under "all". Both runs also read the window title (R15, round 7): the
+window is named "WHO-ATE", the system draws it with nothing in front (it starts
+within a few points of the list column; a 20 pt icon pushed it 28 pt further) and level
+with the traffic lights; the toolbar keeps its height and the sort control stays at
+the right edge (hiding the title measured 38 pt and 526 pt from the edge, against
+52 pt and 6 pt).
+closesheet (R16, owner 2026-10-25): the orphan selected in the main window, its close
+confirmation opened at 4 s as the main window's sheet. Confirm run: at 6 s the
+sheet's centre lies near the window's centre, the dim layer covers the whole window
+(all three columns), the sheet has the Esc button left of the red one; Return at 6 s
+leaves it open and sends nothing; Esc at 8.5 s closes it. Force run: the second step
+(every pid still running, made by the app from the confirmation) in the same place
+("完成" on Esc, red "强制结束"), same keys. Quit-while-open run: the sheet is still up
+at 8 s when the app's own quit runs, and the app exits anyway (a sheet used to block it). Under this automation the app's signal sender
+is a dry run that only counts calls, and the count must stay 0.
 """
 import json, math, os, sys, tempfile
 from pathlib import Path
@@ -36,7 +48,6 @@ import launch
 from window_check import at, intersects, private_env, read_layout, states, without_input, write_receipt
 
 DESIGN = Path(__file__).with_name("design-report.json")
-APP_ICON = Path(__file__).parents[2] / "assets/logo/AppIcon.icns"
 SHOW_AT, QUIT_AT = 4, 9
 
 
@@ -189,6 +200,9 @@ def jump(binary, out):
 
 # R13 layout (measured 2026-10-25): 52 pt and 6 pt with the system title; 38 and 526 without it.
 TOOLBAR_MIN_H, SORT_RIGHT_GAP_MAX = 48, 40
+# R15 (round 7): title start from the list column's left edge and its centre's offset from the
+# traffic lights'. Measured values are in qa.md (round 7); a 20 pt icon in front adds 28 pt.
+TITLE, TITLE_LEAD_MAX, TITLE_DY_MAX = "WHO-ATE", 20, 3
 DOUBLE_CLICK_RUNS = {
     # name: (clicks, expected selection, expected category)
     "owner": ("4 pill app:com.brave.Browser;6 row app:com.brave.Browser", "app:com.brave.Browser", "apps"),
@@ -209,7 +223,6 @@ def dblclick_once(binary, out, name, attempt):
     state = f"{root}/state"
     env = private_env(root, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_STATE_FILE=state,
                       WHOATE_UI_FIXTURE=os.path.realpath(DESIGN), WHOATE_UI_PANEL_DOUBLE_CLICKS=clicks,
-                      WHOATE_UI_APP_ICON=os.path.realpath(APP_ICON),
                       WHOATE_UI_QUIT_AFTER=last + 5)
     handle, exited = run(binary, env, last + 25)
     rows = states(state)
@@ -224,9 +237,11 @@ def dblclick_once(binary, out, name, attempt):
         "qa55_selected_this_row": after.get("selected") == target,
         "qa55_category": after.get("category") == category,
         "qa55_row_visible": after.get("list_row_visible") == "true",
-        "qa54_window_keeps_its_name": after.get("title") == "whoate",
-        "qa54_title_still_drawn": after.get("title_shown") == "true",
-        "qa54_icon_loaded": after.get("brand_icon") == "true",
+        "qa54_window_named_wordmark": after.get("title") == TITLE,
+        "qa54_title_still_drawn": after.get("title_shown") == "true" and after.get("title_drawn") == "true",
+        "qa54_nothing_before_title": after.get("title_lead", "-").lstrip("-").isdigit()
+        and 0 <= int(after["title_lead"]) <= TITLE_LEAD_MAX,
+        "qa54_title_level_with_traffic_lights": after.get("title_dy", "-").isdigit() and int(after["title_dy"]) <= TITLE_DY_MAX,
         "qa54_toolbar_not_compact": int(after.get("toolbar_h", "0")) >= TOOLBAR_MIN_H,
         "qa54_sort_stays_right": after.get("sort_right_gap", "-").isdigit() and int(after["sort_right_gap"]) <= SORT_RIGHT_GAP_MAX,
         "quit_after_exited": exited,
@@ -242,9 +257,86 @@ def dblclick_once(binary, out, name, attempt):
     return all(checks.values()), os.path.join(out, receipt)
 
 
+# R16: how far the sheet's centre may sit from the window's centre (pt), and when things happen.
+SHEET_CENTRE_MAX, CLOSE_AT, RETURN_AT, ESC_AT, CLOSE_QUIT = 24, 4, 6, 8.5, 11.5
+CLOSE_RUNS = {
+    # name: (WHOATE_UI_CLOSE_STEP, expected step, keys pressed)
+    "confirm": ("", "confirm", True),
+    "force": ("force", "result_still_alive", True),
+    # Quit while the sheet is up: a sheet made NSApp.terminate do nothing (a test
+    # instance outlived its quit by 30 minutes, 2026-10-25); the app must still exit.
+    "quit-while-open": ("", "confirm", False),
+}
+
+
+def closesheet(binary, out):
+    return all([without_input(lambda attempt, name=name: closesheet_once(binary, out, name, attempt), f"QA57 {name}")
+                for name in CLOSE_RUNS])
+
+
+def closesheet_once(binary, out, name, attempt):
+    step, expected, keys = CLOSE_RUNS[name]
+    root = tempfile.mkdtemp(prefix="wc10-", dir="/private/tmp")
+    state, window_file = f"{root}/state", f"{root}/window"
+    # A main-window confirmation under automation swaps in a sender that sends nothing
+    # and only counts (kill_attempts), so the Return press can never end a process.
+    env = private_env(root, WHOATE_UI_AUTOMATION="main-window", WHOATE_UI_STATE_FILE=state,
+                      WHOATE_UI_LAYOUT_FILE=f"{root}/layout", WHOATE_UI_WINDOW_FILE=window_file,
+                      WHOATE_UI_FIXTURE=os.path.realpath(DESIGN), WHOATE_UI_SELECT="kind:orphan",
+                      WHOATE_UI_CONFIRM="selected", WHOATE_UI_CLOSE_AT=CLOSE_AT, WHOATE_UI_CLOSE_STEP=step,
+                      WHOATE_UI_QUIT_AFTER=CLOSE_QUIT if keys else ESC_AT, LC_ALL="zh_CN.UTF-8",
+                      **(dict(WHOATE_UI_RETURN_AFTER=RETURN_AT, WHOATE_UI_ESC_AFTER=ESC_AT) if keys else {}))
+    handle, exited = run(binary, env, CLOSE_QUIT + 25)
+    rows = states(state)
+    first = rows[0][0] - float(rows[0][1].get("since_launch", 0)) if rows else 0
+    shown = at(rows, first + RETURN_AT - 0.5) or {}
+    after_return = at(rows, first + ESC_AT - 0.5) or {}
+    gone = at(rows, first + ESC_AT + 1.5) or {}
+    window = next((l.split("\t") for l in Path(window_file).read_text().splitlines() if l.startswith("main\t")), None) \
+        if os.path.exists(window_file) else None
+    width, height = (int(window[2]), int(window[3])) if window else (0, 0)
+    dim = [int(v) for v in shown["dim"].split(",")] if shown.get("dim", "-") != "-" else None
+    buttons = [b for b in shown.get("sheet_buttons", "").split(",") if b]
+    def centred(key):
+        value = shown.get(key, "-")
+        return value.lstrip("-").isdigit() and abs(int(value)) <= SHEET_CENTRE_MAX
+    checks = {
+        "qa57_step_shown": shown.get("close") == expected and shown.get("sheet", "none") != "none",
+        # Every run must end by its own quit within the wait; quit-while-open quits with the sheet up.
+        "qa57_quit_exits": exited,
+        "qa57_sheet_centred_x": centred("sheet_dx"),
+        "qa57_sheet_centred_y": centred("sheet_dy"),
+        # The dim layer spans the window's width (sidebar, list and details) and its content height.
+        "qa57_whole_window_dimmed": dim is not None and dim[0] <= 1 and dim[2] >= width - 2
+        and dim[3] >= height - int(shown.get("toolbar_h", "0")) - 2,
+        # The toolbar (AppKit's titlebar) is dimmed too (review round 7, spec「整窗变暗」).
+        "qa57_toolbar_dimmed": int(shown.get("titlebar_dim", "0")) >= int(shown.get("toolbar_h", "999")) - 2,
+        # Esc's button on the left, the red destructive one on the right (titles: WhoateChecks QA57).
+        "qa57_two_buttons": buttons == ["esc", "destructive"],
+        "qa57_no_signal": (rows[-1][1].get("kill_attempts") if rows else None) == "0",
+    }
+    if keys:
+        checks["qa57_return_ends_nothing"] = after_return.get("close") == expected and after_return.get("kill_attempts") == "0"
+        checks["qa57_esc_closes"] = gone.get("close") == "idle" and gone.get("sheet") == "none" \
+            and gone.get("titlebar_dim") == "0"
+    else:
+        checks["qa57_sheet_up_at_quit"] = after_return.get("close") == expected and after_return.get("sheet", "none") != "none"
+    receipt = f"qa57-closesheet-{name}.json"
+    write_receipt(out, receipt, {"pid": handle["pid"], "attempt": attempt, "shown": shown, "after_return": after_return,
+                                 "gone": gone, "window": [width, height], "states": rows, "checks": checks})
+    print(f"QA57 {name} attempt={attempt} close={shown.get('close')} sheet={shown.get('sheet')} "
+          f"dx={shown.get('sheet_dx')} dy={shown.get('sheet_dy')} buttons={buttons} dim={dim} window={width}x{height} "
+          f"titlebar_dim={shown.get('titlebar_dim')} toolbar_h={shown.get('toolbar_h')} "
+          f"after_return={after_return.get('close')} after_esc={gone.get('close')} kills={gone.get('kill_attempts')}")
+    for check, ok in checks.items():
+        print(f"P10 {name} {check}={ok}")
+    return all(checks.values()), os.path.join(out, receipt)
+
+
 def main(argv):
     command, *rest = argv
-    ok = {"panel": panel, "main": main_window, "reopen": reopen, "jump": jump, "dblclick": dblclick}[command](*rest)
+    ok = {"panel": panel, "main": main_window, "reopen": reopen, "jump": jump, "dblclick": dblclick,
+          "closesheet": closesheet}[command](*rest)
     return 0 if ok else 1
 
 

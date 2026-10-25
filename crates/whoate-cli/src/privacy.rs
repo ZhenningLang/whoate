@@ -119,6 +119,11 @@ pub fn project(input: &Report, snapshot: &Snapshot, policy: Policy) -> Report {
         }
         for evidence in &mut owner.evidence {
             clean(&mut evidence.detail);
+            // R17's git dir is a path wherever the repository lives (/Volumes, /opt), not only under /Users.
+            if policy.redact && evidence.kind == "git_fsmonitor" && evidence.detail.starts_with('/')
+            {
+                evidence.detail = "~/<private>".into();
+            }
         }
         for part in &mut owner.parts {
             clean(&mut part.name);
@@ -377,5 +382,70 @@ mod tests {
         assert_eq!(output.owners[0].pids, r.owners[0].pids);
         assert_eq!(output.owners[0].mem_bytes, r.owners[0].mem_bytes);
         assert_eq!(output.owners[0].id, r.owners[0].id);
+    }
+
+    /// Phase 10 round 7 review B1: a git fsmonitor owner (R17) carries no repository
+    /// path into `--redact` output; ids are kept, so the id holds only an opaque key.
+    #[test]
+    fn phase10_redact_hides_the_git_monitors_repository_path() {
+        let repo = "/Users/someone/Projects/SecretRepo";
+        // A repository on an external disk too (review round 7 B [risk]): not under /Users.
+        let procs = [
+            (7101, format!("{repo}/.git")),
+            (7102, format!("{repo}/.git/worktrees/secret-task")),
+            (7103, "/Volumes/Ext/OtherRepo/.git".into()),
+        ]
+        .into_iter()
+        .map(|(pid, dir)| {
+            let mut p = whoate_core::snapshot::Proc::identity(pid, 1, 501, Some(1), "git".into());
+            p.argv = ["git", "fsmonitor--daemon", "run", "--detach"]
+                .map(String::from)
+                .to_vec();
+            p.cwd = Some("/Users/someone".into());
+            p.tmux_pane = Some("%229".into());
+            p.git_dir = Some(dir);
+            p
+        })
+        .collect();
+        let snap = Snapshot::historical("2026-10-25T20:30:00+08:00".into(), procs);
+        let cfg = whoate_core::recognizers::ConfigReader::isolated(std::env::temp_dir());
+        let owners = whoate_core::attribute::attribute(&snap, 501, &cfg, &Default::default());
+        assert_eq!(owners.len(), 2, "worktrees share the repository's row");
+        let mut report: Report = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/attribution/sample-v1.json"
+        ))
+        .unwrap();
+        report.owners = owners;
+        report.swarms.clear();
+        let output = project(
+            &report,
+            &snap,
+            Policy {
+                prompts: false,
+                redact: true,
+            },
+        );
+        let json = serde_json::to_string(&output).unwrap();
+        for leak in [
+            "/Users/",
+            "someone",
+            "Projects/SecretRepo",
+            "secret-task",
+            ".git",
+            "/Volumes",
+            "Ext/",
+        ] {
+            assert!(!json.contains(leak), "{leak} in --redact output: {json}");
+        }
+        // Only the repository's folder name is left, in the label (allowed: a name, not a path).
+        let secret = output
+            .owners
+            .iter()
+            .find(|o| o.label == "git fsmonitor · SecretRepo")
+            .unwrap();
+        assert!(secret.id.starts_with("service:git-fsmonitor:") && !secret.id.contains('/'));
+        for (before, after) in report.owners.iter().zip(&output.owners) {
+            assert_eq!(before.id, after.id, "--redact keeps ids");
+        }
     }
 }

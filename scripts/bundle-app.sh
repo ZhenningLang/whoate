@@ -10,6 +10,7 @@ logo="$root/assets/logo"
 
 icons() {
     command -v rsvg-convert >/dev/null || { echo "rsvg-convert required (brew install librsvg)" >&2; exit 1; }
+    command -v potrace >/dev/null || { echo "potrace required (brew install potrace)" >&2; exit 1; }
     local set
     set=$(mktemp -d)/AppIcon.iconset
     mkdir -p "$set"
@@ -18,8 +19,15 @@ icons() {
         rsvg-convert -w $((size * 2)) -h $((size * 2)) "$logo/app-icon.svg" -o "$set/icon_${size}x${size}@2x.png"
     done
     iconutil -c icns "$set" -o "$logo/AppIcon.icns"
-    rsvg-convert -f pdf -w 36 -h 27 "$logo/logo-template.svg" -o "$logo/menubar-template.pdf"
-    rm -rf "$(dirname "$set")"
+    # Menu bar template (R20, owner 2026-10-25), 18 pt square. rsvg's PDF keeps the SVG
+    # mask as a soft mask that AppKit draws as nothing, so the template is drawn at
+    # 1024 px and traced into plain vector paths (identical at 72 px, measured).
+    local tmp
+    tmp=$(dirname "$set")
+    rsvg-convert -w 1024 -h 1024 --background-color white "$logo/logo-template.svg" -o "$tmp/template.png"
+    sips -s format bmp "$tmp/template.png" --out "$tmp/template.bmp" >/dev/null
+    potrace "$tmp/template.bmp" -b pdf -W 18pt -H 18pt -o "$logo/menubar-template.pdf"
+    rm -rf "$tmp"
 }
 
 if [[ "${1:-}" == icons ]]; then

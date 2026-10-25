@@ -593,6 +593,12 @@
     "rule": "orphan-dev-server",
     "text": "启动它的 tmux pane %266 已关闭，端口 8799 当前 0 个连接；启动后 10 分钟内涨到 9.7G，之后不再变化。",
     "action": "whoate kill 948211 948214 948215 948219"
+   },
+   "reclaimable_physical": {
+    "bytes": 9771050598,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -8376,6 +8382,83 @@
     "level": "ok",
     "rule": "swarm-spread",
     "text": "分散在多个归属里，各自 1–6 份。"
+   }
+  },
+  {
+   "signature": "[\"com.apple.WebKit\"]",
+   "label": "com.apple.WebKit",
+   "count": 12,
+   "mem_bytes": 1185729740,
+   "unknown_mem_count": 0,
+   "cpu_pct": 1.9,
+   "shape": "spread",
+   "owners": [
+    {
+     "id": "app:com.openai.codex",
+     "count": 4,
+     "mem_bytes": 483183820,
+     "cpu_pct": 1.2
+    },
+    {
+     "id": "app:com.anthropic.claudefordesktop",
+     "count": 3,
+     "mem_bytes": 325058560,
+     "cpu_pct": 0.4
+    },
+    {
+     "id": "app:com.brave.Browser",
+     "count": 2,
+     "mem_bytes": 125829120,
+     "cpu_pct": 0.1
+    },
+    {
+     "id": "service:7101",
+     "count": 1,
+     "mem_bytes": 94371840,
+     "cpu_pct": 0.0
+    },
+    {
+     "id": "service:7102",
+     "count": 1,
+     "mem_bytes": 83886080,
+     "cpu_pct": 0.0
+    },
+    {
+     "id": "service:7103",
+     "count": 1,
+     "mem_bytes": 73400320,
+     "cpu_pct": 0.2
+    }
+   ],
+   "parents": [
+    1
+   ],
+   "started_span_s": 7200.0,
+   "pids": [
+    996000,
+    996001,
+    996002,
+    996003,
+    996004,
+    996005,
+    996006,
+    996007,
+    996008,
+    996009,
+    996010,
+    996011
+   ],
+   "evidence": [
+    {
+     "kind": "same_executable",
+     "detail": "com.apple.WebKit.WebContent",
+     "confidence": "certain"
+    }
+   ],
+   "verdict": {
+    "level": "watch",
+    "rule": "swarm-spread",
+    "text": "各归属分别启动 com.apple.WebKit，共 12 份 1130.8 MiB；关掉闲置归属能一起释放"
    }
   }
  ],

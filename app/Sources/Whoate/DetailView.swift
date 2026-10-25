@@ -21,7 +21,8 @@ struct DetailView: View {
                             OwnerDetail(row: row, owner: owner, language: language, procs: model.procs(owner.id),
                                         report: model.report, select: { model.select($0) })
                         } else if let row, let swarm = model.report?.swarms.first(where: { $0.id == row.id }) {
-                            SwarmDetail(row: row, swarm: swarm, owners: model.report?.owners ?? [], language: language)
+                            SwarmDetail(row: row, swarm: swarm, owners: model.report?.owners ?? [], language: language,
+                                        select: { model.select($0) })
                         } else {
                             OverviewDetail(host: model.report?.host, language: language)
                         }
@@ -371,8 +372,52 @@ struct SwarmDetail: View {
     let swarm: Swarm
     let owners: [Owner]
     let language: Language
+    /// Opens a user's own details through AppModel.select (the R9 path).
+    var select: (String) -> Void
+
     var body: some View {
-        DetailHeaderView(header: Detail.header(swarm, row: row), row: row, language: language)
+        DetailHeaderView(header: Detail.header(swarm, row: row, language: language), row: row, language: language)
+        if Spread.isSpread(swarm) { spread } else { distribution }
+    }
+
+    /// R19: what it is in one sentence, who uses it, and what would help.
+    @ViewBuilder private var spread: some View {
+        let byID = Dictionary(owners.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let users = Spread.users(swarm, owners: byID, language: language)
+        Text(Spread.summary(swarm, users: users, language: language)).font(.body).fixedSize(horizontal: false, vertical: true)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(users.enumerated()), id: \.offset) { index, user in
+                    if index > 0 { Divider() }
+                    if let id = user.id {
+                        Button { select(id) } label: { userLine(user, link: true) }.buttonStyle(.plain)
+                    } else {
+                        userLine(user, link: false)
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+        } label: { Text(L10n.text(.spreadUsers, language)).font(.headline) }
+        Text(Spread.advice(users, owners: byID, language: language)).font(.callout).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func userLine(_ user: Spread.User, link: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text(user.name).lineLimit(1).truncationMode(.middle)
+                .foregroundStyle(link ? Color.accentColor : Color.secondary)
+            Spacer()
+            Text(L10n.format(.spreadCount, language, "\(user.count)")).foregroundStyle(.secondary)
+            Text(user.memBytes.map(Format.bytes) ?? "—").frame(minWidth: 52, alignment: .trailing)
+            Text("CPU " + Format.cpu(user.cpuPct)).foregroundStyle(.secondary).frame(minWidth: 72, alignment: .trailing)
+            // Kept on every line so the columns line up; only the lines that open show it.
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).opacity(link ? 1 : 0)
+        }
+        .font(.callout).monospacedDigit().padding(.vertical, 6).contentShape(Rectangle())
+    }
+
+    /// A burst group: how many copies each owner started.
+    private var distribution: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(swarm.owners.sorted { $0.count > $1.count }.enumerated()), id: \.offset) { index, member in

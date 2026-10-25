@@ -574,6 +574,8 @@ fn phase02_verdict_swarm_bilingual_action_and_rule_metadata() {
         owners: vec![SwarmOwner {
             id: "pane:demo".into(),
             count: 20,
+            mem_bytes: None,
+            cpu_pct: None,
         }],
         parents: vec![999001],
         started_span_s: Some(60.0),

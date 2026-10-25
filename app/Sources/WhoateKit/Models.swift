@@ -302,6 +302,10 @@ public struct Swarm: Decodable, Sendable, Equatable, Identifiable {
     public struct Member: Decodable, Sendable, Equatable {
         public var id: String
         public var count: Int
+        /// R19 (additive, optional): this owner's members' memory and CPU.
+        public var memBytes: UInt64?
+        public var cpuPct: Double?
+        enum CodingKeys: String, CodingKey, CaseIterable { case id, count, memBytes = "mem_bytes", cpuPct = "cpu_pct" }
     }
     public var signature: String
     public var label: String

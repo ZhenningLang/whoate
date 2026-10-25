@@ -174,6 +174,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 PanelActions.showMain(nil, open: open, dismiss: { self?.dismissPanel() })
             }
         }
+        if automation.mainWindow, let confirm = automation.confirm {
+            // Keys are pressed into this confirmation: nothing may reach a process.
+            model.kill = { pids, _ in
+                Self.killAttempts.add(pids.count)
+                let error = try? JSONDecoder().decode(FFIError.self, from: Data(#"{"code":1,"message":"automation: no signal sent"}"#.utf8))
+                return (1, .failure(error!))
+            }
+            at(automation.closeAt ?? 4) { [weak self] in self?.openCloseSheet(confirm, step: automation.closeStep) }
+        }
+        if let after = automation.escAfter { at(after) { [mainWindows] in Self.press(key: 53, "\u{1b}", in: mainWindows.all.first) } }
+        if let after = automation.returnAfter { at(after) { [mainWindows] in Self.press(key: 36, "\r", in: mainWindows.all.first) } }
         if let after = automation.mainCloseAfter { at(after) { [mainWindows] in mainWindows.closeAll() } }
         if let after = automation.quitAfter { at(after) { [quit] in quit() } }
         if let path = automation.stateFile { await recordState(to: path) }
@@ -232,10 +243,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     "occlusion_visible=\(main.occlusionState.contains(.visible))",
                     "hides_on_deactivate=\(main.hidesOnDeactivate)", "level=\(main.level.rawValue)",
                     "behavior=\(main.collectionBehavior.rawValue)", "window=\(main.windowNumber)",
-                    // R13: the window keeps its name (Window menu, Mission Control, the drawn title).
+                    // R15: the window's name is the wordmark (Window menu, Mission Control, the drawn title).
                     "title=\(main.title)", "title_shown=\(main.titleVisibility == .visible)",
                 ]
-                fields += Self.listSelection(main) + Self.toolbarGeometry(main)
+                fields += Self.listSelection(main) + Self.toolbarGeometry(main) + Self.closeSheet(main, close: model.close)
             }
             let line = fields.joined(separator: "\t")
             if line != last {
@@ -260,28 +271,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// whether the row lies wholly inside the list's visible part. The list is the
     /// second table from the left in the main window; the sidebar is the first.
     static func listSelection(_ window: NSWindow) -> [String] {
-        func tables(_ view: NSView) -> [NSTableView] {
-            (view as? NSTableView).map { [$0] } ?? view.subviews.flatMap(tables)
-        }
-        guard let content = window.contentView else { return [] }
-        let found = tables(content).sorted { $0.convert($0.bounds, to: nil).minX < $1.convert($1.bounds, to: nil).minX }
-        guard found.count >= 2 else { return ["list=missing"] }
-        let list = found[1], row = list.selectedRow
+        guard let list = listSelectionTable(window) else { return ["list=missing"] }
+        let row = list.selectedRow
         let inside = row >= 0 && list.visibleRect.insetBy(dx: -1, dy: -1).contains(list.rect(ofRow: row))
         return ["list_rows=\(list.numberOfRows)", "list_row=\(row)", "list_row_visible=\(inside)"]
     }
 
-    /// Automation only (R13 check): whether the brand icon loaded, the toolbar's height,
-    /// and the sort control's distance from the window's right edge. Hiding the system
-    /// title turns the toolbar compact and pulls that control left.
-    static func toolbarGeometry(_ window: NSWindow) -> [String] {
-        func segmented(_ view: NSView) -> NSSegmentedControl? {
-            (view as? NSSegmentedControl) ?? view.subviews.lazy.compactMap(segmented).first
+    static func listSelectionTable(_ window: NSWindow) -> NSTableView? {
+        func tables(_ view: NSView) -> [NSTableView] {
+            (view as? NSTableView).map { [$0] } ?? view.subviews.flatMap(tables)
         }
-        let sort = window.contentView?.superview.flatMap(segmented).map { $0.convert($0.bounds, to: nil) }
-        return ["brand_icon=\(BrandIcon.icon != nil)",
-                "toolbar_h=\(Int(window.frame.height - window.contentLayoutRect.height))",
-                "sort_right_gap=\(sort.map { "\(Int(window.frame.width - $0.maxX))" } ?? "-")"]
+        let found = window.contentView.map(tables)?.sorted { $0.convert($0.bounds, to: nil).minX < $1.convert($1.bounds, to: nil).minX }
+        return found.flatMap { $0.count >= 2 ? $0[1] : nil }
+    }
+
+    /// Automation only (R13/R15 check): the toolbar's height, the sort control's distance
+    /// from the window's right edge (hiding the system title turns the toolbar compact and
+    /// pulls that control left), and the title the system draws: whether it is there, how
+    /// far it starts from the list column's left edge (an item in front of it pushes it
+    /// right) and its vertical offset from the traffic lights.
+    static func toolbarGeometry(_ window: NSWindow) -> [String] {
+        func first<T: NSView>(_ view: NSView, _ match: (T) -> Bool) -> T? {
+            if let found = view as? T, match(found) { return found }
+            for sub in view.subviews { if let found = first(sub, match) { return found } }
+            return nil
+        }
+        func frame(_ view: NSView?) -> CGRect? { view.map { $0.convert($0.bounds, to: nil) } }
+        guard let frameView = window.contentView?.superview else { return [] }
+        let sort = frame(first(frameView) { (_: NSSegmentedControl) in true })
+        let title = frame(first(frameView) { (field: NSTextField) in !field.isHidden && field.stringValue == window.title })
+        let list = listSelectionTable(window).flatMap { frame($0.enclosingScrollView) }
+        let close = frame(window.standardWindowButton(.closeButton))
+        return ["toolbar_h=\(Int(window.frame.height - window.contentLayoutRect.height))",
+                "sort_right_gap=\(sort.map { "\(Int(window.frame.width - $0.maxX))" } ?? "-")",
+                "title_drawn=\(title != nil)",
+                "title_lead=\(title.flatMap { t in list.map { "\(Int(t.minX - $0.minX))" } } ?? "-")",
+                "title_dy=\(title.flatMap { t in close.map { "\(Int(abs(t.midY - $0.midY)))" } } ?? "-")"]
     }
 
     /// Screenshot entry: the same PanelView in an ordinary titled window,
@@ -303,7 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let rows = model.rows.filter { $0.source == .owner }
             let id = confirm != "first" ? confirm
                 : (rows.first(where: \.closable) ?? rows.first(where: { model.owner($0.id).map { !Panel.isProtected($0) } ?? false }))?.id
-            if let id { model.requestClose(id) }
+            if let id { model.requestClose(id, from: .panel) }
         }
         try? await Task.sleep(for: .milliseconds(600))
         window.setContentSize(window.contentView!.fittingSize)
@@ -349,6 +374,73 @@ extension AppDelegate {
                 NSApp.postEvent(event, atStart: false)
             }
         }
+    }
+}
+
+extension AppDelegate {
+    /// Automation only (R16): the main window's close confirmation for `id` ("selected":
+    /// the selected owner). Step "force" swaps in the second step with every pid still
+    /// running; it is made here from the confirmation, and no signal is ever sent.
+    func openCloseSheet(_ id: String, step: String?) {
+        guard let target = id == "selected" ? model.selectedOwnerID : id else { return }
+        model.requestClose(target, from: .main)
+        guard step == "force", case .confirm(let c) = model.close else { return }
+        let none: [String: Any] = ["unknown_count": 0]
+        let json: [String: Any] = [
+            "executed": true, "missing_targets": [String](),
+            "results": c.pids.map { ["pid": $0, "status": "still_alive"] },
+            "memory": ["before": none, "basis": "automation"],
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: json),
+              let result = try? JSONDecoder().decode(KillResult.self, from: data) else { return }
+        model.close = .result(KillOutcome(code: 0, result: result, language: model.language))
+    }
+
+    /// Automation only (R16): kill calls the dry-run sender received (must stay 0).
+    nonisolated static let killAttempts = Counter()
+    final class Counter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = 0
+        func add(_ n: Int) { lock.withLock { value += n } }
+        var count: Int { lock.withLock { value } }
+    }
+
+    /// Automation only (R16): one key press (Esc, Return) to the main window's sheet.
+    static func press(key: UInt16, _ characters: String, in window: NSWindow?) {
+        guard let target = window?.attachedSheet ?? window else { return }
+        for type in [NSEvent.EventType.keyDown, .keyUp] {
+            guard let event = NSEvent.keyEvent(
+                with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: target.windowNumber, context: nil, characters: characters,
+                charactersIgnoringModifiers: characters, isARepeat: false, keyCode: key) else { continue }
+            NSApp.postEvent(event, atStart: false)
+        }
+    }
+
+    /// Automation only (R16 check): the close step, the dry-run kill count, the dim
+    /// layer's frame, and the main window's sheet: its centre's offset from the
+    /// window's centre, size, and its buttons left to right (layout ids; SwiftUI
+    /// buttons are no NSButtons and expose no accessibility tree without a client).
+    static func closeSheet(_ window: NSWindow, close: AppModel.CloseFlow) -> [String] {
+        let step = switch close {
+        case .idle: "idle"
+        case .confirm: "confirm"
+        case .running: "running"
+        case .result(let o): o.stillAlive.isEmpty ? "result" : "result_still_alive"
+        case .forcing: "forcing"
+        case .failed: "failed"
+        }
+        let dim = RowFrames.main["close\tdim"].map { "\(Int($0.minX)),\(Int($0.minY)),\(Int($0.width)),\(Int($0.height))" }
+        let common = ["close=\(step)", "kill_attempts=\(killAttempts.count)", "dim=\(dim ?? "-")",
+                      "titlebar_dim=\(TitlebarDim.height(window))"]
+        guard let sheet = window.attachedSheet else { return common + ["sheet=none"] }
+        // Left to right: "esc" is the button bound to Esc, "destructive" the red one.
+        let buttons = RowFrames.sheet.filter { $0.key.hasPrefix("closeButton\t") }.sorted { $0.value.minX < $1.value.minX }
+            .map { String($0.key.dropFirst("closeButton\t".count)) }
+        let (s, w) = (sheet.frame, window.frame)
+        return common + ["sheet=\(Int(s.width))x\(Int(s.height))",
+                         "sheet_dx=\(Int(s.midX - w.midX))", "sheet_dy=\(Int(s.midY - w.midY))",
+                         "sheet_buttons=\(buttons.joined(separator: ","))"]
     }
 }
 
@@ -424,7 +516,7 @@ struct MenuBarGallery: View {
         case .symbol: "A · symbol"
         case .prefix: "B · ! prefix"
         case .word: "C · word"
-        case .systemSymbol: "D · memorychip"
+        case .systemSymbol: "D · pie logo"
         }
     }
 

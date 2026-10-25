@@ -305,6 +305,12 @@ pub enum Shape {
 pub struct SwarmOwner {
     pub id: String,
     pub count: usize,
+    /// R19 (additive): this owner's members' footprint and CPU, summed over the
+    /// members that could be read; absent when none could.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mem_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_pct: Option<f64>,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Swarm {

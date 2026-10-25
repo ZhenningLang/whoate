@@ -106,8 +106,13 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round4Tests.relationShowsNoTechnicalIdentifiers", Phase10Round4Tests.relationShowsNoTechnicalIdentifiers),
     ("Phase10Round4Tests.detailsDrawACpuCurveWithHoles", Phase10Round4Tests.detailsDrawACpuCurveWithHoles),
     ("Phase10Round4Tests.cpuReadsAsALowerBound", Phase10Round4Tests.cpuReadsAsALowerBound),
-    ("Phase10Round6Tests.mainWindowShowsTheAppIconBeforeItsTitle", Phase10Round6Tests.mainWindowShowsTheAppIconBeforeItsTitle),
+    ("Phase10Round6Tests.mainWindowTitleIsTheWordmark", Phase10Round6Tests.mainWindowTitleIsTheWordmark),
     ("Phase10Round6Tests.doubleClickedPanelRowsOpenTheirRow", Phase10Round6Tests.doubleClickedPanelRowsOpenTheirRow),
+    ("Phase10Round7Tests.closeConfirmationListsProgramsInPlainWords", Phase10Round7Tests.closeConfirmationListsProgramsInPlainWords),
+    ("Phase10Round7Tests.closeConfirmationIsOneSheetOverTheWholeWindow", Phase10Round7Tests.closeConfirmationIsOneSheetOverTheWholeWindow),
+    ("Phase10Round7Tests.gitMonitorReadsAsItsRepository", Phase10Round7Tests.gitMonitorReadsAsItsRepository),
+    ("Phase10Round7Tests.spreadGroupsAreNormalAndSayWhoUsesThem", Phase10Round7Tests.spreadGroupsAreNormalAndSayWhoUsesThem),
+    ("Phase10Round7Tests.menuBarShowsTheMonochromePie", { try Phase10Round7Tests.menuBarShowsTheMonochromePie() }),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))

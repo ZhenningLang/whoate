@@ -334,19 +334,33 @@ public final class AppModel {
         lastError = nil
     }
 
-    public func requestClose(_ ownerID: String) {
+    /// Where a close was asked for: the main window shows it as a sheet over the
+    /// whole window (R16), the panel as a card inside the panel.
+    public enum CloseOrigin: Sendable { case main, panel }
+    public private(set) var closeOrigin: CloseOrigin = .main
+    /// The signal sender; automation that presses keys in a confirmation swaps in one
+    /// that sends nothing (R16 check), so a wrong key can never end a process.
+    @ObservationIgnored public var kill: @Sendable ([Int32], Bool) -> (code: Int32, result: Decoded<KillResult>) = {
+        Engine.kill(pids: $0, force: $1)
+    }
+    /// The confirmation of the close in progress; the result step names its pids from it.
+    public private(set) var closing: KillConfirmation?
+
+    public func requestClose(_ ownerID: String, from origin: CloseOrigin = .main) {
         guard let owner = owner(ownerID) else { return }
-        close = .confirm(KillConfirmation(owner: owner, language: language))
+        let confirmation = KillConfirmation(owner: owner, language: language, procs: procs(ownerID))
+        (closeOrigin, closing, close) = (origin, confirmation, .confirm(confirmation))
     }
 
-    public func cancelClose() { close = .idle }
+    public func cancelClose() { (close, closing) = (.idle, nil) }
 
     /// Step one: SIGTERM, wait five seconds. Step two (force) only for pids the
     /// library reported still alive after step one.
     public func confirmClose(force: Bool = false) async {
         guard let step = begin(force: force) else { return }
         let (language, pids) = (language, step.pids)
-        let (code, result) = await Task.detached { Engine.kill(pids: pids, force: force) }.value
+        let kill = kill
+        let (code, result) = await Task.detached { kill(pids, force) }.value
         // The flow moved on while waiting (closed or replaced): drop the late answer.
         guard close == step.state else { return }
         switch (result, step.state) {

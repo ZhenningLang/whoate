@@ -36,7 +36,12 @@ enum Phase10DesignTests {
     }
 
     static func swarmSubtitleNamesItsMainOwners() throws {
-        var swarm = swarmJSON("exe:python3.13", mem: 74 << 20, count: 74)
+        try swarmSubtitle(shape: "burst")
+        try swarmSubtitle(shape: "spread")
+    }
+
+    static func swarmSubtitle(shape: String) throws {
+        var swarm = swarmJSON("exe:python3.13", mem: 74 << 20, count: 74, shape: shape)
         swarm["owners"] = (1...15).map { ["id": "agent:claude:s\($0)", "count": 3] }
             + (1...4).map { ["id": "agent:opencode:o\($0)", "count": 2] }
             + [["id": "orphan:7", "count": 1], ["id": "orphan:8", "count": 1], ["id": "app:com.anthropic.claude-code", "count": 19]]
@@ -44,7 +49,10 @@ enum Phase10DesignTests {
         let row = try require(RowNames.apply(Panel.rows(report, sort: .memory, language: .zh), report: report, language: .zh).first)
         // The title says "× 74"; the subtitle spends its width on the owners (design round 1, finding 1).
         expect(row.title == "exe:python3.13 × 74")
-        expect(row.subtitle == "分属 22 个归属：Claude Code 会话 15、opencode 会话 4、孤儿进程 2…", row.subtitle)
+        // R19 (owner 2026-10-25): a spread group counts processes, the unit its details list;
+        // owners outside the report say nothing about the app: one "not recognised" line.
+        expect(row.subtitle == (shape == "burst" ? "分属 22 个归属：Claude Code 会话 15、opencode 会话 4、孤儿进程 2…"
+                                : "74 个进程：没认出是哪个应用 74"), row.subtitle)
     }
 
     static func menuBarItemIsNeverColoured() throws {
@@ -59,7 +67,8 @@ enum Phase10DesignTests {
         expect(MenuBarItem.label(critical, style: .symbol, language: .zh).image == .symbol("exclamationmark.triangle.fill"))
         expect(MenuBarItem.label(warn, style: .prefix, language: .zh).text == "! 41.0G")
         expect(MenuBarItem.label(critical, style: .word, language: .en).text == "41.0G critical")
-        expect(MenuBarItem.label(normal, style: .systemSymbol, language: .zh).image == .symbol("memorychip"))
+        // R20 (owner 2026-10-25): the pie logo replaces the memory-chip symbol when normal.
+        expect(MenuBarItem.label(normal, style: .systemSymbol, language: .zh) == .init(image: .logo, text: "41.0G"))
         expect(MenuBarItem.label(warn, style: .systemSymbol, language: .zh).image == .symbol("exclamationmark.triangle"))
         // Feedback 5: no tinted bitmap path is left in the app sources.
         for file in ["WhoateApp.swift", "PanelView.swift", "Palette.swift"] {

@@ -35,8 +35,17 @@ public enum PanelActions {
 /// The one quit path for the panel button, ⌘Q and automation.
 public struct QuitAction: Sendable {
     private let terminate: @MainActor @Sendable () -> Void
-    public init(terminate: @escaping @MainActor @Sendable () -> Void = { NSApplication.shared.terminate(nil) }) {
+    public init(terminate: @escaping @MainActor @Sendable () -> Void = { QuitAction.terminateApp() }) {
         self.terminate = terminate
+    }
+    /// A sheet on a window (R16's close confirmation) makes NSApp.terminate do nothing
+    /// (measured 2026-10-25: a test instance outlived its quit by 30 minutes), so the
+    /// sheets go first; dismissing the close sheet cancels the close.
+    @MainActor public static func terminateApp() {
+        for window in NSApp.windows {
+            if let sheet = window.attachedSheet { window.endSheet(sheet) }
+        }
+        NSApplication.shared.terminate(nil)
     }
     @MainActor public func callAsFunction() { terminate() }
 }

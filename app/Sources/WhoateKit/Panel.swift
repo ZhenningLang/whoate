@@ -75,10 +75,12 @@ public enum Panel {
                 kind: o.kind, rule: o.verdict.rule)
         }
         let swarms = report.swarms.map { s in
-            PanelRow(
-                id: s.id, source: .swarm, title: "\(s.label) × \(s.count)", memBytes: s.memBytes,
-                cpuPct: s.cpuPct, subtitle: subtitle(s, language), level: s.verdict.level,
-                pill: pill(s, language), pillLevel: s.verdict.level, history: [], closable: false,
+            // R19: a spread group is normal in the GUI (not in "needs action", grey pill); the core's level stays.
+            let level = Spread.isSpread(s) ? .ok : s.verdict.level
+            return PanelRow(
+                id: s.id, source: .swarm, title: "\(Spread.name(s, language)) × \(s.count)", memBytes: s.memBytes,
+                cpuPct: s.cpuPct, subtitle: subtitle(s, language), level: level,
+                pill: pill(s, language), pillLevel: level, history: [], closable: false,
                 unknownMemCount: s.unknownMemCount, cpuReadable: s.cpuPctReadable, unknownCPUCount: s.unknownCPUCount,
                 members: s.owners.map(\.id))
         }
@@ -133,7 +135,7 @@ public enum Panel {
     public static func pill(_ s: Swarm, _ language: Language) -> String {
         switch s.shape {
         case .burst: return L10n.text(.possibleRunaway, language)
-        case .spread: return L10n.text(.sharedAcross, language)
+        case .spread: return L10n.text(.usedByApps, language)
         case .unknown: return L10n.text(s.verdict.level == .ok ? .normal : .watch, language)
         }
     }
@@ -166,6 +168,12 @@ public enum Panel {
 
     public static func subtitle(_ o: Owner, _ language: Language) -> String {
         if let agent = o.agent { return agentSubtitle(o, agent, language) }
+        if RowNames.isGitMonitor(o) {
+            // R17: the repository, and how many daemons (one per worktree).
+            var parts = [o.origin?.cwd.map { abbreviate($0) } ?? L10n.text(.gitMonitorNoRepo, language)]
+            if o.pids.count > 1 { parts.append(L10n.format(.gitMonitorCopies, language, "\(o.pids.count)")) }
+            return parts.joined(separator: " · ")
+        }
         var parts: [String] = []
         if let origin = o.origin {
             if origin.paneAlive == false {

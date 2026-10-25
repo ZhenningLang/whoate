@@ -34,10 +34,13 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case used, compressed, swap, sortMemory, sortCPU
     case refreshEvery, systemProcsAgo, systemProcsMissing, openWhoate, quit
     case details, close, normal, systemProcess, systemService
-    case considerClosing, possibleLeak, growing, idleFor, possibleRunaway, sharedAcross, watch, eachAbout, adviceOne
+    case considerClosing, possibleLeak, growing, idleFor, possibleRunaway, usedByApps, watch, eachAbout, adviceOne
+    case webContent, spreadUnknown, spreadSomeApps, spreadUnknownClause, spreadAndMore, spreadWebKit, spreadGeneric, spreadAdvice
+    case spreadVerbOne, spreadVerbEach, spreadNoneRecognised
+    case spreadAdviceGeneric, spreadSubtitle, spreadUsers, spreadCount, processGroupLine
     case adviceCount, processCount, paneClosed, ports, copies
     case engineFailed, engineRetrying, loading, noOwners
-    case confirmTitle, confirmPIDs, estimateLabel, estimateUnknown, estimateBasis
+    case confirmTitle, estimateUnknown, estimateBasis, processNumber
     case confirmButton, cancel, protectedHint, terminating
     case resultTitle, terminated, stillAlive, refused, missing, unknownStatus
     case observedChange, notMeasured, observedBasis
@@ -63,6 +66,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case relationPaneClosed, relationApp, relationSession, relationMCP, relationExited, copyEvidence
     case howOwnApp, howSession, howCodex, howPane, howLauncher, howNoSession, howPaneClosed, howOrphan
     case howResponsible, howOtherUser, howService, howDefault
+    case gitMonitor, gitMonitorOf, gitMonitorCopies, gitMonitorNoRepo, howGitMonitor, howGitMonitorNoRepo, gitMonitorAdvice
     case copyHeader, copyOwner, copySession, copyKind, copyKindAgent, copyMemory, copyUnknown, copyCwd
     case copyTmux, copyWindow, copyReason, copySuggestion, copyProcesses, copyMore, copyNoArgv
     case lastActive
@@ -95,7 +99,27 @@ public enum L10n {
         .growing: ("还在涨", "Still growing"),
         .idleFor: ("空闲 %@", "Idle %@"),
         .possibleRunaway: ("疑似失控", "Possible runaway"),
-        .sharedAcross: ("关掉闲置归属可一起释放", "Freed with idle owners"),
+        .usedByApps: ("多个应用在用", "Used by several apps"),
+        .webContent: ("网页内容进程（WebKit）", "Web content processes (WebKit)"),
+        .spreadUnknown: ("没认出是哪个应用", "App not recognised"),
+        .spreadSomeApps: ("多个应用", "Several apps"),
+        .spreadVerbOne: ("用", "uses"),
+        .spreadVerbEach: ("各自用", "each use"),
+        .spreadNoneRecognised: ("（都没认出是哪个应用）", " (none of them recognised)"),
+        .spreadUnknownClause: ("（另有 %@ 个进程没认出是哪个应用）", " (%@ more processes from apps not recognised)"),
+        .spreadAndMore: (" 等 %@ 个应用", " and others (%@ apps)"),
+        .spreadWebKit: ("%@%@ macOS 的网页组件显示内容%@，每个页面或窗口一个进程，一共 %@ 个，占 %@。这是正常现象。",
+                        "%@ %@ macOS's web component to show content%@, one process per page or window: %@ in all, using %@. This is normal."),
+        .spreadGeneric: ("%@%@ %@%@，一共 %@ 个进程，占 %@。这是正常现象，不是失控。",
+                         "%@ %@ %@%@: %@ processes in all, using %@. This is normal, not a runaway."),
+        .spreadAdvice: ("想省内存，就关掉占得最多又暂时不用的那个应用，比如 %@（%@）。",
+                        "To save memory, quit the app that uses the most and that you don't need now, for example %@ (%@)."),
+        .spreadAdviceGeneric: ("想省内存，就关掉暂时不用的应用，它开的这些进程会跟着退出。",
+                               "To save memory, quit apps you don't need now; their processes quit with them."),
+        .spreadSubtitle: ("%@ 个进程：%@", "%@ processes: %@"),
+        .spreadUsers: ("谁在用", "Who uses them"),
+        .spreadCount: ("%@ 个", "%@"),
+        .processGroupLine: ("进程群 · %@ 个进程", "Process group · %@ processes"),
         .watch: ("留意", "Watch"),
         .eachAbout: ("单个约 %@", "~%@ each"),
         .adviceOne: ("有 1 条建议", "1 suggestion"),
@@ -109,10 +133,9 @@ public enum L10n {
         .loading: ("正在采样…", "Sampling…"),
         .noOwners: ("没有可显示的归属", "Nothing to show"),
         .confirmTitle: ("关闭「%@」？", "Close “%@”?"),
-        .confirmPIDs: ("将向这些进程发送结束信号：", "These processes will be asked to quit:"),
-        .estimateLabel: ("预计腾出物理内存", "Estimated physical memory freed"),
         .estimateUnknown: ("无法预估（%@ 个进程测不到）", "Cannot estimate (%@ unmeasured)"),
-        .estimateBasis: ("按驻留内存粗估，含共享页，不保证", "RSS estimate incl. shared pages; not guaranteed"),
+        .estimateBasis: ("按常驻内存估算，含共享部分，实际腾出的可能更少。", "Estimated from resident memory, shared pages included; the real amount freed may be less."),
+        .processNumber: ("进程号 %@", "PID %@"),
         .confirmButton: ("结束进程", "Quit processes"),
         .cancel: ("取消", "Cancel"),
         .protectedHint: ("系统进程，勿关", "System process; do not terminate"),
@@ -140,7 +163,7 @@ public enum L10n {
         .reasonPlatformBinary: ("macOS 自带程序", "macOS system binary"),
         .reasonPlatformProbeFailed: ("无法确认是否为系统程序", "could not check for a system binary"),
         .reasonNoConfirmedPlan: ("不在已确认的关闭列表里", "not in the confirmed close list"),
-        .mainWindowTitle: ("whoate", "whoate"),
+        .mainWindowTitle: ("WHO-ATE", "WHO-ATE"),
         .mainWindowPending: ("三栏主窗口在下一期提供，当前列出全部归属。", "The three-column window arrives next; all owners are listed for now."),
         .showMain: ("完整面板", "Full Panel"),
         .cpuHeadline: ("整机 CPU %@", "CPU %@"),
@@ -221,8 +244,8 @@ public enum L10n {
         .restartNotRun: ("没有可用的重启命令", "No restart command"),
         .facts: ("实测数据", "Measured facts"),
         .linuxNote: ("Docker 数字按 Linux 口径统计", "Docker figures use Linux accounting"),
-        .confirmSummary: ("将结束 %@ 个进程，预计腾出 %@", "Ends %@ processes, frees about %@"),
-        .confirmSummaryUnknown: ("将结束 %@ 个进程，预计腾出：无法预估", "Ends %@ processes; memory freed: cannot estimate"),
+        .confirmSummary: ("会结束 %@ 个进程，预计腾出约 %@ 内存。", "Ends %@ processes and frees about %@ of memory."),
+        .confirmSummaryUnknown: ("会结束 %@ 个进程，腾出多少内存无法预估。", "Ends %@ processes; cannot estimate the memory freed."),
         .paneSessions: ("这个 pane 里的助手会话", "Agent sessions in this pane"),
         .paneSessionsLine: ("会话：%@", "Sessions: %@"),
         .andMore: ("等 %@ 个", "%@ in all"),
@@ -257,6 +280,16 @@ public enum L10n {
         .howResponsible: ("macOS 记录是 %@ 让它运行的。", "macOS records that %@ had it run."),
         .howOtherUser: ("属于系统账户的进程。", "Processes of a system account."),
         .howService: ("macOS 的后台服务，归不到具体软件。", "A macOS background service that belongs to no app."),
+        .gitMonitor: ("git 文件监视", "git fsmonitor"),
+        .gitMonitorOf: ("git 文件监视 · %@", "git fsmonitor · %@"),
+        .gitMonitorCopies: ("×%@（含工作树）", "×%@ (incl. worktrees)"),
+        .gitMonitorNoRepo: ("仓库读不到", "repository unreadable"),
+        .gitMonitorAdvice: ("git 自带的后台程序，让 git status 更快。关了也会在下次用 git 时自动重开，一般不用管。",
+                            "git's own background helper that makes git status faster. If closed, git starts it again the next time it runs; usually nothing to do."),
+        .howGitMonitor: ("这是 git 为 %@ 开的文件监视后台，git 故意让它脱离终端运行。",
+                         "git started this file-watching helper for %@ and detached it from the terminal on purpose."),
+        .howGitMonitorNoRepo: ("这是 git 开的文件监视后台（仓库读不到），git 故意让它脱离终端运行。",
+                               "git started this file-watching helper (repository unreadable) and detached it from the terminal on purpose."),
         .howDefault: ("按进程的父子关系归到这里。", "Grouped here by parent and child processes."),
         .copyHeader: ("whoate 归属信息 · %@ · 帮我判断保留还是关闭。不含对话内容。",
                       "whoate owner info · %@ · Help me decide whether to keep or close it. No conversation content."),

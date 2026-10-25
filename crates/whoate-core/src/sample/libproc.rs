@@ -144,6 +144,11 @@ pub trait ProcessReader {
     fn cwd(&mut self, pid: i32) -> SampleResult<String>;
     fn args(&mut self, pid: i32) -> SampleResult<sysctl::ProcArgs>;
     fn responsible_pid(&mut self, pid: i32) -> Option<i32>;
+    /// Unix socket paths and directories the process holds open, sockets first;
+    /// asked only of git fsmonitor daemons (R17).
+    fn open_paths(&mut self, _pid: i32) -> Vec<String> {
+        vec![]
+    }
 }
 
 pub fn enrich_proc(
@@ -186,6 +191,9 @@ pub fn enrich_proc(
                 candidate.codex_thread_id = args.codex_thread_id;
             }
             Err(error) => errors.push(error),
+        }
+        if crate::attribute::git_fsmonitor(&candidate.argv) {
+            candidate.git_dir = crate::attribute::git_dir_of(&reader.open_paths(proc.pid));
         }
     }
     if reader
@@ -246,6 +254,115 @@ impl ProcessReader for NativeProcessReader<'_> {
     fn responsible_pid(&mut self, pid: i32) -> Option<i32> {
         responsible_pid(pid)
     }
+    fn open_paths(&mut self, pid: i32) -> Vec<String> {
+        open_paths(pid)
+    }
+}
+
+/// `struct proc_fileinfo` and `struct vnode_fdinfowithpath` (sys/proc_info.h);
+/// the locked libc has neither, nor PROC_PIDFDVNODEPATHINFO.
+#[repr(C)]
+struct ProcFileInfo {
+    fi_openflags: u32,
+    fi_status: u32,
+    fi_offset: i64,
+    fi_type: i32,
+    fi_guardflags: u32,
+}
+#[repr(C)]
+struct VnodeFdInfoWithPath {
+    pfi: ProcFileInfo,
+    pvip: libc::vnode_info_path,
+}
+const PROC_PIDFDVNODEPATHINFO: libc::c_int = 2;
+const VDIR: libc::c_int = 2;
+/// `struct socket_fdinfo` is a deep union; only two fields are read, at the
+/// offsets the macOS SDK's sys/proc_info.h gives (measured with offsetof,
+/// 2026-10-25): `psi.soi_kind` and the unix socket's `sun_path` (104 bytes).
+const PROC_PIDFDSOCKETINFO: libc::c_int = 3;
+const PROX_FDTYPE_SOCKET: u32 = 2;
+const SOCKET_FDINFO_SIZE: usize = 792;
+const SOI_KIND_OFFSET: usize = 256;
+const SOCKINFO_UN: i32 = 3;
+const SUN_PATH_OFFSET: usize = 282;
+const SUN_PATH_LEN: usize = 104;
+
+/// The process's open descriptors; empty when the list cannot be read.
+fn open_fds(pid: i32) -> Vec<libc::proc_fdinfo> {
+    let item = size_of::<libc::proc_fdinfo>();
+    let bytes =
+        unsafe { libc::proc_pidinfo(pid, libc::PROC_PIDLISTFDS, 0, std::ptr::null_mut(), 0) };
+    if bytes <= 0 {
+        return vec![];
+    }
+    // Room for a few descriptors opened between the two calls.
+    let mut fds = vec![unsafe { zeroed::<libc::proc_fdinfo>() }; bytes as usize / item + 8];
+    let bytes = unsafe {
+        libc::proc_pidinfo(
+            pid,
+            libc::PROC_PIDLISTFDS,
+            0,
+            fds.as_mut_ptr().cast(),
+            (fds.len() * item) as i32,
+        )
+    };
+    fds.truncate(bytes.max(0) as usize / item);
+    fds
+}
+
+/// R17: the unix socket paths, then the directories, a process holds open (a git
+/// fsmonitor daemon listens on `<git dir>/fsmonitor--daemon.ipc`).
+pub fn open_paths(pid: i32) -> Vec<String> {
+    let fds = open_fds(pid);
+    let sockets = fds
+        .iter()
+        .filter(|fd| fd.proc_fdtype == PROX_FDTYPE_SOCKET)
+        .filter_map(|fd| {
+            let mut buffer = [0_u64; SOCKET_FDINFO_SIZE / 8];
+            let read = unsafe {
+                libc::proc_pidfdinfo(
+                    pid,
+                    fd.proc_fd,
+                    PROC_PIDFDSOCKETINFO,
+                    buffer.as_mut_ptr().cast(),
+                    SOCKET_FDINFO_SIZE as i32,
+                )
+            };
+            let bytes: &[u8] =
+                unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast(), SOCKET_FDINFO_SIZE) };
+            let kind = i32::from_ne_bytes(
+                bytes[SOI_KIND_OFFSET..SOI_KIND_OFFSET + 4]
+                    .try_into()
+                    .ok()?,
+            );
+            let path = &bytes[SUN_PATH_OFFSET..SUN_PATH_OFFSET + SUN_PATH_LEN];
+            let path = &path[..path.iter().position(|b| *b == 0).unwrap_or(SUN_PATH_LEN)];
+            (read as usize == SOCKET_FDINFO_SIZE && kind == SOCKINFO_UN && !path.is_empty())
+                .then(|| String::from_utf8_lossy(path).into_owned())
+        });
+    let dirs = fds
+        .iter()
+        .filter(|fd| fd.proc_fdtype == libc::PROX_FDTYPE_VNODE as u32)
+        .filter_map(|fd| {
+            let mut info = unsafe { zeroed::<VnodeFdInfoWithPath>() };
+            let size = size_of::<VnodeFdInfoWithPath>();
+            let read = unsafe {
+                libc::proc_pidfdinfo(
+                    pid,
+                    fd.proc_fd,
+                    PROC_PIDFDVNODEPATHINFO,
+                    (&mut info as *mut VnodeFdInfoWithPath).cast(),
+                    size as i32,
+                )
+            };
+            (read as usize == size && info.pvip.vip_vi.vi_type == VDIR)
+                .then(|| char_array(info.pvip.vip_path.as_slice().as_flattened()))
+        });
+    sockets
+        .collect::<Vec<_>>()
+        .into_iter()
+        .chain(dirs)
+        .collect()
 }
 
 pub fn footprint(pid: i32) -> SampleResult<(u64, u64)> {

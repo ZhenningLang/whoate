@@ -73,6 +73,62 @@ pub fn is_runtime(proc: &Proc) -> bool {
             .is_some_and(|v| !v.is_empty() && v.bytes().all(|b| b.is_ascii_digit() || b == b'.'))
 }
 
+/// A detached `git fsmonitor--daemon` (R17, owner 2026-10-25): git starts it
+/// for a repository with `core.fsmonitor` and detaches it from the terminal on
+/// purpose, so a closed pane in its environment says nothing about it.
+pub fn git_fsmonitor(argv: &[String]) -> bool {
+    argv.first()
+        .is_some_and(|exe| exe.rsplit('/').next() == Some("git"))
+        && argv.get(1).is_some_and(|a| a == "fsmonitor--daemon")
+        && argv.iter().any(|a| a == "--detach")
+}
+
+/// The git dir a daemon serves: from its `<git dir>/fsmonitor--daemon.ipc`
+/// socket, else from its open directories: `<repo>/.git`, or a worktree's
+/// `<repo>/.git/worktrees/<name>` (preferred: it names the worktree).
+pub fn git_dir_of(paths: &[String]) -> Option<String> {
+    let is_git_dir = |d: &str| {
+        git_repository(d).is_some_and(|repo| {
+            let tail = &d[repo.len()..];
+            tail == "/.git"
+                || tail
+                    .strip_prefix("/.git/worktrees/")
+                    .is_some_and(|name| !name.is_empty() && !name.contains('/'))
+        })
+    };
+    if let Some(dir) = paths
+        .iter()
+        .filter_map(|p| p.strip_suffix("/fsmonitor--daemon.ipc"))
+        .find(|d| is_git_dir(d))
+    {
+        return Some(dir.into());
+    }
+    paths
+        .iter()
+        .filter(|d| is_git_dir(d))
+        .max_by_key(|d| d.len())
+        .cloned()
+}
+
+/// An opaque, stable key for a repository path (FNV-1a, 64 bit). Owner ids stay
+/// as they are under `--redact`, so a path never goes into one; the path itself
+/// is the owner's `origin.cwd`, which `--redact` hides (round 7 review B1).
+pub fn repository_key(path: &str) -> String {
+    let hash = path.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
+    });
+    format!("{hash:016x}")
+}
+
+/// The repository a git dir belongs to: the path before its `/.git` component.
+pub fn git_repository(git_dir: &str) -> Option<&str> {
+    git_dir
+        .match_indices("/.git")
+        .find(|(i, m)| matches!(git_dir.as_bytes().get(i + m.len()), None | Some(b'/')))
+        .map(|(i, _)| &git_dir[..i])
+        .filter(|repo| !repo.is_empty())
+}
+
 /// Session display name. A name the tool derived itself (Claude Code's
 /// `7-74`) says less than the session title; a name the user chose wins.
 pub fn agent_label(agent: &Agent) -> String {
@@ -334,8 +390,11 @@ pub fn attribute(
     for proc in &snap.procs {
         let (chain, reaches_launchd) = ancestors(proc, &index);
         let root = *chain.last().unwrap_or(&proc);
+        // R17: a git fsmonitor daemon belongs to its repository, never to a pane.
+        let monitor = git_fsmonitor(&proc.argv);
         let pane = chain
             .iter()
+            .filter(|_| !monitor)
             .find_map(|p| snap.tmux_panes.iter().find(|pane| pane.pane_pid == p.pid));
         // The pane pid itself may exec an agent. Prefer an actual session;
         // name-only subdivision is valid only inside a pane, at its outer root.
@@ -357,7 +416,7 @@ pub fn attribute(
             .find(|(_, a)| a.session_id.is_some())
             .copied()
             .or_else(|| pane.and_then(|_| candidates.last().copied()));
-        let environment_pane = reaches_launchd
+        let environment_pane = (reaches_launchd && !monitor)
             .then(|| chain.iter().find_map(|p| p.tmux_pane.as_ref()))
             .flatten();
         let mut evidence = vec![];
@@ -406,7 +465,30 @@ pub fn attribute(
                 },
             ));
         }
-        let (id, kind, label, owner_agent) = if let Some((agent_proc, agent)) = agent {
+        let (id, kind, label, owner_agent) = if monitor {
+            // Worktrees share their main repository's row (spec R17 leaves the choice).
+            let repo = proc.git_dir.as_deref().and_then(git_repository);
+            evidence.push(match &proc.git_dir {
+                Some(dir) => Evidence::new("git_fsmonitor", dir.clone(), Confidence::Certain),
+                None => Evidence::new("git_fsmonitor", "repository unreadable", Confidence::Weak),
+            });
+            if let Some(repo) = repo {
+                origin.cwd = Some(repo.into());
+            }
+            let name = repo.and_then(|r| Path::new(r).file_name()?.to_str());
+            (
+                repo.map_or_else(
+                    || "service:git-fsmonitor".into(),
+                    |r| format!("service:git-fsmonitor:{}", repository_key(r)),
+                ),
+                OwnerKind::Service,
+                name.map_or_else(
+                    || "git fsmonitor".into(),
+                    |n| format!("git fsmonitor · {n}"),
+                ),
+                None,
+            )
+        } else if let Some((agent_proc, agent)) = agent {
             agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else if let Some(pane) = pane {
             (

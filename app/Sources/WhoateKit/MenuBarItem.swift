@@ -12,7 +12,8 @@ public enum MenuBarItem {
         case prefix
         /// C: the pressure word after the number.
         case word
-        /// D: a system symbol even when normal (the logo reads as "…." at 18 pt); alerts as in A.
+        /// D: alerts as in A. Until R20 it also showed a system symbol when normal (the old
+        /// logo read as "…." at 18 pt); since the pie logo (owner 2026-10-25) every style shows it.
         case systemSymbol
     }
 
@@ -33,7 +34,7 @@ public enum MenuBarItem {
         switch image {
         case .logo:
             made = (logo?.copy() as? NSImage) ?? NSImage(systemSymbolName: "memorychip", accessibilityDescription: "whoate")!
-            made.size = NSSize(width: 18, height: 14)
+            made.size = NSSize(width: 18, height: 18)
         case .symbol(let name):
             made = NSImage(systemSymbolName: name, accessibilityDescription: "whoate")
                 ?? NSImage(systemSymbolName: "memorychip", accessibilityDescription: "whoate")!
@@ -46,7 +47,8 @@ public enum MenuBarItem {
         let used = host.map { Format.bytes($0.memUsedBytes) } ?? "—"
         let pressure = host?.pressure ?? .unknown
         guard pressure == .warn || pressure == .critical else {
-            return Label(image: style == .systemSymbol ? .symbol("memorychip") : .logo, text: used)
+            // R20: the monochrome bitten-pie template, the number after it as before.
+            return Label(image: .logo, text: used)
         }
         let critical = pressure == .critical
         switch style {

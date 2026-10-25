@@ -103,13 +103,17 @@ public struct DetailActions: Equatable, Sendable {
 
 public enum Detail {
     public static func header(_ owner: Owner, row: PanelRow, language: Language) -> DetailHeader {
-        DetailHeader(kindLine: kindLine(owner, language), title: row.title, subtitle: row.subtitle, pill: row.pill,
-                     pillLevel: row.pillLevel, verdict: owner.verdict.level == .ok ? nil : owner.verdict.text)
+        // R17: git's fsmonitor reads as normal; the plain-words line is ours (the core's verdict table is frozen).
+        let advice = RowNames.isGitMonitor(owner) ? L10n.text(.gitMonitorAdvice, language) : nil
+        return DetailHeader(kindLine: kindLine(owner, language), title: row.title, subtitle: row.subtitle, pill: row.pill,
+                            pillLevel: row.pillLevel, verdict: owner.verdict.level == .ok ? advice : owner.verdict.text)
     }
 
-    public static func header(_ swarm: Swarm, row: PanelRow) -> DetailHeader {
-        DetailHeader(kindLine: swarm.signature, title: row.title, subtitle: row.subtitle, pill: row.pill,
-                     pillLevel: row.pillLevel, verdict: swarm.verdict.level == .ok ? nil : swarm.verdict.text)
+    /// R19: no raw signature on top; a spread group's plain-words summary is its own card.
+    public static func header(_ swarm: Swarm, row: PanelRow, language: Language) -> DetailHeader {
+        DetailHeader(kindLine: L10n.format(.processGroupLine, language, "\(swarm.count)"), title: row.title,
+                     subtitle: row.subtitle, pill: row.pill, pillLevel: row.pillLevel,
+                     verdict: Spread.isSpread(swarm) || swarm.verdict.level == .ok ? nil : swarm.verdict.text)
     }
 
     static func kindLine(_ owner: Owner, _ language: Language) -> String {
@@ -435,7 +439,12 @@ public enum Detail {
                 .max { ranks[$0, default: 1] < ranks[$1, default: 1] }
         }
         var sentence: String, decided: Confidence?
-        if kinds.contains("responsible_launcher") {
+        if RowNames.isGitMonitor(owner) {
+            // R17: recognised from its own command line, so never a guess.
+            sentence = RowNames.gitMonitorRepo(owner).map { L10n.format(.howGitMonitor, language, $0) }
+                ?? L10n.text(.howGitMonitorNoRepo, language)
+            decided = .certain
+        } else if kinds.contains("responsible_launcher") {
             sentence = L10n.format(.howLauncher, language, owner.agent.map { RowNames.tool($0.tool) } ?? name)
             decided = weakest(["responsible_launcher"])
         } else if let agent = owner.agent, owner.kind == .agentSession {

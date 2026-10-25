@@ -82,7 +82,7 @@
 | 中栏 | `List` + `.listStyle(.inset)`，系统内容背景 |
 | 详情区 | 窗口背景 |
 | 详情卡 | `GroupBox`（系统分组背景），不用自绘圆角卡片 |
-| 关闭确认卡（面板与详情区的浮层） | `.regularMaterial` 圆角 12，描边 `.separator` |
+| 关闭确认（R16，owner 2026-10-25） | 主窗口：系统 sheet，macOS 负责居中与键盘焦点，宽 440；后面整窗（三栏）盖一层 40% 黑。面板：同一张卡片（`CloseCard`）放在面板正中，`.regularMaterial` 圆角 12，描边 `.separator`，阴影，后面同样 40% 黑。两处各管自己发起的关闭，不互相弹出 |
 | 内容层 | 不用 Liquid Glass |
 
 依据：HIG Materials「Don't use Liquid Glass in the content layer」；侧栏、弹出面板这类组件交给系统材质。HIG Sidebars（侧栏用系统样式）。
@@ -95,7 +95,7 @@
 | 退出（Quit） | 独立按钮，无边框（`.borderless`）、次要色文字，保留 ⌘Q | 面板底栏最左，与「完整面板」隔着整条状态文字 |
 | 行内「详情」 | 标准按钮，小尺寸 | 面板行第二行右侧 |
 | 行内「关闭」 | 标准按钮 + `role: .destructive`，文字系统红（有边框的标准按钮不吃 tint，所以直接给文字上色），小尺寸，不当主按钮 | 紧跟「详情」 |
-| 确认框「结束进程」「强制结束」 | `role: .destructive`，不设为默认按钮；「取消」绑 Esc；标题下一行写「将结束 N 个进程，预计腾出 X」 | 确认卡右下 |
+| 确认框「结束进程」「强制结束」 | `role: .destructive`，红色填充（`.borderedProminent` + `.tint(.red)`），大尺寸；不设为默认按钮，回车不触发；「取消」「完成」绑 Esc | 确认框右下，在「取消」右边 |
 | 详情「跳到这个 pane」 | 标准按钮；不在 tmux 的会话按钮置灰，旁边写「不在 tmux 里」 | 详情底部最左 |
 | 详情「复制相关信息」（Copy Details） | 标准按钮；写剪贴板后旁边显示「已复制」2 秒 | 跳转按钮右侧 |
 | 详情「关闭 N 个进程…」 | `role: .destructive` + `.borderedProminent` + `.tint(.red)`（红底；窗口不在前台时系统把它画成灰底，和其他突出按钮一样），不设为默认按钮，只打开两段确认；系统进程置灰并提示「系统进程，勿关」 | 详情底部最右，和其他按钮之间用弹性空白隔开 |
@@ -108,16 +108,18 @@
 
 面板行双击（owner 2026-10-25 点验 R14）：双击行的任意空白或文字处，和行内「详情」走同一条路（打开或提前主窗口、左栏切到所属分类、中栏选中并滚到中间、面板收起）；同类进程群行没有按钮，双击是它打开主窗口的入口，主窗口里没有这一行时选它占内存最大的成员归属，都没有就只开窗口。「详情」「关闭」、建议胶囊保留自己的点击，双击它们不触发；单击行不做任何事。
 
-主窗口标题（owner 2026-10-25 点验 R13）：工具栏最左放 20 pt 的 app 图标（与 Dock 同一个 `AppIcon.icns`），系统照常在它右边画窗口标题「whoate」当字标；不另画字标、不加计数或分类名。不隐藏系统标题：实测隐藏后工具栏变成紧凑高度，右侧的压力胶囊和「内存 / CPU」被拉到左边。
+主窗口标题（owner 2026-10-25 复查 R15，推翻 R13 的「图标＋whoate」）：工具栏最左只有大写字标「WHO-ATE」，就是系统画的窗口标题，中英文界面相同；前面不放图标，不另画字标，不加计数或分类名。Window 菜单、调度中心里的窗口名也是「WHO-ATE」；app 名、Dock 名、菜单栏和小面板仍是 whoate。不隐藏系统标题：实测隐藏后工具栏变成紧凑高度，右侧的压力胶囊和「内存 / CPU」被拉到左边。
+
+关闭确认的内容（owner 2026-10-25 R16）：标题「关闭「名字」？」；一句白话「会结束 N 个进程，预计腾出约 X 内存。」（测不到时说「腾出多少内存无法预估。」）；进程清单每行「程序名　内存　进程号 N」，进程号是行尾的次要文字，超过 6 行变成可滚动区域；有估算时下面一行次要色说明「按常驻内存估算，含共享部分，实际腾出的可能更少。」。说明文字不低于 `.secondary`。第二步（5 秒后仍未退出）、等待中、失败都用同一张卡片和同一位置；发信号期间 sheet 不能被 Esc 关掉。
 
 依据：HIG Buttons「Don't assign the primary role to a button that performs a destructive action」「a destructive button uses the system red color」「It's essential to include enough space around a button…」。HIG 没有退出入口的专门条款；收进「⋯」菜单是 macOS 菜单栏工具的常见做法（推断，不是 HIG 原文）。
 
 ## 6. 菜单栏项
 
-- 图标：`assets/logo/menubar-template.pdf`，作为模板图（`isTemplate = true`），18×14 pt。系统按菜单栏明暗给它着色。
+- 图标（owner 2026-10-25 R20 定稿）：单色「被咬掉一口的饼图」，`assets/logo/menubar-template.pdf`，作为模板图（`isTemplate = true`），18×18 pt；系统按菜单栏明暗给它着色。PDF 由 `scripts/bundle-app.sh icons` 从 `logo-template.svg` 生成：先渲染成 1024 像素位图再用 potrace 描成纯矢量路径，因为 rsvg 直接转出的 PDF 把 SVG 遮罩写成软遮罩，AppKit 画出来是空的（实测）。
 - 文字：已用内存（如「41.2G」），系统菜单栏字体，菜单栏前景色，等宽数字。不加颜色、不画位图。
 - 删除 08a 的彩色位图路径（`MenuBarLabel.render(text:color:)`）。
-- 设计稿里发现：`menubar-template.pdf` 缩到 18×14 pt 后看起来就是一串点「‥‥」。owner 反馈 5 说的「….」很可能是这个图标本身，不是系统截断（推断：依据是设计稿画廊截图，没在真菜单栏对照）。
+- 设计稿里发现：旧版 `menubar-template.pdf` 缩到 18×14 pt 后看起来就是一串点「‥‥」。owner 反馈 5 说的「….」很可能是这个图标本身，不是系统截断（推断：依据是设计稿画廊截图，没在真菜单栏对照）。R20 换成饼图后不再有这个问题。
 - 告警态（内存偏紧、内存紧张）四个候选，都只用形状或文字表达，不用颜色：
 
 | 方案 | 平时 | 偏紧 | 紧张 | 优点 | 缺点 |
@@ -127,7 +129,7 @@
 | C 压力词 | whoate 图标 | 数字后加「偏紧」 | 数字后加「紧张」 | 意思最直白 | 变宽，更容易被截断；图标仍像「….」 |
 | D 系统符号（推荐） | `memorychip` | 同 A | 同 A | 平时也是清楚的系统符号，不再像「….」；告警同 A | 菜单栏上不再出现 whoate 自己的图形 |
 
-owner 2026-10-21 设计关卡选定 **方案 D**。四个方案仍保留在自动化画廊里，便于以后对照。菜单栏图像一律经 `MenuBarItem.image` 生成，任何状态下都是模板图。
+owner 2026-10-21 设计关卡选定 **方案 D**。R20（2026-10-25）起平时一律显示饼图 logo，不再用 `memorychip`；告警仍按 D（同 A）换成三角符号。四个方案仍保留在自动化画廊里，便于以后对照。菜单栏图像一律经 `MenuBarItem.image` 生成，任何状态下都是模板图。
 
 依据：HIG The menu bar → Menu bar extras「Consider using a symbol to represent your menu bar extra… the system can apply other colors to the black areas in each image so it looks good on both dark and light menu bars」「The menu bar's height is 24 pt」；HIG Color「Avoid relying solely on color」。
 
@@ -136,7 +138,7 @@ owner 2026-10-21 设计关卡选定 **方案 D**。四个方案仍保留在自�
 HIG 默认要求点菜单栏项弹出菜单，不是弹出面板。whoate 属于 HIG 写明的例外「Unless the app functionality you want to expose is too complex for a menu」：
 
 - 每行有迷你曲线和风险胶囊，菜单项画不了曲线；
-- 关闭是两段式（确认框列出全部 pid 和预估，5 秒后问是否强制），需要在原地显示进度和结果；
+- 关闭是两段式（确认框列出每个进程和预估，5 秒后问是否强制），需要在原地显示进度和结果；
 - 头部有内存条和内存/CPU 切换。
 
 所以保留 `MenuBarExtra(.window)` 弹出面板。面板里只放这些「菜单做不到」的内容，其余（详情、概览、建议出处）放主窗口。

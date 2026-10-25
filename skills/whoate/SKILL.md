@@ -54,6 +54,16 @@ Views preserve the full Report envelope and host totals. `top -n` limits owners 
 `swarm.owners` contains complete id/count distributions, including IDs outside the view.
 Use `whoate why <id> --json` to inspect an outside owner. Do not sum owners and swarms:
 they are overlapping views of the same processes.
+Each `swarm.owners` entry may also carry optional `mem_bytes` and `cpu_pct`: that owner's
+members only, summed over the members that could be read (absent when none could).
+A `swarm-spread` group (watch) is usually many apps each showing pages with a shared
+system component (WebKit); quitting an idle app frees its share, there is no runaway.
+
+A detached `git fsmonitor--daemon` is attributed to its repository, never to a closed
+pane: owner id `service:git-fsmonitor:<key>` (an opaque hash of the repository path;
+the path itself is `origin.cwd`, hidden by `--redact`), or `service:git-fsmonitor` when
+the repository could not be read; evidence kind `git_fsmonitor`, verdict normal. Its
+worktrees share the repository's row. git restarts it on its next run; leave it alone.
 
 The default top sort is memory, descending; unknown CPU sorts after known values.
 `--by` and `-n` apply only to top. JSON is available on the single-query commands;

@@ -30,7 +30,16 @@ public struct Automation: Equatable, Sendable {
     public var noPathRepair = false
     public var appearance: Appearance?
     /// Owner id to open the close confirmation for, or "first" for the first row.
+    /// In main-window mode (R16) "selected" means the selected owner, opened at `closeAt`.
     public var confirm: String?
+    /// main-window only (R16): when to open the confirmation (seconds since launch);
+    /// `closeStep` "force" then shows the second step with every pid still running,
+    /// built from the confirmation, no signal sent; `escAfter` and `returnAfter` press
+    /// those keys in the sheet. With a main-window confirmation the app sends no signal at all.
+    public var closeAt: Double?
+    public var closeStep: String?
+    public var escAfter: Double?
+    public var returnAfter: Double?
     /// File receiving "panel\t<windowNumber>\t<w>\t<h>\t<scale>\t<pid>\t<confirm owner id or ->"
     /// once the panel window is shown.
     public var windowFile: String?
@@ -65,8 +74,6 @@ public struct Automation: Equatable, Sendable {
     public var sort: SortKey?
     /// Template PDF for the menu bar logo when the app bundle has none (launch.py wrappers).
     public var menuBarIcon: String?
-    /// The app icon for the main window's title (R13) when the bundle has none (launch.py wrappers).
-    public var appIcon: String?
     /// panel-window only (R14): real double-clicks sent into the panel window, from
     /// WHOATE_UI_PANEL_DOUBLE_CLICKS = "<seconds> <row|pill> <row id>" items joined by ";".
     public struct DoubleClick: Equatable, Sendable {
@@ -100,6 +107,10 @@ public struct Automation: Equatable, Sendable {
         layoutFile = environment["WHOATE_UI_LAYOUT_FILE"]
         quitAfter = seconds("WHOATE_UI_QUIT_AFTER")
         mainCloseAfter = seconds("WHOATE_UI_MAIN_CLOSE_AFTER")
+        closeAt = seconds("WHOATE_UI_CLOSE_AT")
+        closeStep = environment["WHOATE_UI_CLOSE_STEP"]
+        escAfter = seconds("WHOATE_UI_ESC_AFTER")
+        returnAfter = seconds("WHOATE_UI_RETURN_AFTER")
         showMainAfter = seconds("WHOATE_UI_SHOW_MAIN_AFTER")
         panelOpenAfter = seconds("WHOATE_UI_PANEL_OPEN_AFTER")
         showMainAgainAfter = seconds("WHOATE_UI_SHOW_MAIN_AGAIN_AFTER")
@@ -110,7 +121,6 @@ public struct Automation: Equatable, Sendable {
         detailScroll = environment["WHOATE_UI_DETAIL_SCROLL"]
         sort = environment["WHOATE_UI_SORT"].flatMap(SortKey.init(rawValue:))
         menuBarIcon = environment["WHOATE_UI_MENUBAR_ICON"]
-        appIcon = environment["WHOATE_UI_APP_ICON"]
         panelDoubleClicks = (environment["WHOATE_UI_PANEL_DOUBLE_CLICKS"] ?? "").split(separator: ";").compactMap { item in
             let fields = item.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 2).map(String.init)
             guard fields.count == 3, let after = Double(fields[0]), after.isFinite, after >= 0,

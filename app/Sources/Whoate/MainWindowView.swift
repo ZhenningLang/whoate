@@ -10,6 +10,17 @@ struct MainWindowView: View {
     let mainWindows: MainWindows
 
     private var language: Language { model.language }
+    private var closing: Bool { model.close != .idle && model.closeOrigin == .main }
+    /// While a signal is out the sheet stays up: the answer comes back to it.
+    private var busy: Bool {
+        switch model.close {
+        case .running, .forcing: true
+        default: false
+        }
+    }
+    private var closeSheet: Binding<Bool> {
+        Binding(get: { closing }, set: { if !$0 && closing { model.cancelClose() } })
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -20,10 +31,17 @@ struct MainWindowView: View {
                 .navigationSplitViewColumnWidth(min: 320, ideal: 360, max: 480)
         } detail: {
             DetailView(model: model)
-                .overlay { CloseFlowView(model: model) }
+        }
+        // R16: the close confirmation over the whole window, the three columns dimmed behind it,
+        // and the toolbar too (AppKit's, outside SwiftUI's overlay).
+        .overlay { if closing { CloseDim().rowFrame("close", "dim") } }
+        .onChange(of: closing) { TitlebarDim.set(mainWindows.all.first, on: closing) }
+        .sheet(isPresented: closeSheet) {
+            CloseCard(model: model).frame(width: 440).interactiveDismissDisabled(busy)
+                .coordinateSpace(.named(RowFrames.space))
+                .onPreferenceChange(RowFrames.self) { if WhoateApp.automation.stateFile != nil { RowFrames.sheet = $0 } }
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) { BrandIcon() }
             ToolbarItemGroup(placement: .primaryAction) {
                 HostToolbar(model: model)
                 // Same model.sort as the panel: switching here switches there.
@@ -39,6 +57,7 @@ struct MainWindowView: View {
         .onPreferenceChange(RowFrames.self) { frames in
             // Its own file: the panel window writes WHOATE_UI_LAYOUT_FILE itself.
             if let path = WhoateApp.automation.layoutFile { RowFrames.write(frames, to: path + ".main") }
+            if WhoateApp.automation.stateFile != nil { RowFrames.main = frames }
         }
         .background(RefreshVisibility { model.setVisible(main: $0) }.frame(width: 0, height: 0))
         .background(WindowReporter { window in
@@ -48,24 +67,35 @@ struct MainWindowView: View {
     }
 }
 
-/// R13 (owner 2026-10-25): the app icon in front of the window's own title. The
-/// system keeps drawing the title as the wordmark, so its type, the toolbar height
-/// and the right-hand controls stay as they were (a toolbar without the title
-/// turns compact and pulls those controls left), and window.title is untouched.
-struct BrandIcon: View {
-    var body: some View {
-        if let icon = Self.icon {
-            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 20, height: 20)
-                .accessibilityHidden(true)
+/// R16 (review round 7): the toolbar lives in AppKit's titlebar container, which a
+/// SwiftUI overlay never reaches; the same dim goes over it while the close sheet is up.
+enum TitlebarDim {
+    static let id = NSUserInterfaceItemIdentifier("whoate.titlebarDim")
+
+    static func container(_ window: NSWindow?) -> NSView? {
+        var view = window?.standardWindowButton(.closeButton)?.superview
+        while let current = view, !String(describing: type(of: current)).contains("TitlebarContainer") {
+            view = current.superview
         }
+        return view
     }
 
-    /// The bundle's AppIcon.icns; launch.py wrappers may name it; `swift run`: none.
-    static let icon: NSImage? = {
-        let bundled = Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
-        let url = bundled ?? WhoateApp.automation.appIcon.map { URL(fileURLWithPath: $0) }
-        return url.flatMap(NSImage.init(contentsOf:))
-    }()
+    @MainActor static func set(_ window: NSWindow?, on: Bool) {
+        guard let titlebar = container(window) else { return }
+        titlebar.subviews.first { $0.identifier == id }?.removeFromSuperview()
+        guard on else { return }
+        let dim = NSView(frame: titlebar.bounds)
+        dim.identifier = id
+        dim.wantsLayer = true
+        dim.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.4).cgColor
+        dim.autoresizingMask = [.width, .height]
+        titlebar.addSubview(dim, positioned: .above, relativeTo: nil)
+    }
+
+    /// Automation only: the dim's height over the titlebar, 0 when it is not there.
+    @MainActor static func height(_ window: NSWindow) -> Int {
+        Int(container(window)?.subviews.first { $0.identifier == id }?.frame.height ?? 0)
+    }
 }
 
 /// Toolbar: pressure pill and used/total/swap; in CPU mode the panel's CPU header.

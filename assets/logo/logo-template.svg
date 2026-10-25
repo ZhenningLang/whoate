@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="72" height="54" viewBox="0 0 72 54"><defs><mask id="b"><rect width="72" height="54" fill="#fff"/><circle cx="62" cy="4" r="9"/><circle cx="54" cy="-2" r="7"/></mask></defs><rect x="4" y="2" width="64" height="40" rx="5" fill="#000" mask="url(#b)"/><g fill="#000"><rect x="12" y="42" width="5" height="9"/><rect x="24" y="42" width="5" height="9"/><rect x="43" y="42" width="5" height="9"/><rect x="55" y="42" width="5" height="9"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<defs><mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><rect width="64" height="64" fill="#fff"/><circle cx="52.84" cy="11.42" r="11.5" fill="#000"/><circle cx="60.72" cy="28.96" r="6.5" fill="#000"/><line x1="32" y1="33" x2="32.00" y2="4.00" stroke="#000" stroke-width="4.2"/><line x1="32" y1="33" x2="12.41" y2="54.38" stroke="#000" stroke-width="4.2"/><line x1="32" y1="33" x2="8.99" y2="15.36" stroke="#000" stroke-width="4.2"/></mask></defs>
+<g mask="url(#cut)"><path d="M32 33 L32.00 6.00 A27 27 0 1 1 13.76 52.91 Z" fill="#000"/><path d="M32 33 L13.76 52.91 A27 27 0 0 1 10.57 16.57 Z" fill="#000"/><path d="M32 33 L10.57 16.57 A27 27 0 0 1 32.00 6.00 Z" fill="#000"/></g>
+
+</svg>

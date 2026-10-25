@@ -43,6 +43,10 @@ pub struct Proc {
     /// CODEX_THREAD_ID from the environment: the Codex session of a tool call.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub codex_thread_id: Option<String>,
+    /// R17: for a detached `git fsmonitor--daemon` only, the git dir it holds open
+    /// (`<repo>/.git` or `<repo>/.git/worktrees/<name>`); None when unreadable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub git_dir: Option<String>,
     pub footprint_bytes: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resident_bytes: Option<u64>,
@@ -71,6 +75,7 @@ impl Proc {
             tmux_pane: None,
             tmux: None,
             codex_thread_id: None,
+            git_dir: None,
             footprint_bytes: None,
             resident_bytes: None,
             cpu_time_ns: None,

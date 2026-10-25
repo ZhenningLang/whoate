@@ -177,8 +177,8 @@ def activation_once(binary, out):
     checks["close_returns_host"] = any(m == "host" for t, m in ticks if t > began + CLOSE_AT)
     # Hidden again: host and the 30 s paused hidden-full only, never full or resume.
     checks["close_no_full_or_resume"] = not any(m in ("full", "resume") for t, m in ticks if t > began + CLOSE_AT + 0.5)
-    # R13: the release bundle's own AppIcon.icns reaches the toolbar (no WHOATE_UI_APP_ICON here).
-    checks["qa54_bundle_icon_loaded"] = opened.get("brand_icon") == "true"
+    # R15: the release bundle's main window is named and drawn as the wordmark.
+    checks["qa54_bundle_title_wordmark"] = opened.get("title") == "WHO-ATE" and opened.get("title_drawn") == "true"
     checks["quit_after_exited"] = exited
     evidence = {"pid": handle["pid"], "isolation": handle["isolation"], "finder_at": finder, "ls_types": types,
                 "states": rows, "schedule": ticks, "full_after_focus": full_after, "gaps": gaps, "checks": checks}

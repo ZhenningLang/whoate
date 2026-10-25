@@ -29,9 +29,8 @@ from screenshots import stats
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIXTURE = os.path.join(ROOT, "tests/gui/design-report.json")
 ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
-# R13: the main window's toolbar shows the app icon; the debug executable has no bundle.
-APP_ICON = os.path.join(ROOT, "assets/logo/AppIcon.icns")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
+WEBKIT = 'swarm:["com.apple.WebKit"]'
 
 # name, window kind, automation mode, extra env, seconds to settle after the window line
 SHOTS = [
@@ -48,13 +47,23 @@ SHOTS = [
     # scrolled into view in the details.
     ("main-agent-tree", "main", "main-window", {"WHOATE_UI_SELECT": "kind:agent", "WHOATE_UI_DETAIL_SCROLL": "relation"}, 6.0),
     ("main-browser-cpu", "main", "main-window", {"WHOATE_UI_SELECT": "kind:browser", "WHOATE_UI_DETAIL_SCROLL": "cpu"}, 6.0),
+    # Round 7 (R16): the close confirmation as the main window's sheet, and its second step
+    # (every pid still running, made by the app; the automation's signal sender sends nothing).
+    ("main-close", "main", "main-window", {"WHOATE_UI_SELECT": "kind:orphan", "WHOATE_UI_CONFIRM": "selected",
+                                           "WHOATE_UI_CLOSE_AT": "3"}, 5.0),
+    ("main-close-force", "main", "main-window", {"WHOATE_UI_SELECT": "kind:orphan", "WHOATE_UI_CONFIRM": "selected",
+                                                 "WHOATE_UI_CLOSE_AT": "3", "WHOATE_UI_CLOSE_STEP": "force"}, 5.0),
+    # Round 7 (R19): a spread process group (WebKit) in plain words, with who uses it.
+    ("main-webkit", "main", "main-window", {"WHOATE_UI_SELECT": WEBKIT}, 5.0),
 ]
-ENGLISH = {"panel", "main-agent"}
+ENGLISH = {"panel", "main-agent", "main-webkit"}
 # Owner id prefix (or test) the selected row must have, per main window shot.
 SELECTED = {"main-agent": lambda i: i.startswith("agent:"), "main-orphan": lambda i: i.startswith("orphan:"),
             "main-browser": lambda i: i == "app:com.brave.Browser", "main-overview": lambda i: i == "-",
             "main-pane": lambda i: i == "pane:%22", "main-agent-tree": lambda i: i.startswith("agent:"),
-            "main-browser-cpu": lambda i: i == "app:com.brave.Browser"}
+            "main-browser-cpu": lambda i: i == "app:com.brave.Browser",
+            "main-close": lambda i: i.startswith("orphan:"), "main-close-force": lambda i: i.startswith("orphan:"),
+            "main-webkit": lambda i: i == WEBKIT}
 
 
 def fresh_fixture(path):
@@ -73,7 +82,7 @@ def capture(binary, out_dir, fixture, shot, appearance, language):
     state_file = window_file + ".state"
     env = dict(WHOATE_UI_AUTOMATION=mode, WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_WINDOW_FILE=window_file,
                WHOATE_UI_STATE_FILE=state_file, WHOATE_UI_FIXTURE=fixture, WHOATE_UI_MENUBAR_ICON=ICON,
-               WHOATE_UI_APP_ICON=APP_ICON, LC_ALL=language, **extra)
+               LC_ALL=language, **extra)
     launcher = launch.Launcher()
     app = launcher.start(binary, env=env)
     suffix = "" if language == ZH else "-en"

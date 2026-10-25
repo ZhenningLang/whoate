@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f1e6cf"/></linearGradient><mask id="b"><rect width="72" height="54" fill="#fff"/><circle cx="62" cy="4" r="9"/><circle cx="54" cy="-2" r="7"/></mask></defs><rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/><rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#000" stroke-opacity=".08"/><g transform="translate(224 296) scale(8)"><rect x="4" y="2" width="64" height="40" rx="5" fill="#b8860b" mask="url(#b)"/><g fill="#b8860b"><rect x="12" y="42" width="5" height="9"/><rect x="24" y="42" width="5" height="9"/><rect x="43" y="42" width="5" height="9"/><rect x="55" y="42" width="5" height="9"/></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F0F1F4"/></linearGradient>
+<filter id="sq" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1B2433" flood-opacity=".22"/></filter>
+<filter id="pie" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#1B2433" flood-opacity=".15"/></filter>
+<mask id="bite" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><rect width="1024" height="1024" fill="#fff"/><circle cx="742.2" cy="301.7" r="118"/><circle cx="817.3" cy="470.2" r="66"/></mask>
+</defs>
+<rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#sq)"/>
+<rect x="101" y="101" width="822" height="822" rx="184" fill="none" stroke="#000" stroke-opacity=".06" stroke-width="2"/>
+<g filter="url(#pie)"><g mask="url(#bite)">
+<path d="M512 524 L512.0 234.0 A290 290 0 1 1 316.1 737.8 Z" fill="#FF5A36"/>
+<path d="M512 524 L316.1 737.8 A290 290 0 0 1 281.9 347.6 Z" fill="#FFB020"/>
+<path d="M512 524 L281.9 347.6 A290 290 0 0 1 512.0 234.0 Z" fill="#20A68F"/>
+<line x1="512" y1="524" x2="512.0" y2="228.0" stroke="#FFFFFF" stroke-width="14"/><line x1="512" y1="524" x2="312.1" y2="742.3" stroke="#FFFFFF" stroke-width="14"/><line x1="512" y1="524" x2="277.1" y2="343.9" stroke="#FFFFFF" stroke-width="14"/>
+</g></g>
+<circle cx="785.0" cy="220.8" r="13" fill="#FF5A36"/><circle cx="866.9" cy="335.3" r="8" fill="#FF5A36"/><circle cx="704.5" cy="162.0" r="7" fill="#FF5A36"/>
+</svg>

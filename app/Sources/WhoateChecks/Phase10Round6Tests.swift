@@ -1,29 +1,31 @@
 // Phase 10 round 6 (owner check 2026-10-25, spec「owner 点验反馈与裁决」R13–R14):
-// QA54 the app icon in front of the main window's title, QA55 a double-clicked
-// panel row opening the main window on that row.
+// QA54 the main window's title (round 7, R15: the wordmark "WHO-ATE", no icon),
+// QA55 a double-clicked panel row opening the main window on that row.
 import Foundation
 @testable import WhoateKit
 
 enum Phase10Round6Tests {
     typealias R3 = Phase10Round3Tests
 
-    // QA54
-    static func mainWindowShowsTheAppIconBeforeItsTitle() throws {
+    // QA54 (R15 replaces R13's icon)
+    static func mainWindowTitleIsTheWordmark() throws {
         let main = try R3.source("MainWindowView.swift"), app = try R3.source("WhoateApp.swift")
-        expect(main.contains("ToolbarItem(placement: .navigation) { BrandIcon() }"), "icon in the title's place")
-        // The system keeps drawing window.title: hiding it turns the toolbar compact and pulls the controls left.
+        // The system draws window.title as the wordmark: hiding it turns the toolbar compact and pulls the controls left.
         for hiding in ["titleVisibility = .hidden", "removing: .title", ".navigationTitle(\"\")"] {
             expect(!main.contains(hiding) && !app.contains(hiding), "the drawn title stays: \(hiding)")
         }
         expect(app.contains(#"Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main")"#))
-        for language in [Language.zh, .en] { expect(L10n.text(.mainWindowTitle, language) == "whoate") }
-        // The icon is the bundle's AppIcon.icns (bundle-app.sh copies it); no other image or text is added.
-        expect(main.contains(#"Bundle.main.url(forResource: "AppIcon", withExtension: "icns")"#))
-        expect(main.contains(".frame(width: 20, height: 20)"))
+        for language in [Language.zh, .en] { expect(L10n.text(.mainWindowTitle, language) == "WHO-ATE", "\(language)") }
+        // Nothing in front of the title: no navigation item, no icon (round 6's BrandIcon is gone).
+        for added in ["placement: .navigation", "BrandIcon", "AppIcon", "Image(nsImage:"] {
+            expect(!main.contains(added), "nothing before the title: \(added)")
+        }
+        let environment = String(decoding: try repoFile("app/Sources/WhoateKit/Environment.swift"), as: UTF8.self)
+        expect(!environment.contains("WHOATE_UI_APP_ICON"), "the icon's automation path is gone too")
+        // Only the main window's title changes: the app and Dock name stay whoate.
         let bundle = String(decoding: try repoFile("scripts/bundle-app.sh"), as: UTF8.self)
-        expect(bundle.contains(#"cp "$logo/AppIcon.icns""#))
-        let parsed = Automation(environment: ["WHOATE_UI_AUTOMATION": "main-window", "WHOATE_UI_APP_ICON": "/x/AppIcon.icns"])
-        expect(parsed.appIcon == "/x/AppIcon.icns" && Automation.off.appIcon == nil)
+        expect(bundle.contains("<key>CFBundleName</key><string>whoate</string>")
+            && bundle.contains("<key>CFBundleDisplayName</key><string>whoate</string>"))
     }
 
     // QA55
