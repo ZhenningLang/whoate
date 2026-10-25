@@ -23,6 +23,7 @@ struct MainWindowView: View {
                 .overlay { CloseFlowView(model: model) }
         }
         .toolbar {
+            ToolbarItem(placement: .navigation) { BrandIcon() }
             ToolbarItemGroup(placement: .primaryAction) {
                 HostToolbar(model: model)
                 // Same model.sort as the panel: switching here switches there.
@@ -45,6 +46,26 @@ struct MainWindowView: View {
             automationMainWindow(window)
         }.frame(width: 0, height: 0))
     }
+}
+
+/// R13 (owner 2026-10-25): the app icon in front of the window's own title. The
+/// system keeps drawing the title as the wordmark, so its type, the toolbar height
+/// and the right-hand controls stay as they were (a toolbar without the title
+/// turns compact and pulls those controls left), and window.title is untouched.
+struct BrandIcon: View {
+    var body: some View {
+        if let icon = Self.icon {
+            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 20, height: 20)
+                .accessibilityHidden(true)
+        }
+    }
+
+    /// The bundle's AppIcon.icns; launch.py wrappers may name it; `swift run`: none.
+    static let icon: NSImage? = {
+        let bundled = Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
+        let url = bundled ?? WhoateApp.automation.appIcon.map { URL(fileURLWithPath: $0) }
+        return url.flatMap(NSImage.init(contentsOf:))
+    }()
 }
 
 /// Toolbar: pressure pill and used/total/swap; in CPU mode the panel's CPU header.

@@ -29,6 +29,8 @@ from screenshots import stats
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIXTURE = os.path.join(ROOT, "tests/gui/design-report.json")
 ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
+# R13: the main window's toolbar shows the app icon; the debug executable has no bundle.
+APP_ICON = os.path.join(ROOT, "assets/logo/AppIcon.icns")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
 
 # name, window kind, automation mode, extra env, seconds to settle after the window line
@@ -71,7 +73,7 @@ def capture(binary, out_dir, fixture, shot, appearance, language):
     state_file = window_file + ".state"
     env = dict(WHOATE_UI_AUTOMATION=mode, WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_WINDOW_FILE=window_file,
                WHOATE_UI_STATE_FILE=state_file, WHOATE_UI_FIXTURE=fixture, WHOATE_UI_MENUBAR_ICON=ICON,
-               LC_ALL=language, **extra)
+               WHOATE_UI_APP_ICON=APP_ICON, LC_ALL=language, **extra)
     launcher = launch.Launcher()
     app = launcher.start(binary, env=env)
     suffix = "" if language == ZH else "-en"

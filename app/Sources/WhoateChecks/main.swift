@@ -106,6 +106,8 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round4Tests.relationShowsNoTechnicalIdentifiers", Phase10Round4Tests.relationShowsNoTechnicalIdentifiers),
     ("Phase10Round4Tests.detailsDrawACpuCurveWithHoles", Phase10Round4Tests.detailsDrawACpuCurveWithHoles),
     ("Phase10Round4Tests.cpuReadsAsALowerBound", Phase10Round4Tests.cpuReadsAsALowerBound),
+    ("Phase10Round6Tests.mainWindowShowsTheAppIconBeforeItsTitle", Phase10Round6Tests.mainWindowShowsTheAppIconBeforeItsTitle),
+    ("Phase10Round6Tests.doubleClickedPanelRowsOpenTheirRow", Phase10Round6Tests.doubleClickedPanelRowsOpenTheirRow),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))

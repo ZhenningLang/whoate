@@ -148,6 +148,11 @@ public final class AppModel {
         if let id { scrollRequest = ScrollRequest(id: id, serial: (scrollRequest?.serial ?? 0) + 1) }
     }
 
+    /// The main window selection for a double-clicked panel row (R14), from the rows now.
+    public func panelTarget(_ row: PanelRow) -> String? {
+        MainWindowModel.panelTarget(row, rows: rows(limit: .max))
+    }
+
     /// "已复制" in the action bar's message for two seconds (R4).
     public func markCopied(_ ownerID: String) {
         guard selectedOwnerID == ownerID else { return }

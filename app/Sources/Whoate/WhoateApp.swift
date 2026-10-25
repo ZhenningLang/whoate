@@ -232,8 +232,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     "occlusion_visible=\(main.occlusionState.contains(.visible))",
                     "hides_on_deactivate=\(main.hidesOnDeactivate)", "level=\(main.level.rawValue)",
                     "behavior=\(main.collectionBehavior.rawValue)", "window=\(main.windowNumber)",
+                    // R13: the window keeps its name (Window menu, Mission Control, the drawn title).
+                    "title=\(main.title)", "title_shown=\(main.titleVisibility == .visible)",
                 ]
-                fields += Self.listSelection(main)
+                fields += Self.listSelection(main) + Self.toolbarGeometry(main)
             }
             let line = fields.joined(separator: "\t")
             if line != last {
@@ -269,6 +271,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return ["list_rows=\(list.numberOfRows)", "list_row=\(row)", "list_row_visible=\(inside)"]
     }
 
+    /// Automation only (R13 check): whether the brand icon loaded, the toolbar's height,
+    /// and the sort control's distance from the window's right edge. Hiding the system
+    /// title turns the toolbar compact and pulls that control left.
+    static func toolbarGeometry(_ window: NSWindow) -> [String] {
+        func segmented(_ view: NSView) -> NSSegmentedControl? {
+            (view as? NSSegmentedControl) ?? view.subviews.lazy.compactMap(segmented).first
+        }
+        let sort = window.contentView?.superview.flatMap(segmented).map { $0.convert($0.bounds, to: nil) }
+        return ["brand_icon=\(BrandIcon.icon != nil)",
+                "toolbar_h=\(Int(window.frame.height - window.contentLayoutRect.height))",
+                "sort_right_gap=\(sort.map { "\(Int(window.frame.width - $0.maxX))" } ?? "-")"]
+    }
+
     /// Screenshot entry: the same PanelView in an ordinary titled window,
     /// because a MenuBarExtra panel cannot be opened programmatically.
     private func showPanelWindow(_ automation: Automation) async {
@@ -300,9 +315,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 + "\(window.backingScaleFactor)\t\(ProcessInfo.processInfo.processIdentifier)\t\(target)\n"
             try? line.write(toFile: path, atomically: true, encoding: .utf8)
         }
+        for click in automation.panelDoubleClicks {
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(max(0, click.after - (ProcessInfo.processInfo.systemUptime - Main.launchedAt))))
+                self?.doubleClick(click, in: window)
+            }
+        }
         if let after = automation.panelCloseAfter {
             try? await Task.sleep(for: .seconds(after))
             window.orderOut(nil)
+        }
+    }
+}
+
+extension AppDelegate {
+    /// Automation only (R14 check): two real clicks posted to the panel window, so
+    /// SwiftUI's own double-click recognition decides, aimed at the row's title line
+    /// or the pill's centre. A target not laid out is reported, never guessed.
+    func doubleClick(_ click: Automation.DoubleClick, in window: NSWindow) {
+        guard let view = window.contentView, let frame = RowFrames.panel["\(click.rowID)\t\(click.part)"] else {
+            FileHandle.standardError.write(Data("double_click_target_missing\t\(click.rowID)\t\(click.part)\n".utf8))
+            return
+        }
+        // A row is aimed at its title line: past the row's 16 pt side and 12 pt top padding.
+        let point = click.part == "pill" ? CGPoint(x: frame.midX, y: frame.midY) : CGPoint(x: frame.minX + 24, y: frame.minY + 20)
+        let location = view.convert(point, to: nil)
+        for count in 1...2 {
+            for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+                guard let event = NSEvent.mouseEvent(
+                    with: type, location: location, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: count,
+                    pressure: type == .leftMouseDown ? 1 : 0) else { continue }
+                NSApp.postEvent(event, atStart: false)
+            }
         }
     }
 }

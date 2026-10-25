@@ -83,6 +83,16 @@ public enum MainWindowModel {
         }
     }
 
+    /// R14 (owner 2026-10-25): what a double-clicked panel row selects in the main
+    /// window. The row itself when the list has it; for a process group that is gone,
+    /// its member owner with the most memory in total (a swarm's `owners` carry counts,
+    /// not each owner's share); nil (window only) when neither is listed.
+    public static func panelTarget(_ row: PanelRow, rows: [PanelRow]) -> String? {
+        if rows.contains(where: { $0.id == row.id }) { return row.id }
+        let members = Set(row.members)
+        return rows.filter { $0.source == .owner && members.contains($0.id) }.max { $0.memBytes < $1.memBytes }?.id
+    }
+
     /// The kind category that lists `row`; nil for process groups and unknown kinds.
     public static func category(of row: PanelRow) -> MainCategory? {
         [MainCategory.tmux, .agents, .apps, .orphans, .system].first { matches(row, $0) }

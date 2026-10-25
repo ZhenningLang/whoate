@@ -28,6 +28,7 @@ struct PanelView: View {
         .background(WindowReporter { window in foundWindow?(window) }.frame(width: 0, height: 0))
         .onPreferenceChange(RowFrames.self) { frames in
             if let path = WhoateApp.automation.layoutFile { RowFrames.write(frames, to: path) }
+            if !WhoateApp.automation.panelDoubleClicks.isEmpty { RowFrames.panel = frames }
         }
     }
 
@@ -83,6 +84,7 @@ struct PanelView: View {
                     if index > 0 { Divider().padding(.leading, 16) }
                     PanelRowView(row: row, language: language, sort: model.sort,
                                  openMain: openMain, close: { model.requestClose(row.id) },
+                                 doubleClick: { openMain(model.panelTarget(row)) },
                                  expanded: Binding(get: { model.expandedAdvice == row.id },
                                                    set: { model.expandedAdvice = $0 ? row.id : nil }))
                 }
@@ -144,6 +146,8 @@ struct PanelRowView: View {
     let sort: SortKey
     var openMain: (String?) -> Void
     var close: () -> Void
+    /// R14: a double-click anywhere but a button opens the main window on this row.
+    var doubleClick: () -> Void
     let expanded: Binding<Bool>
 
     // Curve and value share the first line; buttons own the second, so the
@@ -167,6 +171,7 @@ struct PanelRowView: View {
             }
             HStack(spacing: 8) {
                 AdvicePill(row: row, language: language, expanded: expanded)
+                    .rowFrame(row.id, "pill")
                 Spacer()
                 if row.closable {
                     HStack(spacing: 8) {
@@ -182,6 +187,10 @@ struct PanelRowView: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+        // Buttons (details, close, the advice pill) keep their own clicks.
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2, perform: doubleClick)
+        .rowFrame(row.id, "row")
     }
 }
 
@@ -311,6 +320,8 @@ struct RowFrames: PreferenceKey {
     static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
         value.merge(nextValue()) { $1 }
     }
+    /// Automation only (WHOATE_UI_PANEL_DOUBLE_CLICKS): the panel's latest frames, to aim the clicks.
+    nonisolated(unsafe) static var panel: [String: CGRect] = [:]
     static func write(_ frames: [String: CGRect], to path: String) {
         let now = Date().timeIntervalSince1970
         let lines = frames.sorted { $0.key < $1.key }.map { key, r in

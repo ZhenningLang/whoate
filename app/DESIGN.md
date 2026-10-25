@@ -106,6 +106,10 @@
 
 退出入口（反馈 3，owner 2026-10-21 设计关卡裁决「保留独立按钮」）：退出仍是按钮，放在底栏最左，无边框、次要色；「完整面板」是有边框的标准按钮，放在最右；中间是状态文字。两个按钮中心距远大于 60 pt（实测约 310 pt），样式一眼可分，点「完整面板」不会碰到退出。⌘Q 仍走同一个 `QuitAction`。点「完整面板」或行内「详情」后面板自动收起（反馈 2）。按钮文字按 owner 2026-10-21 点验 R1 定为「退出」「完整面板」（Quit、Full Panel）。
 
+面板行双击（owner 2026-10-25 点验 R14）：双击行的任意空白或文字处，和行内「详情」走同一条路（打开或提前主窗口、左栏切到所属分类、中栏选中并滚到中间、面板收起）；同类进程群行没有按钮，双击是它打开主窗口的入口，主窗口里没有这一行时选它占内存最大的成员归属，都没有就只开窗口。「详情」「关闭」、建议胶囊保留自己的点击，双击它们不触发；单击行不做任何事。
+
+主窗口标题（owner 2026-10-25 点验 R13）：工具栏最左放 20 pt 的 app 图标（与 Dock 同一个 `AppIcon.icns`），系统照常在它右边画窗口标题「whoate」当字标；不另画字标、不加计数或分类名。不隐藏系统标题：实测隐藏后工具栏变成紧凑高度，右侧的压力胶囊和「内存 / CPU」被拉到左边。
+
 依据：HIG Buttons「Don't assign the primary role to a button that performs a destructive action」「a destructive button uses the system red color」「It's essential to include enough space around a button…」。HIG 没有退出入口的专门条款；收进「⋯」菜单是 macOS 菜单栏工具的常见做法（推断，不是 HIG 原文）。
 
 ## 6. 菜单栏项

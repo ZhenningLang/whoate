@@ -65,6 +65,16 @@ public struct Automation: Equatable, Sendable {
     public var sort: SortKey?
     /// Template PDF for the menu bar logo when the app bundle has none (launch.py wrappers).
     public var menuBarIcon: String?
+    /// The app icon for the main window's title (R13) when the bundle has none (launch.py wrappers).
+    public var appIcon: String?
+    /// panel-window only (R14): real double-clicks sent into the panel window, from
+    /// WHOATE_UI_PANEL_DOUBLE_CLICKS = "<seconds> <row|pill> <row id>" items joined by ";".
+    public struct DoubleClick: Equatable, Sendable {
+        public var after: Double
+        public var part: String
+        public var rowID: String
+    }
+    public var panelDoubleClicks: [DoubleClick] = []
 
     public static let off = Automation()
 
@@ -100,6 +110,13 @@ public struct Automation: Equatable, Sendable {
         detailScroll = environment["WHOATE_UI_DETAIL_SCROLL"]
         sort = environment["WHOATE_UI_SORT"].flatMap(SortKey.init(rawValue:))
         menuBarIcon = environment["WHOATE_UI_MENUBAR_ICON"]
+        appIcon = environment["WHOATE_UI_APP_ICON"]
+        panelDoubleClicks = (environment["WHOATE_UI_PANEL_DOUBLE_CLICKS"] ?? "").split(separator: ";").compactMap { item in
+            let fields = item.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 2).map(String.init)
+            guard fields.count == 3, let after = Double(fields[0]), after.isFinite, after >= 0,
+                  ["row", "pill"].contains(fields[1]) else { return nil }
+            return DoubleClick(after: after, part: fields[1], rowID: fields[2])
+        }
     }
     public var isActive: Bool { self != .off }
 }

@@ -6,6 +6,7 @@ against the debug build replaying tests/gui/design-report.json.
   phase10_checks.py main <debug Whoate> <evidence dir>    QA20 (main window)
   phase10_checks.py reopen <Whoate> <evidence dir>        QA22 close → reopen → regular
   phase10_checks.py jump <debug Whoate> <evidence dir>    QA49 (R9) category and scroll
+  phase10_checks.py dblclick <debug Whoate> <evidence dir>  QA55 (R14) double-click a panel row
 
 panel: the panel's own "show main window" action runs at 4 s; before it the
 panel window is visible, after it the panel window is hidden and one main
@@ -19,6 +20,15 @@ window open, the smallest session, as a click in the pane's session card does:
 the sidebar moves to "agent sessions" and the list, rebuilt for that category,
 scrolls to a row past 20. Both times the selected row lies wholly inside the
 list's visible part (AppKit table geometry).
+dblclick (R14, owner 2026-10-25): real mouse events posted into the panel window
+(WHOATE_UI_PANEL_DOUBLE_CLICKS), so SwiftUI's own double-click recognition runs.
+Owner run: a double-click on Brave's advice pill opens nothing, then one on Brave's
+row brings the main window to the front with Brave selected under "apps", in view,
+and the panel put away. Swarm run: the python3.13 process group row (no buttons)
+is selected under "all". Both runs also read the window title (R13): the window
+keeps the name "whoate" and the system still draws it next to the app icon; the
+toolbar keeps its height and the sort control stays at the right edge (hiding the
+title measured 38 pt and 526 pt from the edge, against 52 pt and 6 pt).
 """
 import json, math, os, sys, tempfile
 from pathlib import Path
@@ -26,6 +36,7 @@ import launch
 from window_check import at, intersects, private_env, read_layout, states, without_input, write_receipt
 
 DESIGN = Path(__file__).with_name("design-report.json")
+APP_ICON = Path(__file__).parents[2] / "assets/logo/AppIcon.icns"
 SHOW_AT, QUIT_AT = 4, 9
 
 
@@ -176,9 +187,64 @@ def jump(binary, out):
     return all(checks.values())
 
 
+# R13 layout (measured 2026-10-25): 52 pt and 6 pt with the system title; 38 and 526 without it.
+TOOLBAR_MIN_H, SORT_RIGHT_GAP_MAX = 48, 40
+DOUBLE_CLICK_RUNS = {
+    # name: (clicks, expected selection, expected category)
+    "owner": ("4 pill app:com.brave.Browser;6 row app:com.brave.Browser", "app:com.brave.Browser", "apps"),
+    "swarm": ("4 row swarm:exe:python3.13", "swarm:exe:python3.13", "all"),
+}
+
+
+def dblclick(binary, out):
+    # Both runs, even after a failure: each receipt is evidence of its own.
+    return all([without_input(lambda attempt, name=name: dblclick_once(binary, out, name, attempt), f"QA55 {name}")
+                for name in DOUBLE_CLICK_RUNS])
+
+
+def dblclick_once(binary, out, name, attempt):
+    clicks, target, category = DOUBLE_CLICK_RUNS[name]
+    last = float(clicks.split(";")[-1].split()[0])
+    root = tempfile.mkdtemp(prefix="wd10-", dir="/private/tmp")
+    state = f"{root}/state"
+    env = private_env(root, WHOATE_UI_AUTOMATION="panel-window", WHOATE_UI_STATE_FILE=state,
+                      WHOATE_UI_FIXTURE=os.path.realpath(DESIGN), WHOATE_UI_PANEL_DOUBLE_CLICKS=clicks,
+                      WHOATE_UI_APP_ICON=os.path.realpath(APP_ICON),
+                      WHOATE_UI_QUIT_AFTER=last + 5)
+    handle, exited = run(binary, env, last + 25)
+    rows = states(state)
+    first = rows[0][0] - float(rows[0][1].get("since_launch", 0)) if rows else 0
+    before = at(rows, first + last - 0.3) or {}
+    after = at(rows, first + last + 2.5) or {}
+    checks = {
+        "qa55_panel_open_before": before.get("panel_visible") == "true" and before.get("main_windows") == "0",
+        "qa55_panel_put_away": after.get("panel_visible") == "false",
+        "qa55_main_in_front": after.get("main_windows") == "1" and after.get("visible") == "true"
+        and after.get("key") == "true" and after.get("active") == "true",
+        "qa55_selected_this_row": after.get("selected") == target,
+        "qa55_category": after.get("category") == category,
+        "qa55_row_visible": after.get("list_row_visible") == "true",
+        "qa54_window_keeps_its_name": after.get("title") == "whoate",
+        "qa54_title_still_drawn": after.get("title_shown") == "true",
+        "qa54_icon_loaded": after.get("brand_icon") == "true",
+        "qa54_toolbar_not_compact": int(after.get("toolbar_h", "0")) >= TOOLBAR_MIN_H,
+        "qa54_sort_stays_right": after.get("sort_right_gap", "-").isdigit() and int(after["sort_right_gap"]) <= SORT_RIGHT_GAP_MAX,
+        "quit_after_exited": exited,
+    }
+    receipt = f"qa55-dblclick-{name}.json"
+    write_receipt(out, receipt, {"pid": handle["pid"], "attempt": attempt, "clicks": clicks, "before": before,
+                                 "after": after, "states": rows, "checks": checks})
+    print(f"QA55 {name} attempt={attempt} selected={after.get('selected')} category={after.get('category')} "
+          f"row={after.get('list_row')}/{after.get('list_rows')} visible={after.get('list_row_visible')} "
+          f"frontmost_at_check={after.get('frontmost', '-')}")
+    for check, ok in checks.items():
+        print(f"P10 {name} {check}={ok}")
+    return all(checks.values()), os.path.join(out, receipt)
+
+
 def main(argv):
     command, *rest = argv
-    ok = {"panel": panel, "main": main_window, "reopen": reopen, "jump": jump}[command](*rest)
+    ok = {"panel": panel, "main": main_window, "reopen": reopen, "jump": jump, "dblclick": dblclick}[command](*rest)
     return 0 if ok else 1
 
 

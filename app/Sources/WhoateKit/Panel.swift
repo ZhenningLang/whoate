@@ -29,6 +29,8 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     /// Owner kind and verdict rule (nil for process groups), for main window filters.
     public var kind: OwnerKind?
     public var rule: String?
+    /// Process groups only: the owners the group's processes belong to (R14 falls back to one).
+    public var members: [String] = []
 }
 
 extension PanelRow {
@@ -77,7 +79,8 @@ public enum Panel {
                 id: s.id, source: .swarm, title: "\(s.label) × \(s.count)", memBytes: s.memBytes,
                 cpuPct: s.cpuPct, subtitle: subtitle(s, language), level: s.verdict.level,
                 pill: pill(s, language), pillLevel: s.verdict.level, history: [], closable: false,
-                unknownMemCount: s.unknownMemCount, cpuReadable: s.cpuPctReadable, unknownCPUCount: s.unknownCPUCount)
+                unknownMemCount: s.unknownMemCount, cpuReadable: s.cpuPctReadable, unknownCPUCount: s.unknownCPUCount,
+                members: s.owners.map(\.id))
         }
         return Array((owners + swarms).sorted { a, b in
             switch sort {
