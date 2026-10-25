@@ -7,6 +7,7 @@
   "compressed_bytes": 9663676416,
   "wired_bytes": 5368709120,
   "swap_used_bytes": 6442450944,
+  "swap_total_bytes": 7516192768,
   "pressure": "warn",
   "kernel_zones": {
    "status": "fresh",
@@ -1978,6 +1979,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 1331439861,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -2475,6 +2482,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 171798691,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -2989,6 +3002,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 687194767,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -3532,6 +3551,12 @@
     "level": "watch",
     "rule": "fast-growth",
     "text": "近 10 分钟 +400M，还在涨。"
+   },
+   "reclaimable_physical": {
+    "bytes": 1116691496,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -4070,6 +4095,12 @@
     "level": "watch",
     "rule": "idle-agent",
     "text": "空闲 3 小时，可以关掉。"
+   },
+   "reclaimable_physical": {
+    "bytes": 386547056,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -5044,6 +5075,12 @@
     "level": "ok",
     "rule": "system.mds_stores",
     "text": "Spotlight 索引服务"
+   },
+   "reclaimable_physical": {
+    "bytes": 257698037,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -5547,6 +5584,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 5033164,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -6060,6 +6103,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 128849018,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -6593,6 +6642,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 300647710,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -7129,6 +7184,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 214748364,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -7655,6 +7716,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 85899345,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   },
   {
@@ -8188,6 +8255,12 @@
     "level": "ok",
     "rule": "default",
     "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 171798691,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
    }
   }
  ],

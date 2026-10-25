@@ -35,20 +35,22 @@ struct PanelView: View {
     private var header: some View {
         let header = Panel.header(model.report?.host, sort: model.sort, language)
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(header.headline).font(.title3.weight(.semibold))
-                Spacer()
-                if let host = model.report?.host {
-                    Text("\(Format.bytes(host.memUsedBytes)) / \(Format.bytes(host.memTotalBytes)) · \(L10n.text(.swap, language)) \(Format.bytes(host.swapUsedBytes))")
-                        .font(.callout).monospacedDigit().foregroundStyle(.secondary)
+            Text(header.headline).font(.title3.weight(.semibold))
+            // R21: physical memory with its total and share, the compressor's part of it, swap with its total.
+            if let host = model.report?.host {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(MemoryWording.physical(host, language) + " · " + MemoryWording.compressed(host, language))
+                    Text(MemoryWording.swap(host, language))
                 }
+                .font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                .help(MemoryWording.hostHelp(language))
             }
             if let detail = header.detail {
                 Text(detail).font(.callout).foregroundStyle(.secondary).monospacedDigit()
             }
             if let host = model.report?.host { PressureBar(host: host) }
             HStack(spacing: 12) {
-                legend(L10n.text(.used, language), Palette.used)
+                legend(L10n.text(.memOtherUsed, language), Palette.used)
                 legend(L10n.text(.compressed, language), Palette.compressed)
                 legend(L10n.text(.swap, language), Palette.swap)
                 Spacer()
@@ -80,6 +82,11 @@ struct PanelView: View {
             message(L10n.text(.noOwners, language), detail: nil)
         } else {
             VStack(spacing: 0) {
+                // R21: what the rows' number is, in memory order.
+                if model.sort == .memory {
+                    Text(L10n.text(.memPanelCaption, language)).font(.caption).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing).padding(.horizontal, 16).padding(.top, 6)
+                }
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 { Divider().padding(.leading, 16) }
                     PanelRowView(row: row, language: language, sort: model.sort,
@@ -124,19 +131,32 @@ struct PanelView: View {
     }
 }
 
+/// R21: physical memory on one bar (used, with the compressor's part marked) against
+/// the machine's total; swap on its own thin bar against the swap files' total. Swap is
+/// not physical memory and is never drawn on that bar.
 struct PressureBar: View {
     let host: WhoateKit.Host
     var body: some View {
-        let s = Panel.pressureSegments(host)
-        GeometryReader { geo in
-            HStack(spacing: 0) {
-                Palette.used.frame(width: geo.size.width * s.used)
-                Palette.compressed.frame(width: geo.size.width * s.compressed)
-                Palette.swap.frame(width: geo.size.width * s.swap)
-                Spacer(minLength: 0)
+        let s = Panel.physicalSegments(host)
+        VStack(spacing: 4) {
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    Palette.used.frame(width: geo.size.width * s.other)
+                    Palette.compressed.frame(width: geo.size.width * s.compressed)
+                    Spacer(minLength: 0)
+                }
+            }
+            .frame(height: 8).background(.quaternary).clipShape(RoundedRectangle(cornerRadius: 4))
+            if let swap = Panel.swapFraction(host) {
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        Palette.swap.frame(width: geo.size.width * swap)
+                        Spacer(minLength: 0)
+                    }
+                }
+                .frame(height: 4).background(.quaternary).clipShape(RoundedRectangle(cornerRadius: 2))
             }
         }
-        .frame(height: 8).background(.quaternary).clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
 

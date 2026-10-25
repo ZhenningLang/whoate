@@ -63,6 +63,13 @@ def owner(id, kind, label, mem, cpu, pids, verdict, origin=None, agent=None, evi
     o = {"id": id, "kind": kind, "label": label, "mem_bytes": int(mem), "unknown_mem_count": unknown,
          "cpu_pct": cpu, "pids": pids, "origin": origin, "agent": agent, "evidence": list(evidence),
          "parts": list(parts), "facts": [], "insights": list(insights), "history": list(hist), "verdict": verdict}
+    # R21: every owner of the user's account has an RSS (about 40% of its footprint, the
+    # rest compressed or swapped, as on the owner's machine); other accounts' system
+    # processes cannot be read.
+    # An owner with unreadable footprints has unreadable RSS too (same cross-account
+    # failure on a real Mac; review round 8 B [risk]).
+    if reclaimable is None and kind != "system" and not unknown:
+        reclaimable = mem * 0.4
     if reclaimable is not None:
         o["reclaimable_physical"] = {"bytes": int(reclaimable), "unknown_count": 0, "basis": "rss", "reason": None}
     if cpu_unknown is not None:  # R12: `cpu` is then only the readable part
@@ -281,7 +288,7 @@ def report():
                                  "关掉闲置归属能一起释放")}
     taken = "2026-10-21T00:20:00+08:00"
     host = {"mem_total_bytes": 48 * G, "mem_used_bytes": 44_237_000_000, "compressed_bytes": 9 * G,
-            "wired_bytes": 5 * G, "swap_used_bytes": 6 * G, "pressure": "warn",
+            "wired_bytes": 5 * G, "swap_used_bytes": 6 * G, "swap_total_bytes": 7 * G, "pressure": "warn",
             "kernel_zones": {"status": "fresh", "as_of": taken, "basis": "zprint",
                              "top": [{"name": "VM.object", "bytes": 610 * M, "collectible": None, "pageable": False},
                                      {"name": "kalloc.type.var4.256", "bytes": 420 * M, "collectible": True, "pageable": False},

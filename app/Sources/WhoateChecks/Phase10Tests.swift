@@ -37,10 +37,13 @@ enum Phase10Tests {
     static func sidebarFiltersAndCpuOrder() throws {
         let report = try designReport()
         let all = rows(report)
-        let apps = report.owners.filter { $0.kind == .app }.reduce(0) { $0 + $1.memBytes }
-        expect(MainWindowModel.total(all, .apps) == Format.bytes(apps))
-        let system = report.owners.filter { $0.kind == .system || $0.kind == .service }.reduce(0) { $0 + $1.memBytes }
-        expect(MainWindowModel.total(all, .system) == Format.bytes(system))
+        // R21 (round 8): kinds add their owners' physical memory (an unreadable one makes it "≥").
+        let physical = { (kinds: Set<OwnerKind>) in
+            MemoryWording.physicalTotal(report.owners.filter { kinds.contains($0.kind) }.map { MemoryWording.split($0).physical })
+        }
+        // Brave's footprint is partly unreadable, so is its RSS: the apps' total is a lower bound.
+        expect(MainWindowModel.total(all, .apps) == physical([.app]) && physical([.app]).hasPrefix("≥"))
+        expect(MainWindowModel.total(all, .system) == physical([.system, .service]) && physical([.system, .service]).hasPrefix("≥"))
         let cpu = Panel.rows(report, sort: .cpu, language: .zh, limit: .max)
         expect(cpu.first?.id == "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4", "highest CPU first, act not pinned")
         expect(cpu.firstIndex { $0.id == "orphan:948211" }! > 0, "the act orphan (0.1 %) is not on top")
@@ -95,7 +98,7 @@ enum Phase10Tests {
     static func overviewNamesWiredZonesAndGpuReason() throws {
         var host = try require(try designReport().host)
         var overview = Detail.overview(host, language: .zh)
-        expect(overview.memory.contains { $0.0 == "联动内存" && $0.1 == "5.0G" })
+        expect(overview.memory.contains { $0.0 == "其中联动" && $0.1 == "5.0G（是已用的一部分）" }, "R21: part of physical memory used")
         expect(overview.zones.count == 5 && overview.zonesTitle == "内核内存区（前 5）")
         expect(overview.gpu == "2.1G" && !overview.diagnostics.isEmpty)
         host.kernelZones?.status = .stale
@@ -222,8 +225,9 @@ enum Phase10Tests {
     /// CONFORM:B3: "All" counts owners only; a process group overlays them.
     static func allTotalCountsOwnersOnce() throws {
         let report = try designReport()
-        let owners = report.owners.reduce(0) { $0 + $1.memBytes }
-        expect(MainWindowModel.total(rows(report), .all) == Format.bytes(owners))
+        // R21 (round 8): physical memory, owners only (a process group never adds to it).
+        let owners = MemoryWording.physicalTotal(report.owners.map { MemoryWording.split($0).physical })
+        expect(MainWindowModel.total(rows(report), .all) == owners)
         expect(MainWindowModel.total(rows(report), .needsAction) == "4", "filters still count rows")
     }
 

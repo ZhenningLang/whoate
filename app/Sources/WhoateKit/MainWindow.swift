@@ -61,13 +61,14 @@ public enum MainWindowModel {
         }
     }
 
-    /// Sidebar total: bytes for kinds, row count for filters. Process groups are an
-    /// overlay on owners (overview: a swarm never changes ownership), so their bytes
-    /// are already in the owners' and never counted twice.
+    /// Sidebar total: physical memory for kinds (R21: footprints add up past the machine's
+    /// memory, so the kinds show their owners' physical part, labelled in the section
+    /// title), row count for filters. Process groups are an overlay on owners and never
+    /// counted twice.
     public static func total(_ rows: [PanelRow], _ category: MainCategory) -> String {
         let shown = rows.filter { matches($0, category) }
         guard !category.isFilter else { return "\(shown.count)" }
-        return Format.bytes(shown.filter { $0.source == .owner }.reduce(0) { $0 + $1.memBytes })
+        return MemoryWording.physicalTotal(shown.filter { $0.source == .owner }.map(\.physicalBytes))
     }
 
     /// WHOATE_UI_SELECT: an owner id, kind:orphan|agent|browser, or overview.

@@ -80,8 +80,12 @@ public enum Spread {
     }
 
     /// Row subtitle in processes, the same unit as the list: "16 个进程：Mail 4、WPS 3、Raycast 3…".
+    /// One user only: "74 个进程 · 没认出是哪个应用" (its count would repeat the total).
     public static func subtitle(_ s: Swarm, owners: [String: Owner], language: Language) -> String {
         let users = users(s, owners: owners, language: language)
+        if users.count == 1, let only = users.first {
+            return L10n.format(.spreadSubtitleOne, language, "\(s.count)", only.name)
+        }
         var parts = users.prefix(3).map { "\($0.name) \($0.count)" }
         if users.count > 3, !parts.isEmpty { parts[parts.count - 1] += "…" }
         return L10n.format(.spreadSubtitle, language, "\(s.count)", parts.joined(separator: language == .zh ? "、" : ", "))

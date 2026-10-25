@@ -80,6 +80,8 @@ public struct Host: Decodable, Sendable, Equatable {
     public var compressedBytes: UInt64
     public var wiredBytes: UInt64
     public var swapUsedBytes: UInt64
+    /// R21 (optional): the swap files' current total; macOS grows it on demand.
+    public var swapTotalBytes: UInt64?
     public var pressure: Pressure
     public var kernelZones: KernelZones?
     public var gpuMemory: GpuMemory?
@@ -88,7 +90,7 @@ public struct Host: Decodable, Sendable, Equatable {
     enum CodingKeys: String, CodingKey, CaseIterable {
         case memTotalBytes = "mem_total_bytes", memUsedBytes = "mem_used_bytes"
         case compressedBytes = "compressed_bytes", wiredBytes = "wired_bytes"
-        case swapUsedBytes = "swap_used_bytes", pressure
+        case swapUsedBytes = "swap_used_bytes", swapTotalBytes = "swap_total_bytes", pressure
         case kernelZones = "kernel_zones", gpuMemory = "gpu_memory"
         case memoryDiagnostics = "memory_diagnostics", cpu
     }

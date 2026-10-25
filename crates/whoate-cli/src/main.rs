@@ -205,6 +205,7 @@ mod scenarios {
                 compressed_bytes: 100,
                 wired_bytes: 2048,
                 swap_used_bytes: 0,
+                swap_total_bytes: None,
                 pressure: Pressure::Normal,
                 kernel_zones: None,
                 gpu_memory: None,
@@ -446,6 +447,7 @@ mod scenarios {
             compressed_bytes: 10,
             wired_bytes: 20,
             swap_used_bytes: 0,
+            swap_total_bytes: None,
             pressure: Pressure::Normal,
         });
         let mut r = Report::from_snapshot(&snapshot);
@@ -694,6 +696,7 @@ mod scenarios {
             wired_bytes: 2_000,
             compressed_bytes: 300,
             swap_used_bytes: 400,
+            swap_total_bytes: None,
             pressure: Pressure::Warn,
             kernel_zones: Some(KernelZones {
                 status: Freshness::Fresh,

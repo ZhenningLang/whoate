@@ -39,6 +39,11 @@ JSON uses `schema: "whoate/v1"`. Read the versioned Schema in `schema/whoate-v1.
 Memory is in **bytes**, not MB; CPU is percent of one core and may exceed 100.
 Null means unknown, never zero. Empty arrays mean no recorded items.
 `unknown_mem_count` counts missing footprints: `mem_bytes` is only the known sum.
+An owner's `mem_bytes` is phys_footprint (Activity Monitor's Memory column): it counts
+compressed and swapped pages at their uncompressed size, so owners can add up to more than
+`host.mem_total_bytes`. Their physical (resident) part is `reclaimable_physical.bytes`.
+`host.mem_used_bytes` is physical memory used and includes `compressed_bytes` (the
+compressor's pages); optional `host.swap_total_bytes` is the swap files' current total.
 An owner's CPU is null if any member lacks a valid CPU difference.
 Then optional `cpu_pct_readable` is the sum over the members that were read (a lower
 bound, absent when none was) and `unknown_cpu_count` how many were not; both keys are

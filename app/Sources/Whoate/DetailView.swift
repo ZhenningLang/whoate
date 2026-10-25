@@ -66,9 +66,19 @@ struct DetailHeaderView: View {
             Text(header.subtitle).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             HStack(spacing: 12) {
                 Pill(row: row)
-                ValueText(row: row, sort: .memory, language: language)
+                // R21: the number says what it is.
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(L10n.text(.memFootprint, language)).font(.callout).foregroundStyle(.secondary)
+                    ValueText(row: row, sort: .memory, language: language)
+                }
                 HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
                     .font(.callout).foregroundStyle(.secondary)
+            }
+            if let split = header.memorySplit {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(split.text).font(.callout).monospacedDigit().help(split.help ?? "")
+                    Text(L10n.text(.memSplitNote, language)).font(.caption).foregroundStyle(.secondary)
+                }
             }
             if let verdict = header.verdict {
                 Text(verdict).font(.callout).fixedSize(horizontal: false, vertical: true)
@@ -158,7 +168,7 @@ struct OwnerDetail: View {
 
     /// Sessions running in this pane (R3); a click opens the session's own details.
     private func paneSessionsCard(_ sessions: [PaneSession]) -> some View {
-        box(L10n.text(.paneSessions, language)) {
+        box(L10n.text(.paneSessions, language) + L10n.text(.memCardSuffix, language)) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
                     if index > 0 { Divider() }
@@ -200,7 +210,7 @@ struct OwnerDetail: View {
     /// its processes with what they are for and their memory; past the limit one
     /// folded line. Then how whoate decided, plain words only.
     private func relationCard(_ relation: Relation) -> some View {
-        box(L10n.text(.relation, language)) {
+        box(L10n.text(.relation, language) + L10n.text(.memCardSuffix, language)) {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(relation.lines.enumerated()), id: \.offset) { _, line in relationLine(line) }
                 if let summary = relation.restSummary {
@@ -236,7 +246,7 @@ struct OwnerDetail: View {
     }
 
     private func partsCard(_ parts: [Part]) -> some View {
-        box(L10n.text(owner.agent != nil ? .processesInSession : .parts, language)) {
+        box(L10n.text(owner.agent != nil ? .processesInSession : .parts, language) + L10n.text(.memCardSuffix, language)) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
                     if index > 0 { Divider() }
@@ -255,7 +265,7 @@ struct OwnerDetail: View {
 
     /// The Codex app's processes without a session, by working folder (R7).
     private func foldersCard(_ groups: [FolderGroup]) -> some View {
-        box(L10n.text(.byFolder, language)) {
+        box(L10n.text(.byFolder, language) + L10n.text(.memCardSuffix, language)) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
                     if index > 0 { Divider() }
@@ -397,7 +407,7 @@ struct SwarmDetail: View {
                 }
             }
             .padding(.horizontal, 8)
-        } label: { Text(L10n.text(.spreadUsers, language)).font(.headline) }
+        } label: { Text(L10n.text(.spreadUsers, language) + L10n.text(.memCardSuffix, language)).font(.headline) }
         Text(Spread.advice(users, owners: byID, language: language)).font(.callout).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }

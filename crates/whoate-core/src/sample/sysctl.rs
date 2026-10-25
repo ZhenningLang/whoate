@@ -120,6 +120,7 @@ pub fn host_from_pages(
         compressed_bytes: bytes(compressed)?,
         wired_bytes: bytes(wired)?,
         swap_used_bytes: swap,
+        swap_total_bytes: None,
         pressure,
     })
 }

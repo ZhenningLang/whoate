@@ -112,6 +112,8 @@ struct CloseCard: View {
             Label(L10n.text(.protectedHint, language), systemImage: "lock.fill")
                 .font(.callout.weight(.medium)).foregroundStyle(.secondary)
         }
+        // R21: the list's numbers are each process's footprint.
+        Text(L10n.text(.memProcessCaption, language)).font(.caption).foregroundStyle(.secondary)
         processList(c.processes.map { Line(pid: $0.pid, name: $0.name, value: $0.memory) })
         if c.estimateBytes != nil {
             Text(L10n.text(.estimateBasis, language)).font(.callout).foregroundStyle(.secondary)

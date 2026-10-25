@@ -19,7 +19,7 @@ enum Phase10Round7Tests {
         let owner = try decodeValue(Owner.self, json)
         let zh = KillConfirmation(owner: owner, language: .zh)
         expect(zh.title == "关闭「Python」？", zh.title)
-        expect(zh.summary == "会结束 3 个进程，预计腾出约 4M 内存。", zh.summary)
+        expect(zh.summary == "会结束 3 个进程，预计腾出约 4M 物理内存。", zh.summary)
         // Without whoate_why: names from the parts, memory only where a part is one process.
         expect(zh.processes.map(\.name) == ["python3", "node", "node"], "\(zh.processes)")
         expect(zh.processes.map(\.memory) == ["6M", "未测到", "未测到"], "\(zh.processes)")
@@ -29,7 +29,7 @@ enum Phase10Round7Tests {
         let named = KillConfirmation(owner: owner, language: .en, procs: procs)
         expect(named.processes.map(\.pid) == [8, 7, 9] && named.processes.map(\.name) == ["Node.js", "Python", "node"])
         expect(named.processes.map(\.memory) == ["5M", "2M", "not measured"], "\(named.processes)")
-        expect(named.summary == "Ends 3 processes and frees about 4M of memory.", named.summary)
+        expect(named.summary == "Ends 3 processes and frees about 4M of physical memory.", named.summary)
         json["reclaimable_physical"] = NSNull()
         let unknown = KillConfirmation(owner: try decodeValue(Owner.self, json), language: .zh)
         expect(unknown.summary == "会结束 3 个进程，腾出多少内存无法预估。", unknown.summary)
@@ -149,9 +149,9 @@ enum Phase10Round7Tests {
         expect(users.compactMap(\.id) == ["app:com.apple.mail", "app:com.kingsoft.wpsoffice", "app:agentsview", "app:com.raycast.macos"])
         let summary = Spread.summary(swarm, users: users, language: .zh)
         // The app count is the list's recognised lines; the rest is said apart (review round 7 B).
-        expect(summary == "Mail、wpsoffice、AgentsView、Raycast 各自用 macOS 的网页组件显示内容（另有 3 个进程没认出是哪个应用），每个页面或窗口一个进程，一共 16 个，占 5.8G。这是正常现象。", summary)
+        expect(summary == "Mail、wpsoffice、AgentsView、Raycast 各自用 macOS 的网页组件显示内容（另有 3 个进程没认出是哪个应用），每个页面或窗口一个进程，一共 16 个，占用 5.8G。这是正常现象。", summary)
         let advice = Spread.advice(users, owners: owners, language: .zh)
-        expect(advice == "想省内存，就关掉占得最多又暂时不用的那个应用，比如 Mail（2.1G）。", advice)
+        expect(advice == "想省内存，就关掉占得最多又暂时不用的那个应用，比如 Mail（占用 2.1G）。", advice)
         let header = Detail.header(swarm, row: spread, language: .zh)
         expect(header.kindLine == "进程群 · 16 个进程" && header.verdict == nil, header.kindLine)
         for text in [summary, advice, header.kindLine, header.title, header.subtitle, spread.pill] + users.map(\.name) {
@@ -235,4 +235,215 @@ enum Phase10Round7Tests {
         let script = String(decoding: try repoFile("scripts/bundle-app.sh"), as: UTF8.self)
         expect(script.contains(#"potrace "$tmp/template.bmp" -b pdf -W 18pt -H 18pt"#) && script.contains("for size in 16 32 128 256 512"))
     }
+
+    // QA63 (round 8, R21): every memory number says what it is.
+    static func memoryNumbersSayWhatTheyAre() throws {
+        let host = try decodeValue(Host.self, ["mem_total_bytes": 24 << 30, "mem_used_bytes": 19 << 30,
+                                               "compressed_bytes": 9 << 30, "wired_bytes": 4 << 30,
+                                               "swap_used_bytes": 9_728 << 20, "swap_total_bytes": 10 << 30, "pressure": "warn"])
+        expect(MemoryWording.physical(host, .zh) == "物理内存 19.0G / 24.0G · 79%", MemoryWording.physical(host, .zh))
+        expect(MemoryWording.compressed(host, .zh) == "其中压缩 9.0G")
+        expect(MemoryWording.swap(host, .zh) == "swap 9.5G / 10.0G · 95%", MemoryWording.swap(host, .zh))
+        expect(MemoryWording.hostLine(host, .en) == "Physical memory 19.0G / 24.0G · 79% · incl. compressed 9.0G · swap 9.5G / 10.0G · 95%")
+        var old = host
+        old.swapTotalBytes = nil
+        expect(MemoryWording.swap(old, .zh) == "swap 已用 9.5G", "an older core: used only")
+        expect(MemoryWording.hostHelp(.zh).contains("macOS 会按需扩大") && MemoryWording.hostHelp(.zh).contains("是已用的一部分"))
+        // One label per line, the value without a second one (review round 8 B [should]).
+        let overview = Detail.overview(host, language: .zh).memory.map { "\($0.0) \($0.1)" }
+        expect(overview == ["物理内存 19.0G / 24.0G · 79%", "其中压缩 9.0G（是已用的一部分）", "其中联动 4.0G（是已用的一部分）",
+                            "swap 9.5G / 10.0G · 95%（macOS 会按需扩大 swap）"], "\(overview)")
+
+        // One owner: physical part (RSS, at most the total), the rest compressed or swapped.
+        let rss: (UInt64?) -> [String: Any] = { bytes in
+            ["bytes": bytes.map { $0 as Any } ?? NSNull(), "unknown_count": bytes == nil ? 1 : 0, "basis": "rss", "reason": NSNull()]
+        }
+        let owner = try decodeValue(Owner.self, ownerJSON("app:a", mem: 10 << 30, overrides: ["reclaimable_physical": rss(4 << 30)]))
+        expect(MemoryWording.splitLine(owner, .zh) == .init(text: "物理内存约 4.0G · 压缩或 swap 约 6.0G · 合计（占用）10.0G", help: nil))
+        expect(MemoryWording.splitLine(owner, .en).text == "In physical memory ~4.0G · compressed or swapped ~6.0G · total (footprint) 10.0G")
+        // RSS counts shared pages: the estimate is capped at the footprint (min(RSS, footprint)).
+        let shared = try decodeValue(Owner.self, ownerJSON("app:b", mem: 1 << 30, overrides: ["reclaimable_physical": rss(3 << 30)]))
+        expect(MemoryWording.split(shared) == .init(physical: 1 << 30, outside: 0, total: 1 << 30), "capped at the footprint")
+        // Review round 8 (A:B2, B:B2, CONFORM:B2): the split keeps the header's precision.
+        // Some footprints unread: a lower bound, no split (a difference from it would claim too much).
+        let partial = try decodeValue(Owner.self, ownerJSON("app:c", mem: 4_300 << 20, pids: [1, 2, 3, 4],
+                                                            overrides: ["unknown_mem_count": 3, "reclaimable_physical": rss(1 << 30)]))
+        expect(MemoryWording.split(partial).physical == nil && MemoryWording.split(partial).outside == nil)
+        expect(MemoryWording.splitLine(partial, .zh) == .init(text: "合计（占用）≥ 4.2G · 有进程读不到，拆不出物理内存和压缩/swap",
+                                                             help: "3 个进程读不到内存"), "\(MemoryWording.splitLine(partial, .zh))")
+        expect(MemoryWording.splitLine(partial, .en).text.hasPrefix("Total (footprint) ≥ 4.2G · some processes unreadable"))
+        // None read: never "0B".
+        let none = try decodeValue(Owner.self, ownerJSON("system:1", mem: 0, kind: "system", pids: [1, 2],
+                                                         overrides: ["unknown_mem_count": 2, "reclaimable_physical": rss(nil)]))
+        expect(MemoryWording.splitLine(none, .zh) == .init(text: "合计（占用）读不到", help: "2 个进程读不到内存"))
+        expect(MemoryWording.splitLine(none, .en).text == "Total (footprint) not readable")
+        // Only the RSS unread: the total is exact, the physical part is not known.
+        let noRSS = try decodeValue(Owner.self, ownerJSON("app:d", mem: 1 << 30, overrides: ["reclaimable_physical": rss(nil)]))
+        expect(MemoryWording.splitLine(noRSS, .zh) == .init(text: "合计（占用）1.0G · 物理内存部分读不到", help: nil))
+        expect(MemoryWording.splitLine(noRSS, .en).text == "Total (footprint) 1.0G · physical part not readable")
+        // The detail line and the header number agree (design report Brave: ≥ 4.2G, 3 unread).
+        let design = try Phase10Tests.designReport()
+        let braveOwner = try require(design.owners.first { $0.id == "app:com.brave.Browser" })
+        let braveRow = try require(Phase10Tests.rows(design).first { $0.id == braveOwner.id })
+        let line = try require(Detail.header(braveOwner, row: braveRow, language: .zh).memorySplit)
+        expect(line.text.contains(braveRow.memory(.zh).text) && line.help == braveRow.memory(.zh).help, line.text)
+        expect(MemoryWording.physicalTotal([1 << 30, 2 << 30]) == "3.0G" && MemoryWording.physicalTotal([1 << 30, nil]) == "≥ 1.0G")
+        expect(MemoryWording.physicalTotal([nil]) == "—" && MemoryWording.physicalTotal([]) == "0B")
+
+        // The sidebar's kinds add physical memory: never past the machine's total, and the section says so.
+        let report = try Phase10Tests.designReport()
+        let rows = Phase10Tests.rows(report)
+        let all = MainWindowModel.total(rows, .all)
+        expect(all.hasPrefix("≥ "), "the design report's system owner is unreadable: \(all)")
+        let physical = rows.compactMap(\.physicalBytes).reduce(0, +)
+        expect(physical < (report.host?.memTotalBytes ?? 0), "\(physical)")
+        expect(L10n.text(.memSectionOwners, .zh) == "归属 · 物理内存")
+        // Defined, not "includes" (owner turned that wording down): 占用 = 物理内存 + 压缩/swap.
+        expect(L10n.format(.memListHeader, .zh, "6") == "6 个归属 · 按占用排序")
+        expect(L10n.text(.memPanelCaption, .zh) == "占用 = 物理内存 + 压缩/swap")
+        for key in [L10nKey.memListHeader, .memPanelCaption, .memProcessCaption] {
+            expect(!L10n.text(key, .zh).contains("含压缩"), "\(key)")
+        }
+        expect(L10n.text(.curve30, .zh).hasPrefix("占用"))
+
+        // No view formats a host or owner number by hand any more: they go through MemoryWording
+        // or sit under a label (card titles carry " · 占用", rows a column header).
+        for (file, text) in try R3.viewSources() {
+            for raw in ["host.memUsedBytes", "host.swapUsedBytes", "host.compressedBytes", "L10n.text(.memoryUsed"] {
+                expect(!text.contains(raw), "\(file): \(raw)")
+            }
+        }
+        let detail = try R3.source("DetailView.swift"), main = try R3.source("MainWindowView.swift")
+        expect(detail.components(separatedBy: "L10n.text(.memCardSuffix, language)").count - 1 == 5, "five memory cards say 占用")
+        expect(detail.contains("Text(L10n.text(.memFootprint, language))") && detail.contains("header.memorySplit"))
+        expect(main.contains("Section(L10n.text(.memSectionOwners, language))") && main.contains("MemoryWording.physical(host, language)")
+               && main.contains("Text(MemoryWording.swap(host, language))"), "the toolbar's two lines")
+        // The list defines its number under the count line, as the panel does above its rows.
+        expect(main.contains("Text(L10n.text(.memPanelCaption, language))"))
+        let panel = try R3.source("PanelView.swift"), flow = try R3.source("CloseFlowView.swift")
+        expect(panel.contains("Text(L10n.text(.memPanelCaption, language))"))
+        expect(flow.contains("Text(L10n.text(.memProcessCaption, language))"))
+    }
+
+    /// Review round 8 (B:B1, spec R21 「断言文本里没有孤立的 NN.NG」): every memory number
+    /// the views show, with the block title it sits under; returns those whose own text
+    /// and block title both lack a kind word.
+    static func unlabelled(_ shown: [(block: String, text: String)], _ language: Language) -> [String] {
+        // The core's own units too ("9.70 GiB", "+500 MiB"; review round 8 B:B1).
+        let number = try! NSRegularExpression(pattern: #"\d+(?:\.\d+)?\s?(?:[KMGT]i?B?|B)(?![A-Za-z])"#)
+        let words = language == .zh ? ["物理内存", "压缩", "swap", "占用", "联动", "显存", "内核内存区"]
+            : ["physical", "compressed", "swap", "footprint", "wired", "gpu", "kernel"]
+        return shown.compactMap { block, text in
+            let hasNumber = number.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+            let said = (block + " " + text).lowercased()
+            return hasNumber && !words.contains { said.contains($0.lowercased()) } ? "[\(block)] \(text)" : nil
+        }
+    }
+
+    // QA63 (review round 8 B:B1)
+    static func everyShownMemoryNumberHasALabel() throws {
+        expect(!unlabelled([("", "4.2G")], .zh).isEmpty && unlabelled([("", "占用 4.2G")], .zh).isEmpty, "the check itself")
+        // A verdict sentence in verdict/rules.rs's own format is caught, and shown labelled.
+        for (raw, language) in [("启动它的 pane 已关闭（时长未知），占 9.70 GiB", Language.zh), ("近 10 分钟 +500 MiB，还在涨", .zh),
+                                ("Its launching pane is closed (duration unknown); using 9.70 GiB", .en),
+                                ("+500 MiB over 10 minutes and still growing", .en)] {
+            expect(!unlabelled([("", raw)], language).isEmpty, "caught: \(raw)")
+            expect(unlabelled([("", MemoryWording.verdict(raw, language))], language).isEmpty, MemoryWording.verdict(raw, language))
+        }
+        let report = try Phase10Tests.designReport()
+        let host = try require(report.host)
+        let owners = Dictionary(report.owners.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for language in [Language.zh, .en] {
+            let t = { (key: L10nKey) in L10n.text(key, language) }
+            let rows = Phase10Tests.rows(report, language)
+            let list = L10n.format(.memListHeader, language, "\(rows.count)") + " " + t(.memPanelCaption)
+            var shown: [(block: String, text: String)] = [
+                ("", MemoryWording.physical(host, language)), ("", MemoryWording.compressed(host, language)),
+                ("", MemoryWording.swap(host, language)), ("", MemoryWording.hostLine(host, language)),
+            ]
+            let overview = Detail.overview(host, language: language)
+            shown += overview.memory.map { ($0.0, $0.1) }
+            shown += overview.zones.map { (overview.zonesTitle ?? "", $0.1) }
+            shown += overview.gpu.map { [(t(.gpuMemory), $0)] } ?? []
+            shown += [MainCategory.all, .tmux, .agents, .apps, .orphans, .system].map {
+                (t(.memSectionOwners), MainWindowModel.total(rows, $0))
+            }
+            for row in rows {
+                shown += [(list, row.memory(language).text), (list, row.subtitle), ("", t(.memFootprint) + " " + row.memory(language).text)]
+                shown.append((t(.memPanelCaption), row.memory(language).text))
+            }
+            let suffix = t(.memCardSuffix)
+            for owner in report.owners {
+                let row = try require(rows.first { $0.id == owner.id })
+                let header = Detail.header(owner, row: row, language: language)
+                shown += [("", t(.memFootprint) + " " + row.memory(language).text), ("", header.memorySplit?.text ?? ""),
+                          ("", header.verdict ?? "")]
+                for card in Detail.cards(owner, history: [], catalog: [:], language: language, report: report) {
+                    switch card {
+                    case .relation(let r):
+                        let block = t(.relation) + suffix
+                        shown += (r.lines + r.rest).compactMap { $0.memory.map { (block, $0.text) } }
+                        shown += r.restSummary.map { [(block, $0)] } ?? []
+                    case .parts(let parts):
+                        let block = t(owner.agent != nil ? .processesInSession : .parts) + suffix
+                        shown += parts.map { (block, Format.memory($0.memBytes, unknown: $0.unknownMemCount, language).text) }
+                    case .folders(let groups):
+                        shown += groups.map { (t(.byFolder) + suffix, Format.memory($0.memBytes, unknown: $0.unknown, language).text) }
+                    case .paneSessions(let sessions):
+                        shown += sessions.map { (t(.paneSessions) + suffix, $0.memory.text) }
+                    default: break
+                    }
+                }
+                let close = KillConfirmation(owner: owner, language: language)
+                shown.append(("", close.summary))
+                shown += close.processes.map { (t(.memProcessCaption), $0.memory) }
+            }
+            for swarm in report.swarms {
+                if let row = rows.first(where: { $0.id == swarm.id }) {
+                    shown.append(("", Detail.header(swarm, row: row, language: language).verdict ?? ""))
+                }
+                let users = Spread.users(swarm, owners: owners, language: language)
+                shown += users.map { (t(.spreadUsers) + suffix, $0.memBytes.map(Format.bytes) ?? "—") }
+                shown += [("", Spread.summary(swarm, users: users, language: language)),
+                          ("", Spread.advice(users, owners: owners, language: language))]
+            }
+            let offenders = unlabelled(shown, language)
+            expect(offenders.isEmpty, "\(language): \(offenders)")
+            expect(shown.count > 100, "the check saw the views' numbers: \(shown.count)")
+        }
+        // The one registered exception (app/DESIGN.md §12): the menu bar number has no room for a word.
+        let bar = MenuBarItem.label(host, style: .systemSymbol, language: .zh)
+        expect(!unlabelled([("", bar.text)], .zh).isEmpty, "menu bar number: the documented exception")
+    }
+
+    /// Review round 8 B:B1: the core's verdict sentences in the GUI's units, with the label.
+    static func verdictSentencesGetUnitsAndTheLabel() throws {
+        let cases: [(String, Language, String)] = [
+            ("启动它的 pane 已关闭（时长未知），占 9.70 GiB", .zh, "启动它的 pane 已关闭（时长未知），占用 9.7G"),
+            ("无人管理的开发进程，占 1.25 GiB", .zh, "无人管理的开发进程，占用 1.2G"),
+            ("近 10 分钟 +500 MiB，还在涨", .zh, "近 10 分钟 +500M（占用），还在涨"),
+            ("启动后 10 分钟内涨到 9.7G，之后不再变化。", .zh, "启动后 10 分钟内涨到 9.7G（占用），之后不再变化。"),
+            ("父进程 [1] 在 60s 内拉起了 20 个相同的 node，合计 104.0 MiB，疑似失控", .zh, "父进程 [1] 在 60s 内拉起了 20 个相同的 node，合计 104M（占用），疑似失控"),
+            ("Its launching pane is closed (duration unknown); using 9.70 GiB", .en, "Its launching pane is closed (duration unknown); footprint 9.7G"),
+            ("+500 MiB over 10 minutes and still growing", .en, "+500M (footprint) over 10 minutes and still growing"),
+            ("空闲 7200 秒，可关", .zh, "空闲 7200 秒，可关"),
+            ("占用 9.7G，已标好", .zh, "占用 9.7G，已标好"),
+            // Review round 8 B: an English label already there; a name with "4K" in it.
+            ("footprint 9.7G and steady", .en, "footprint 9.7G and steady"),
+            ("父进程 [1] 在 60s 内拉起了 20 个相同的 4K Video Downloader，合计 104.0 MiB，疑似失控", .zh,
+             "父进程 [1] 在 60s 内拉起了 20 个相同的 4K Video Downloader，合计 104M（占用），疑似失控"),
+        ]
+        for (raw, language, want) in cases {
+            expect(MemoryWording.verdict(raw, language) == want, "\(raw) → \(MemoryWording.verdict(raw, language))")
+        }
+        // The detail header shows it so; the core's text itself is untouched (CLI / JSON).
+        let owner = try decodeValue(Owner.self, ownerJSON("orphan:1", mem: 9 << 30, level: "act", rule: "orphan-heavy", kind: "orphan",
+                                                          overrides: ["verdict": ["level": "act", "rule": "orphan-heavy",
+                                                                                  "text": "无人管理的开发进程，占 9.00 GiB"]]))
+        let report = try decodeValue(Report.self, reportJSON(owners: [ownerJSON("orphan:1", mem: 9 << 30, kind: "orphan")]))
+        let row = try require(Phase10Tests.rows(report).first)
+        expect(Detail.header(owner, row: row, language: .zh).verdict == "无人管理的开发进程，占用 9.0G")
+        expect(owner.verdict.text == "无人管理的开发进程，占 9.00 GiB")
+    }
 }
+

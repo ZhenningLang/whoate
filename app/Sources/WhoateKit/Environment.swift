@@ -40,6 +40,9 @@ public struct Automation: Equatable, Sendable {
     public var closeStep: String?
     public var escAfter: Double?
     public var returnAfter: Double?
+    /// main-window only (review round 8 A:B1): the window's content width, to check the
+    /// toolbar at the narrowest width the window allows.
+    public var mainWidth: Double?
     /// File receiving "panel\t<windowNumber>\t<w>\t<h>\t<scale>\t<pid>\t<confirm owner id or ->"
     /// once the panel window is shown.
     public var windowFile: String?
@@ -111,6 +114,7 @@ public struct Automation: Equatable, Sendable {
         closeStep = environment["WHOATE_UI_CLOSE_STEP"]
         escAfter = seconds("WHOATE_UI_ESC_AFTER")
         returnAfter = seconds("WHOATE_UI_RETURN_AFTER")
+        mainWidth = seconds("WHOATE_UI_MAIN_WIDTH")
         showMainAfter = seconds("WHOATE_UI_SHOW_MAIN_AFTER")
         panelOpenAfter = seconds("WHOATE_UI_PANEL_OPEN_AFTER")
         showMainAgainAfter = seconds("WHOATE_UI_SHOW_MAIN_AGAIN_AFTER")

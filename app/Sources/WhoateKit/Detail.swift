@@ -10,6 +10,9 @@ public struct DetailHeader: Equatable, Sendable {
     public var pill: String
     public var pillLevel: Level
     public var verdict: String?
+    /// R21, owners only: "物理内存约 X · 压缩或 swap 约 Y · 合计（占用）Z", with the
+    /// header's "≥" and hover when some processes could not be read.
+    public var memorySplit: Format.Memory? = nil
 }
 
 public struct SessionCard: Equatable, Sendable {
@@ -106,14 +109,17 @@ public enum Detail {
         // R17: git's fsmonitor reads as normal; the plain-words line is ours (the core's verdict table is frozen).
         let advice = RowNames.isGitMonitor(owner) ? L10n.text(.gitMonitorAdvice, language) : nil
         return DetailHeader(kindLine: kindLine(owner, language), title: row.title, subtitle: row.subtitle, pill: row.pill,
-                            pillLevel: row.pillLevel, verdict: owner.verdict.level == .ok ? advice : owner.verdict.text)
+                            pillLevel: row.pillLevel,
+                            verdict: owner.verdict.level == .ok ? advice : MemoryWording.verdict(owner.verdict.text, language),
+                            memorySplit: MemoryWording.splitLine(owner, language))
     }
 
     /// R19: no raw signature on top; a spread group's plain-words summary is its own card.
     public static func header(_ swarm: Swarm, row: PanelRow, language: Language) -> DetailHeader {
         DetailHeader(kindLine: L10n.format(.processGroupLine, language, "\(swarm.count)"), title: row.title,
                      subtitle: row.subtitle, pill: row.pill, pillLevel: row.pillLevel,
-                     verdict: Spread.isSpread(swarm) || swarm.verdict.level == .ok ? nil : swarm.verdict.text)
+                     verdict: Spread.isSpread(swarm) || swarm.verdict.level == .ok ? nil
+                         : MemoryWording.verdict(swarm.verdict.text, language))
     }
 
     static func kindLine(_ owner: Owner, _ language: Language) -> String {
@@ -493,11 +499,13 @@ public enum Detail {
     }
 
     public static func overview(_ host: Host, language: Language) -> Overview {
+        // R21: the label names what each value is (once: the value carries no second label),
+        // with its limit and share where there is one.
         let memory = [
-            (L10n.text(.memoryUsed, language), "\(Format.bytes(host.memUsedBytes)) / \(Format.bytes(host.memTotalBytes))"),
-            (L10n.text(.compressed, language), Format.bytes(host.compressedBytes)),
-            (L10n.text(.swap, language), Format.bytes(host.swapUsedBytes)),
-            (L10n.text(.wired, language), Format.bytes(host.wiredBytes)),
+            (L10n.text(.memOverviewPhysical, language), MemoryWording.physicalValue(host)),
+            (L10n.text(.memOverviewCompressed, language), L10n.format(.memPartOfUsed, language, Format.bytes(host.compressedBytes))),
+            (L10n.text(.memOverviewWired, language), L10n.format(.memPartOfUsed, language, Format.bytes(host.wiredBytes))),
+            (L10n.text(.swap, language), MemoryWording.swapValue(host) + L10n.text(.memSwapGrows, language)),
         ]
         var zonesTitle: String?, zones: [(String, String)] = []
         if let k = host.kernelZones {

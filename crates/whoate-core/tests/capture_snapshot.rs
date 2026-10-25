@@ -45,6 +45,7 @@ fn sampler_mock_replays_full_contract_and_local_timestamp() {
         compressed_bytes: 64,
         wired_bytes: 256,
         swap_used_bytes: 32,
+        swap_total_bytes: None,
         pressure: Pressure::Warn,
     });
     snap.tmux_panes.push(TmuxPane {

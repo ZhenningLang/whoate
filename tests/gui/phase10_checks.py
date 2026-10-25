@@ -8,6 +8,7 @@ against the debug build replaying tests/gui/design-report.json.
   phase10_checks.py jump <debug Whoate> <evidence dir>    QA49 (R9) category and scroll
   phase10_checks.py dblclick <debug Whoate> <evidence dir>  QA55 (R14) double-click a panel row
   phase10_checks.py closesheet <debug Whoate> <evidence dir>  QA57 (R16) the close confirmation sheet
+  phase10_checks.py toolbar <debug Whoate> <evidence dir>   QA54 (R21 review A:B1) Memory/CPU stays whole
 
 panel: the panel's own "show main window" action runs at 4 s; before it the
 panel window is visible, after it the panel window is hidden and one main
@@ -333,10 +334,52 @@ def closesheet_once(binary, out, name, attempt):
     return all(checks.values()), os.path.join(out, receipt)
 
 
+# Review round 8 A:B1: the R21 memory text must never push the Memory/CPU control out of
+# the toolbar, in either language, at the narrowest window (960, MainWindowView minWidth).
+TOOLBAR_RUNS = {"zh-960": ("zh_CN.UTF-8", 960), "en-960": ("en_US.UTF-8", 960), "en-default": ("en_US.UTF-8", None)}
+SORT_MIN_W = 80
+
+
+def toolbar(binary, out):
+    return all([without_input(lambda attempt, name=name: toolbar_once(binary, out, name, attempt), f"QA54 toolbar {name}")
+                for name in TOOLBAR_RUNS])
+
+
+def toolbar_once(binary, out, name, attempt):
+    language, width = TOOLBAR_RUNS[name]
+    root = tempfile.mkdtemp(prefix="wt10-", dir="/private/tmp")
+    state = f"{root}/state"
+    env = private_env(root, WHOATE_UI_AUTOMATION="main-window", WHOATE_UI_STATE_FILE=state,
+                      WHOATE_UI_FIXTURE=os.path.realpath(DESIGN), WHOATE_UI_QUIT_AFTER=8, LC_ALL=language,
+                      **({"WHOATE_UI_MAIN_WIDTH": width} if width else {}))
+    handle, exited = run(binary, env, 30)
+    rows = states(state)
+    first = rows[0][0] - float(rows[0][1].get("since_launch", 0)) if rows else 0
+    s = at(rows, first + 6) or {}
+    num = lambda key: int(s[key]) if s.get(key, "-").lstrip("-").isdigit() else None
+    gap, w, left, win = num("sort_right_gap"), num("sort_w"), num("sort_left"), num("window_w")
+    checks = {
+        "qa54_sort_present_and_right": gap is not None and gap <= SORT_RIGHT_GAP_MAX,
+        "qa54_sort_whole": w is not None and w >= SORT_MIN_W and left is not None and win is not None
+        and left >= 0 and left + w <= win,
+        "qa54_window_width": width is None or (win is not None and abs(win - width) <= 2),
+        "qa54_title_still_drawn": s.get("title_drawn") == "true",
+        "qa54_toolbar_not_compact": (num("toolbar_h") or 0) >= TOOLBAR_MIN_H,
+        "quit_after_exited": exited,
+    }
+    receipt = f"qa54-toolbar-{name}.json"
+    write_receipt(out, receipt, {"pid": handle["pid"], "attempt": attempt, "state": s, "states": rows, "checks": checks})
+    print(f"QA54 toolbar {name} attempt={attempt} window_w={win} sort_left={left} sort_w={w} gap={gap} "
+          f"toolbar_h={s.get('toolbar_h')}")
+    for check, ok in checks.items():
+        print(f"P10 toolbar {name} {check}={ok}")
+    return all(checks.values()), os.path.join(out, receipt)
+
+
 def main(argv):
     command, *rest = argv
     ok = {"panel": panel, "main": main_window, "reopen": reopen, "jump": jump, "dblclick": dblclick,
-          "closesheet": closesheet}[command](*rest)
+          "closesheet": closesheet, "toolbar": toolbar}[command](*rest)
     return 0 if ok else 1
 
 

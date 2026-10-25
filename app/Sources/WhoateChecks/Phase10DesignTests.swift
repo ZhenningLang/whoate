@@ -52,7 +52,13 @@ enum Phase10DesignTests {
         // R19 (owner 2026-10-25): a spread group counts processes, the unit its details list;
         // owners outside the report say nothing about the app: one "not recognised" line.
         expect(row.subtitle == (shape == "burst" ? "分属 22 个归属：Claude Code 会话 15、opencode 会话 4、孤儿进程 2…"
-                                : "74 个进程：没认出是哪个应用 74"), row.subtitle)
+                                : "74 个进程 · 没认出是哪个应用"), row.subtitle)
+        // One user only: its count would repeat the total (orchestrator, round 8).
+        if shape == "spread" {
+            let en = try require(RowNames.apply(Panel.rows(report, sort: .memory, language: .en), report: report, language: .en).first)
+            expect(en.subtitle == "74 processes · App not recognised", en.subtitle)
+            expect(!row.subtitle.hasSuffix(" 74"), "no repeated count")
+        }
     }
 
     static func menuBarItemIsNeverColoured() throws {

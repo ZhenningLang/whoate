@@ -382,6 +382,7 @@ mod tests {
             compressed_bytes: 1048576,
             wired_bytes: 2097152,
             swap_used_bytes: 3145728,
+            swap_total_bytes: None,
             pressure: Pressure::Warn,
         });
         let mut report = Report::from_snapshot(&snap);

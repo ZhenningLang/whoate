@@ -31,6 +31,9 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var rule: String?
     /// Process groups only: the owners the group's processes belong to (R14 falls back to one).
     public var members: [String] = []
+    /// R21: owners only, the part of `memBytes` in physical memory (MemoryWording.split);
+    /// nil when its RSS could not be read, and for process groups.
+    public var physicalBytes: UInt64?
 }
 
 extension PanelRow {
@@ -72,7 +75,7 @@ public enum Panel {
                 history: histories.map { $0[o.id] ?? [] } ?? o.history,
                 closable: o.verdict.level == .act && !isProtected(o), insights: o.insights,
                 unknownMemCount: o.unknownMemCount, cpuReadable: o.cpuPctReadable, unknownCPUCount: o.unknownCPUCount,
-                kind: o.kind, rule: o.verdict.rule)
+                kind: o.kind, rule: o.verdict.rule, physicalBytes: MemoryWording.split(o).physical)
         }
         let swarms = report.swarms.map { s in
             // R19: a spread group is normal in the GUI (not in "needs action", grey pill); the core's level stays.
@@ -261,13 +264,20 @@ public enum Panel {
         }
     }
 
-    /// Fractions of (total + swap) for the used, compressed and swap segments.
-    public static func pressureSegments(_ host: Host) -> (used: Double, compressed: Double, swap: Double) {
-        let whole = Double(host.memTotalBytes) + Double(host.swapUsedBytes)
-        guard whole > 0 else { return (0, 0, 0) }
+    /// R21: the physical memory bar, as fractions of the machine's total: the used part
+    /// other than the compressor's, and the compressor's (both together are "used").
+    public static func physicalSegments(_ host: Host) -> (other: Double, compressed: Double) {
+        let total = Double(host.memTotalBytes)
+        guard total > 0 else { return (0, 0) }
         let compressed = min(host.compressedBytes, host.memUsedBytes)
-        return (Double(host.memUsedBytes - compressed) / whole, Double(compressed) / whole,
-                Double(host.swapUsedBytes) / whole)
+        return (min(1, Double(host.memUsedBytes - compressed) / total), min(1, Double(compressed) / total))
+    }
+
+    /// R21: swap's own bar, used / the swap files' current total; nil without a total
+    /// (swap is then only in the text). Swap is not physical memory: never on that bar.
+    public static func swapFraction(_ host: Host) -> Double? {
+        guard let total = host.swapTotalBytes, total > 0 else { return nil }
+        return min(1, Double(host.swapUsedBytes) / Double(total))
     }
 
     /// Footer line: the refresh interval, then the last refresh error while the

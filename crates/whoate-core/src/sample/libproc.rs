@@ -34,6 +34,7 @@ struct NativeHost {
     compressed_pages: u64,
     page_size: u64,
     swap_used: u64,
+    swap_total: u64,
     pressure: i32,
 }
 
@@ -498,7 +499,7 @@ pub fn host() -> SampleResult<crate::snapshot::Host> {
     if result != 0 {
         return Err(SampleError::os("host", result));
     }
-    sysctl::host_from_pages(
+    let mut host = sysctl::host_from_pages(
         raw.total,
         sysctl::PageCounts {
             page_size: raw.page_size,
@@ -509,7 +510,10 @@ pub fn host() -> SampleResult<crate::snapshot::Host> {
         },
         raw.swap_used,
         raw.pressure,
-    )
+    )?;
+    // R21: the swap files' current total (macOS grows them on demand).
+    host.swap_total_bytes = Some(raw.swap_total);
+    Ok(host)
 }
 
 fn issue(issues: &mut BTreeMap<(&'static str, String), usize>, error: SampleError) {

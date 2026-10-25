@@ -51,7 +51,7 @@ int capture_identities(struct capture_identity **out, size_t *count) {
 
 struct capture_host {
     uint64_t total, internal_pages, purgeable_pages, wired_pages, compressed_pages;
-    uint64_t page_size, swap_used;
+    uint64_t page_size, swap_used, swap_total;
     int32_t pressure;
 };
 
@@ -88,6 +88,7 @@ int capture_host(struct capture_host *out) {
     size = sizeof(swap);
     if (sysctlbyname("vm.swapusage", &swap, &size, NULL, 0)) return errno;
     out->swap_used = swap.xsu_used;
+    out->swap_total = swap.xsu_total;
     size = sizeof(out->pressure);
     if (sysctlbyname("kern.memorystatus_vm_pressure_level", &out->pressure, &size, NULL, 0)) return errno;
     return 0;

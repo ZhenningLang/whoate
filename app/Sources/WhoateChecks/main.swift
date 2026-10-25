@@ -113,6 +113,9 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round7Tests.gitMonitorReadsAsItsRepository", Phase10Round7Tests.gitMonitorReadsAsItsRepository),
     ("Phase10Round7Tests.spreadGroupsAreNormalAndSayWhoUsesThem", Phase10Round7Tests.spreadGroupsAreNormalAndSayWhoUsesThem),
     ("Phase10Round7Tests.menuBarShowsTheMonochromePie", { try Phase10Round7Tests.menuBarShowsTheMonochromePie() }),
+    ("Phase10Round7Tests.memoryNumbersSayWhatTheyAre", Phase10Round7Tests.memoryNumbersSayWhatTheyAre),
+    ("Phase10Round7Tests.everyShownMemoryNumberHasALabel", Phase10Round7Tests.everyShownMemoryNumberHasALabel),
+    ("Phase10Round7Tests.verdictSentencesGetUnitsAndTheLabel", Phase10Round7Tests.verdictSentencesGetUnitsAndTheLabel),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))

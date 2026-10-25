@@ -304,6 +304,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let close = frame(window.standardWindowButton(.closeButton))
         return ["toolbar_h=\(Int(window.frame.height - window.contentLayoutRect.height))",
                 "sort_right_gap=\(sort.map { "\(Int(window.frame.width - $0.maxX))" } ?? "-")",
+                // Review round 8 A:B1: the Memory/CPU control whole and inside the window.
+                "sort_w=\(sort.map { "\(Int($0.width))" } ?? "-")", "sort_left=\(sort.map { "\(Int($0.minX))" } ?? "-")",
+                "window_w=\(Int(window.frame.width))",
                 "title_drawn=\(title != nil)",
                 "title_lead=\(title.flatMap { t in list.map { "\(Int(t.minX - $0.minX))" } } ?? "-")",
                 "title_dy=\(title.flatMap { t in close.map { "\(Int(abs(t.midY - $0.midY)))" } } ?? "-")"]

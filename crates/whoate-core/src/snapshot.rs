@@ -102,6 +102,9 @@ pub struct Host {
     pub compressed_bytes: u64,
     pub wired_bytes: u64,
     pub swap_used_bytes: u64,
+    /// R21 (additive): the swap files' current total; macOS grows it on demand.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub swap_total_bytes: Option<u64>,
     pub pressure: Pressure,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kernel_zones: Option<crate::sample::system_memory::KernelZones>,

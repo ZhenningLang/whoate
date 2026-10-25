@@ -162,8 +162,13 @@ enum PanelTests {
         let report = try decodeValue(Report.self, reportJSON(owners: []))
         let host = try require(report.host)
         expect(Panel.headline(host, .zh) == "内存偏紧")
-        let s = Panel.pressureSegments(host)
-        expect(abs(s.used - 33.0 / 68) < 1e-9 && abs(s.compressed - 8.0 / 68) < 1e-9 && abs(s.swap - 20.0 / 68) < 1e-9)
+        // R21 (round 8): physical memory against the total only; swap on its own bar.
+        let s = Panel.physicalSegments(host)
+        expect(abs(s.other - 33.0 / 48) < 1e-9 && abs(s.compressed - 8.0 / 48) < 1e-9)
+        expect(Panel.swapFraction(host) == nil, "no swap total: swap stays in the text")
+        var withTotal = host
+        withTotal.swapTotalBytes = 40 << 30
+        expect(Panel.swapFraction(withTotal) == 0.5)
         let now = try require(Panel.parseDate("2026-10-14T19:40:00+08:00"))
         expect(Panel.systemAge(report, now: now) == 6)
     }

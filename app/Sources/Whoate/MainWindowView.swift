@@ -110,8 +110,14 @@ struct HostToolbar: View {
             if model.sort == .cpu, let detail = header.detail {
                 Text(detail).font(.callout).monospacedDigit().foregroundStyle(.secondary)
             } else if let host = model.report?.host {
-                Text("\(L10n.text(.memoryUsed, language)) \(Format.bytes(host.memUsedBytes)) / \(Format.bytes(host.memTotalBytes)) · \(L10n.text(.swap, language)) \(Format.bytes(host.swapUsedBytes))")
-                    .font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                // R21: physical memory used / total · %, the compressor's share of it, swap used / total · %,
+                // in two short lines so the Memory/CPU control always keeps its place (review round 8 A:B1).
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(MemoryWording.physical(host, language) + " · " + MemoryWording.compressed(host, language))
+                    Text(MemoryWording.swap(host, language))
+                }
+                .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+                .help(MemoryWording.hostHelp(language))
             }
         }
         .fixedSize()
@@ -142,7 +148,8 @@ struct SidebarView: View {
         let rows = model.rows(limit: .max)
         let selection = Binding<MainCategory?>(get: { model.category }, set: { if let c = $0 { model.category = c } })
         List(selection: selection) {
-            Section(L10n.text(.sectionOwners, language)) {
+            // R21: the kinds' totals are their owners' physical memory.
+            Section(L10n.text(.memSectionOwners, language)) {
                 ForEach([MainCategory.all, .tmux, .agents, .apps, .orphans, .system], id: \.self) { item($0, rows) }
             }
             Section(L10n.text(.sectionFilters, language)) {
@@ -170,12 +177,19 @@ struct OwnerListView: View {
         let metric = L10n.text(model.sort == .memory ? .sortMemory : .sortCPU, language)
         VStack(spacing: 0) {
             HStack {
-                Text(L10n.format(.ownersCount, language, "\(rows.count)") + " · " + L10n.format(.sortedBy, language, metric))
+                // R21: in memory order the number is the footprint, and the header says so.
+                Text(model.sort == .memory ? L10n.format(.memListHeader, language, "\(rows.count)")
+                     : L10n.format(.ownersCount, language, "\(rows.count)") + " · " + L10n.format(.sortedBy, language, metric))
                 Spacer()
                 Text(L10n.text(.last30Minutes, language))
             }
             .font(.subheadline).foregroundStyle(.secondary)
-            .padding(.horizontal, 16).padding(.vertical, 8)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, model.sort == .memory ? 2 : 8)
+            // R21: what the number is, defined on a line of its own (it does not fit beside the count).
+            if model.sort == .memory {
+                Text(L10n.text(.memPanelCaption, language)).font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 8)
+            }
             Divider()
             ScrollViewReader { proxy in
                 List(selection: $model.selectedOwnerID) {
@@ -224,7 +238,8 @@ struct MainRowView: View {
                     if sort == .memory {
                         HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
                     } else {
-                        MemoryText(memory: row.memory(language))
+                        // R21: labelled like the CPU number in memory order.
+                        HStack(spacing: 4) { Text(L10n.text(.memFootprint, language)); MemoryText(memory: row.memory(language)) }
                     }
                 }
                 .font(.callout).foregroundStyle(.secondary)
@@ -246,6 +261,9 @@ struct MainRowView: View {
 /// not happen to cover it; WHOATE_UI_WINDOW_FILE receives its line.
 @MainActor func automationMainWindow(_ window: NSWindow) {
     let automation = WhoateApp.automation
+    if automation.mainWindow, let width = automation.mainWidth {
+        window.setContentSize(NSSize(width: width, height: window.contentLayoutRect.height))
+    }
     if automation.mainWindow, let screen = NSScreen.main?.visibleFrame {
         window.setFrameOrigin(NSPoint(x: screen.maxX - window.frame.width - 8, y: screen.minY + 8))
     }
