@@ -1,14 +1,14 @@
 {
   "fixture": "tests/gui/design-report.json",
   "fixture_sha256": "83858d4fe29b3583eee91c392632fda15221b42d1ad333637f35774358f2601b",
-  "app_tree": "8beda3422e1bcc31783bcb61e191eca08d6a0ba0",
+  "app_tree": "00280fd2e8bd0ad52f005c0fffaf9b54b7261e23",
   "images": [
     {
       "file": "panel-en-light.png",
-      "sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
+      "sha256": "959f9c5926d264749b5c5214bdae1e7a6311c02d231e784cc303fd8e8acc9787",
       "shot": "panel-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
+      "source_sha256": "959f9c5926d264749b5c5214bdae1e7a6311c02d231e784cc303fd8e8acc9787",
       "width": 840,
       "height": 1310
     },
@@ -23,10 +23,10 @@
     },
     {
       "file": "main-browser-en-light.png",
-      "sha256": "8169fae77ba588cae17acb4635f0b40a92410bcaa40218244a40c4fc4072c5ee",
+      "sha256": "09e6b2a51850cd1cc53c12e456bbe987c4a5d8f5cf808db4d3e0a8bff85b913d",
       "shot": "main-browser-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "a2bbcc8a9d8724debc989b639d24e7de311f9ba0336ffbbcf783d307139c185e",
+      "source_sha256": "610a7e628a8b0238c2dd440e63c3ee20df65dc7d75bf6a77e4d62c3c77be87ed",
       "width": 1600,
       "height": 1028
     },
@@ -58,10 +58,24 @@
       "height": 524
     }
   ],
+  "social": {
+    "source": "assets/social/preview.svg",
+    "file": "assets/social/preview.png",
+    "og": "og.png",
+    "sha256": "2abd3d3e5e81f38ee028109ff1ace611428fbaa195c3e167dd14516dce2c5dc1",
+    "width": 1280,
+    "height": 640,
+    "embeds": [
+      {
+        "file": "main-agent-en-light.png",
+        "sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618"
+      }
+    ]
+  },
   "demo": {
     "file": "demo.gif",
-    "sha256": "454d29d2e5809e78854ec6d39c5f6395e464a24749ee5be0765d1a7f2c722e1c",
-    "bytes": 1260831,
+    "sha256": "946a278e45286eaa99bcebd276d13d133f303a0cdaeb38d1844b1b012c6fb169",
+    "bytes": 1260785,
     "duration_s": 12.2,
     "width": 960,
     "height": 616,
@@ -79,13 +93,13 @@
       {
         "shot": "panel-en-light",
         "file": "panel-en-light.png",
-        "sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
+        "sha256": "959f9c5926d264749b5c5214bdae1e7a6311c02d231e784cc303fd8e8acc9787",
         "duration_s": 2.3
       },
       {
         "shot": "main-browser-en-light",
         "file": "main-browser-en-light.png",
-        "sha256": "8169fae77ba588cae17acb4635f0b40a92410bcaa40218244a40c4fc4072c5ee",
+        "sha256": "09e6b2a51850cd1cc53c12e456bbe987c4a5d8f5cf808db4d3e0a8bff85b913d",
         "duration_s": 2.3
       },
       {
@@ -109,19 +123,5 @@
       "width": 960,
       "height": 616
     }
-  },
-  "social": {
-    "source": "assets/social/preview.svg",
-    "file": "assets/social/preview.png",
-    "og": "og.png",
-    "sha256": "2abd3d3e5e81f38ee028109ff1ace611428fbaa195c3e167dd14516dce2c5dc1",
-    "width": 1280,
-    "height": 640,
-    "embeds": [
-      {
-        "file": "main-agent-en-light.png",
-        "sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618"
-      }
-    ]
   }
 }
