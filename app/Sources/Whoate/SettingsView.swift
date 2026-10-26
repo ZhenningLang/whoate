@@ -11,6 +11,8 @@ struct SettingsView: View {
     let app: AppModel
     /// Reports the settings window (activation policy, automation state).
     let found: (NSWindow) -> Void
+    /// A page's laid-out height changed: the window takes it now (AppDelegate.settingsPageResized).
+    let resized: () -> Void
 
     private var language: Language { app.language }
 
@@ -20,6 +22,7 @@ struct SettingsView: View {
                 page(tab)
                     .formStyle(.grouped)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in resized() }
                     .tabItem { Label(L10n.text(tab.title, language), systemImage: tab.symbol) }
                     .tag(tab)
             }

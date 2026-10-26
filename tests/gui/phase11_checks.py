@@ -9,6 +9,7 @@ root (never the owner's UserDefaults), a fake login item and a fake notifier.
   phase11_checks.py first-launch <debug Whoate> <evidence dir>      QA20
   phase11_checks.py notify <debug Whoate> <evidence dir>            QA27
   phase11_checks.py shots <debug Whoate> <evidence dir> <cli>       QA22
+  phase11_checks.py settle <debug Whoate> <evidence dir> <cli>      QA22 (tab heights hold)
   phase11_checks.py owner-snapshot <file>                           QA23 before (no login items: see owner_state)
   phase11_checks.py owner-compare <file>                            QA23 after
 
@@ -311,27 +312,54 @@ def shoot(number, png):
     return shot.returncode == 0 and os.path.exists(png), shot.stderr.strip()
 
 
-def capture(number, size, pid, png, slack=0, owner=window_owner, take=shoot, measure=screenshots.stats):
+HELD_READS, HELD_INTERVAL = 5, 0.1
+
+
+def held(number, owner=window_owner, sleep=time.sleep, reads=HELD_READS, interval=HELD_INTERVAL, timeout=5):
+    """(width, height) once the window server reports the same size `reads` times in a row,
+    `interval` s apart; None when it never holds within `timeout` s or the window goes.
+    The app's own report can lag a resize, and a page first laid out under the toolbar
+    was 11 pt too tall until a later update (settingsPageResized)."""
+    run = []
+    for _ in range(int(timeout / interval)):
+        found = owner(number)
+        if not found:
+            return None
+        run = run + [found[1:]] if run and run[-1] == found[1:] else [found[1:]]
+        if len(run) >= reads:
+            return run[-1]
+        sleep(interval)
+    return None
+
+
+def capture(number, size, pid, png, slack=0, owner=window_owner, take=shoot, measure=screenshots.stats, sleep=time.sleep):
     """One window this run's app owns, by number; screenshots.py's image checks.
     The window must belong to `pid` by the window server's account, checked before
-    anything is captured, so another app's window is never photographed.
+    anything is captured, so another app's window is never photographed. Its size must
+    hold before the capture (held) and still be the same after it.
     `slack` points: a popover's capture includes its arrow beyond the window frame."""
     found = owner(number)
     owner_pid = found[0] if found else None
     if owner_pid != pid:
         return {"file": png, "window": int(number), "pid": pid, "owner_pid": owner_pid, "owner_ok": False, "ok": False,
                 "error": "window missing" if owner_pid is None else "window belongs to another process"}
-    # The size the window server has now (the app's own report can lag an animated resize).
-    _, width, height = found
+    size_held = held(number, owner=owner, sleep=sleep)
+    if size_held is None:
+        return {"file": png, "window": int(number), "pid": pid, "owner_pid": owner_pid, "owner_ok": True, "ok": False,
+                "error": f"window size did not hold for {HELD_READS} reads"}
+    width, height = size_held
     scale = size.split("x")[-1]
     taken, error = take(number, png)
     if not taken:
         return {"file": png, "error": error, "owner_pid": owner_pid, "owner_ok": True, "ok": False}
+    after = owner(number)
     s = measure(png)
     expected = (round(int(width) * float(scale)), round(int(height) * float(scale)))
     s.update(file=png, window=int(number), pid=pid, owner_pid=owner_pid, owner_ok=True, expected_size=expected,
-             size_ok=all(abs(got - want) <= slack * float(scale) for got, want in zip((s["width"], s["height"]), expected)),
+             size_after=list(after[1:]) if after else None, held_after=bool(after) and after[1:] == size_held,
              not_solid=s["distinct_colours"] > 8)
+    s["size_ok"] = s["held_after"] and all(abs(got - want) <= slack * float(scale)
+                                           for got, want in zip((s["width"], s["height"]), expected))
     s["ok"] = s["size_ok"] and s["not_solid"]
     return s
 
@@ -361,24 +389,35 @@ def steady(state, field, settle=0.6, timeout=10):
     return states(state)[-1][1]
 
 
-def shots(binary, out, cli):
-    results, envs = [], []
-    tab_step = 2.5
-    # Everything the app is shown lives under the temporary root, never the owner's home:
-    # the CLI path appears on the command line tab, and the shots may be published (P06).
+TAB_STEP = 2.5
+
+
+def shot_assets(cli):
+    """Everything the app is shown lives under the temporary root, never the owner's home:
+    the CLI path appears on the command line tab, and the shots may be published (P06)."""
     assets = root("wp11assets-")
     shutil.copy2(cli, f"{assets}/whoate")
     shutil.copy2(DESIGN, f"{assets}/design-report.json")
-    cli, fixture = f"{assets}/whoate", f"{assets}/design-report.json"
+    return f"{assets}/whoate", f"{assets}/design-report.json"
+
+
+def settings_env(cli, fixture, language, appearance, tab=None):
+    """The settings window at 2 s, then every tab TAB_STEP s apart; or only `tab`."""
+    base = root("wp11shot-")
+    os.makedirs(f"{base}/bin", exist_ok=True)
+    tabs = {"WHOATE_UI_SETTINGS_TAB": tab} if tab else {"WHOATE_UI_SETTINGS_TAB_STEP": TAB_STEP}
+    return env_for(base, fixture, WHOATE_UI_AUTOMATION="menubar", WHOATE_UI_STATE_FILE=f"{base}/state", LC_ALL=language,
+                   WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_OPEN_SETTINGS_AFTER=2, WHOATE_UI_CLI_BUNDLED=cli,
+                   WHOATE_UI_QUIT_AFTER=2 + (3 if tab else TAB_STEP * 6) + 3, **tabs)
+
+
+def shots(binary, out, cli):
+    results, envs = [], []
+    cli, fixture = shot_assets(cli)
     for language in ("zh_CN.UTF-8", "en_US.UTF-8"):
         for appearance in ("light", "dark"):
-            base = root("wp11shot-")
-            os.makedirs(f"{base}/bin", exist_ok=True)
-            state = f"{base}/state"
-            env = env_for(base, fixture, WHOATE_UI_AUTOMATION="menubar", WHOATE_UI_STATE_FILE=state, LC_ALL=language,
-                          WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_OPEN_SETTINGS_AFTER=2,
-                          WHOATE_UI_SETTINGS_TAB_STEP=tab_step, WHOATE_UI_CLI_BUNDLED=cli,
-                          WHOATE_UI_QUIT_AFTER=2 + tab_step * 6 + 3)
+            env = settings_env(cli, fixture, language, appearance)
+            state = env["WHOATE_UI_STATE_FILE"]
             envs.append(env)
             runner = launch.Launcher()
             handle = runner.start(binary, env=env)
@@ -454,6 +493,83 @@ def shots(binary, out, cli):
     count_ok = len([r for r in results if r["ok"]]) == 23 and len(results) == 23
     print(f"QA22 shots={len(results)} ok={sum(r['ok'] for r in results)} launches={len(envs)} app_env_home_free={home_ok}")
     return count_ok and home_ok
+
+
+def dwell_heights(samples, skip=0.3, tail=0.4):
+    """{tab: sorted window heights} while each tab is shown, from (time, tab, height)
+    samples in order. Left out: the first `skip` s of a tab (the switch's own resize) and
+    its last `tail` s (the state file reports a switch up to 0.2 s after the window moves)."""
+    spans = []
+    for t, tab, height in samples:
+        if not spans or spans[-1][0] != tab:
+            spans.append((tab, []))
+        spans[-1][1].append((t, height))
+    heights = {}
+    for tab, rows in spans:
+        start, end = rows[0][0] + skip, rows[-1][0] - tail
+        heights.setdefault(tab, set()).update(h for t, h in rows if start <= t <= end)
+    return {tab: sorted(hs) for tab, hs in heights.items()}
+
+
+def settled_verdict(dwell, direct):
+    """Every tab shown at one height for its whole dwell, and notifications at the height it
+    has when the window opens on it directly. Before settingsPageResized, notifications
+    opened 11 pt too tall and either stayed so or dropped 0.6-0.8 s later (QA22 red twice)."""
+    return all(len(dwell.get(tab, [])) == 1 for tab in TABS) and dwell["notifications"] == [direct]
+
+
+def settle(binary, out, cli):
+    """QA22: a tab switch shows the page at its final height at once. Per language (light):
+    every tab in turn, the window server's height sampled every 30 ms; and a window opened
+    on notifications directly, for that tab's reference height."""
+    cli, fixture = shot_assets(cli)
+    report, ok = {}, True
+    for language in ("zh_CN.UTF-8", "en_US.UTF-8"):
+        samples, direct = [], None
+        for tab in (None, "notifications"):
+            env = settings_env(cli, fixture, language, "light", tab)
+            state = env["WHOATE_UI_STATE_FILE"]
+            runner = launch.Launcher()
+            handle = runner.start(binary, env=env)
+            try:
+                row = wait_state(state, lambda r: r.get("settings_visible") == "true" and r.get("settings_window", "-") != "-")
+                number = row and row["settings_window"]
+                # The app reports the window a moment before the window server lists it;
+                # never listed as this app's within 5 s: no samples, no reference (red).
+                for _ in range(100):
+                    if not number or (window_owner(number) or [None])[0] == handle["pid"]:
+                        break
+                    time.sleep(0.05)
+                else:
+                    number = None
+                if number and tab:
+                    size = held(number)
+                    direct = size and size[1]
+                # Past the app's own quit time plus 10 s the run is over (a hung app: red).
+                deadline = time.time() + float(env["WHOATE_UI_QUIT_AFTER"]) + 10
+                while number and runner.alive(handle) and not tab:
+                    if time.time() > deadline:
+                        samples.clear()
+                        break
+                    rows = states(state)
+                    found = window_owner(number)
+                    if not found or found[0] != handle["pid"]:
+                        break
+                    samples.append((time.time(), rows[-1][1].get("settings_tab"), found[2]))
+                    time.sleep(0.03)
+                runner.wait(handle, 30)
+            finally:
+                if runner.alive(handle):
+                    runner.stop(handle)
+            launch.cleanup(handle)
+        dwell = dwell_heights(samples)
+        verdict = direct is not None and settled_verdict(dwell, direct)
+        ok &= verdict
+        report[language[:2]] = {"dwell_heights": dwell, "notifications_direct": direct, "ok": verdict,
+                                "samples": [[round(t - samples[0][0], 3), tab, h] for t, tab, h in samples] if samples else []}
+        print(f"QA22 settle {language[:2]} dwell_heights={dwell} notifications_direct={direct} ok={verdict}")
+    write_receipt(out, "qa22-settle.json", report)
+    return ok
 
 
 # QA23 ------------------------------------------------------------------------
@@ -550,6 +666,8 @@ def main(argv):
     os.makedirs(out, exist_ok=True)
     if command == "shots":
         return shots(binary, out, argv[4])
+    if command == "settle":
+        return settle(binary, out, argv[4])
     return {"settings-window": settings_window, "persist": persist, "first-launch": first_launch,
             "notify": notify}[command](binary, out)
 

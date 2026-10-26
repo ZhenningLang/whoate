@@ -68,7 +68,7 @@ struct WhoateApp: App {
         // Phase 11: the standard settings window (⌘, and whoate → 设置…).
         Settings {
             SettingsView(model: delegate.settingsModel, settings: delegate.settings, app: delegate.model,
-                         found: { delegate.settingsWindowFound($0) })
+                         found: { delegate.settingsWindowFound($0) }, resized: { delegate.settingsPageResized() })
         }
 
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {

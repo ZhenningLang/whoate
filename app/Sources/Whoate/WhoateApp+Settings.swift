@@ -146,6 +146,15 @@ extension AppDelegate {
         }
     }
 
+    /// A page shown for the first time is laid out twice: once under the toolbar's safe
+    /// area, where the grouped form measures 10.5 pt taller, then without it. The window
+    /// takes the first height and kept it until some later, unrelated update (0.6 s or
+    /// never, measured), so a tab opened too tall and then jumped. Asking for a
+    /// constraints pass on the next turn makes it take the second height at once.
+    func settingsPageResized() {
+        DispatchQueue.main.async { [weak self] in self?.settingsWindow?.contentView?.needsUpdateConstraints = true }
+    }
+
     /// WHOATE_UI_OPEN_SETTINGS_AFTER, _SETTINGS_TAB(_STEP), _SETTINGS_CLOSE_AFTER, _NOTIFY_CLICK_AFTER.
     func scheduleSettingsAutomation(_ automation: Automation, at: (Double, @escaping @MainActor () -> Void) -> Void) {
         if let tab = automation.settingsTab.flatMap(SettingsTab.init(rawValue:)) { settingsModel.tab = tab }
