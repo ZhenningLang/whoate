@@ -76,6 +76,11 @@ impl<S: Sampler, C: Clock> Engine<S, C> {
             self.previous = None;
         }
     }
+    /// Text from the next tick on uses `language`; history and caches stay.
+    pub fn set_language(&mut self, language: Language) {
+        self.context.language = language;
+        self.context.cfg.language = language;
+    }
     pub fn with_sampler(sampler: S, clock: C, context: Context) -> Self {
         Self::try_with_sampler(sampler, clock, context)
             .expect("embedded insight library must pass full validation")

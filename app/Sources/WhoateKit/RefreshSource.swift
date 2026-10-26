@@ -8,8 +8,11 @@ public protocol RefreshEngine: Sendable {
     func history(pid: Int32, owner: String) -> [HistoryPoint]?
     /// History plus whoate_why's process list (R4, R8), from one call.
     func detail(pid: Int32, owner: String) -> (history: [HistoryPoint], procs: [ProcBrief])?
+    /// Diagnosis text language from the next tick on (Phase 11); history is kept.
+    func setLanguage(_ language: Language) -> Decoded<LanguageControl>
 }
 extension RefreshEngine {
+    public func setLanguage(_ language: Language) -> Decoded<LanguageControl> { .value(LanguageControl(language: language == .zh ? "zh" : "en")) }
     public func history(pid: Int32, owner: String) -> [HistoryPoint]? { nil }
     public func detail(pid: Int32, owner: String) -> (history: [HistoryPoint], procs: [ProcBrief])? {
         history(pid: pid, owner: owner).map { ($0, []) }
@@ -18,6 +21,11 @@ extension RefreshEngine {
 
 public struct RefreshControl: Decodable, Sendable {
     public var active: Bool
+}
+
+/// whoate_engine_set_language's answer (whoate/control-v1).
+public struct LanguageControl: Decodable, Sendable, Equatable {
+    public var language: String
 }
 
 public struct HostSample: Decodable, Sendable {

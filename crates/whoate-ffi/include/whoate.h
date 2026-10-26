@@ -33,6 +33,13 @@ char *whoate_host_json(void);
  * Uses the same exclusive-engine threading rule as tick. */
 char *whoate_engine_set_active(WhoateEngine *engine, int32_t active);
 
+/* Phase 11: diagnosis text language from the next tick on; language 1 = zh,
+ * 2 = en. Keeps report/history/caches. Returns {"schema":"whoate/control-v1",
+ * "language":"zh"|"en"}, or the standard error with code 2 for any other value
+ * or a NULL engine. A debug engine replaying a report file accepts the call but
+ * its text stays as recorded. Same exclusive-engine threading rule as tick. */
+char *whoate_engine_set_language(WhoateEngine *engine, int32_t language);
+
 /* Report holding only the owner(s) containing pid, with full history, plus
  * "procs": those owners' processes (argv redacted) and their ancestors up to
  * launchd; empty when replaying a report. Ticks once first if needed. */

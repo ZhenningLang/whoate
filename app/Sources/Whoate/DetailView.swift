@@ -505,14 +505,15 @@ struct HistoryChart: View {
     let color: Color
     let language: Language
     var metric: SortKey = .memory
+    @Environment(\.curveGapLimit) private var gapLimit
     var body: some View {
-        if !Format.drawable(points, metric: metric) {
+        if !Format.drawable(points, metric: metric, gapLimit: gapLimit) {
             Text(L10n.text(.notEnoughSamples, language)).font(.callout).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 Chart {
-                    ForEach(Array(Format.runs(points, metric: metric).enumerated()), id: \.offset) { index, run in
+                    ForEach(Array(Format.runs(points, metric: metric, gapLimit: gapLimit).enumerated()), id: \.offset) { index, run in
                         ForEach(run, id: \.timestampS) { p in
                             LineMark(x: .value("t", Date(timeIntervalSince1970: TimeInterval(p.timestampS))),
                                      y: .value("value", Self.value(p, metric)), series: .value("run", index))

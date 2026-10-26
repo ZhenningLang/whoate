@@ -12,6 +12,17 @@ public func completedPath(_ path: String?) -> String {
     return parts.joined(separator: ":")
 }
 
+/// Appends to an opt-in automation file, creating it on first use.
+public func appendLine(_ line: String, to path: String, failure: String) {
+    if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
+    do {
+        let file = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
+        defer { try? file.close() }
+        try file.seekToEnd()
+        try file.write(contentsOf: Data(line.utf8))
+    } catch { FileHandle.standardError.write(Data((failure + "\n").utf8)) }
+}
+
 /// Must run before the engine is created.
 public func repairProcessPath() {
     setenv("PATH", completedPath(ProcessInfo.processInfo.environment["PATH"]), 1)
@@ -85,6 +96,27 @@ public struct Automation: Equatable, Sendable {
         public var rowID: String
     }
     public var panelDoubleClicks: [DoubleClick] = []
+    /// Phase 11 settings window: open it this many seconds after start (the gear's
+    /// action), show this tab (general|menubar|notifications|cli|about), step through
+    /// every tab `settingsTabStep` seconds apart, close it at `settingsCloseAfter`.
+    public var openSettingsAfter: Double?
+    public var settingsTab: String?
+    public var settingsTabStep: Double?
+    public var settingsCloseAfter: Double?
+    /// "<key>=<value>,…" applied through the settings' own setters once launched (QA19).
+    public var assignments: String?
+    /// Fake open-at-login status: enabled|off|approval|error.
+    public var loginFake: String?
+    /// Fake notifier log; its granted authorization; a click on the latest
+    /// "growing" notification at this time (QA27).
+    public var notifyLog: String?
+    public var notifyAuth: String?
+    public var notifyClickAfter: Double?
+    /// Command line tab: candidate directories and the user's PATH (colon lists,
+    /// temporary directories only), and the CLI to treat as the app's own.
+    public var cliDirs: [String]?
+    public var cliPath: [String]?
+    public var cliBundled: String?
 
     public static let off = Automation()
 
@@ -125,6 +157,19 @@ public struct Automation: Equatable, Sendable {
         detailScroll = environment["WHOATE_UI_DETAIL_SCROLL"]
         sort = environment["WHOATE_UI_SORT"].flatMap(SortKey.init(rawValue:))
         menuBarIcon = environment["WHOATE_UI_MENUBAR_ICON"]
+        openSettingsAfter = seconds("WHOATE_UI_OPEN_SETTINGS_AFTER")
+        settingsTab = environment["WHOATE_UI_SETTINGS_TAB"]
+        settingsTabStep = seconds("WHOATE_UI_SETTINGS_TAB_STEP")
+        settingsCloseAfter = seconds("WHOATE_UI_SETTINGS_CLOSE_AFTER")
+        assignments = environment["WHOATE_UI_SET"]
+        loginFake = environment["WHOATE_UI_LOGIN_FAKE"]
+        notifyLog = environment["WHOATE_UI_NOTIFY_LOG"]
+        notifyAuth = environment["WHOATE_UI_NOTIFY_AUTH"]
+        notifyClickAfter = seconds("WHOATE_UI_NOTIFY_CLICK_AFTER")
+        let dirs = { (key: String) in environment[key].map { $0.split(separator: ":").map(String.init) } }
+        cliDirs = dirs("WHOATE_UI_CLI_DIRS")
+        cliPath = dirs("WHOATE_UI_CLI_PATH")
+        cliBundled = environment["WHOATE_UI_CLI_BUNDLED"]
         panelDoubleClicks = (environment["WHOATE_UI_PANEL_DOUBLE_CLICKS"] ?? "").split(separator: ";").compactMap { item in
             let fields = item.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 2).map(String.init)
             guard fields.count == 3, let after = Double(fields[0]), after.isFinite, after >= 0,

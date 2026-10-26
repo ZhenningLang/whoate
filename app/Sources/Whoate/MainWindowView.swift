@@ -52,7 +52,9 @@ struct MainWindowView: View {
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) { if model.firstLaunchBanner { FirstLaunchBanner(model: model) } }
         .frame(minWidth: 960, minHeight: 600)
+        .environment(\.curveGapLimit, model.profile.gapLimit)
         .coordinateSpace(.named(RowFrames.space))
         .onPreferenceChange(RowFrames.self) { frames in
             // Its own file: the panel window writes WHOATE_UI_LAYOUT_FILE itself.
@@ -273,4 +275,20 @@ struct MainRowView: View {
     appendLine("main\t\(window.windowNumber)\t\(Int(size.width))\t\(Int(size.height))\t"
         + "\(window.backingScaleFactor)\t\(ProcessInfo.processInfo.processIdentifier)\t-\n",
         to: path, failure: "window_file_failed")
+}
+
+/// Phase 11 first launch, when no menu bar item could be pointed at: where whoate lives.
+struct FirstLaunchBanner: View {
+    let model: AppModel
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "menubar.arrow.up.rectangle").foregroundStyle(.secondary)
+            Text(L10n.text(.firstLaunchBanner, model.language)).font(.callout)
+            Spacer(minLength: 8)
+            Button(L10n.text(.gotIt, model.language)) { model.firstLaunchBanner = false }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+    }
 }

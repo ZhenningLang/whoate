@@ -8,7 +8,13 @@ import SwiftUI
 
 public enum WindowPolicy {
     public static func activation(mainWindows: Int) -> NSApplication.ActivationPolicy {
-        mainWindows > 0 ? .regular : .accessory
+        activation(mainWindows: mainWindows, settingsWindows: 0)
+    }
+
+    /// The settings window needs the Dock and ⌘Tab too (research F10), but it is
+    /// never a main window: "完整面板" still opens one.
+    public static func activation(mainWindows: Int, settingsWindows: Int) -> NSApplication.ActivationPolicy {
+        mainWindows > 0 || settingsWindows > 0 ? .regular : .accessory
     }
 
     public enum OpenAction: Equatable, Sendable { case bringToFront, create }
@@ -55,7 +61,10 @@ public struct QuitAction: Sendable {
 @MainActor @Observable
 public final class MainWindows {
     public private(set) var count = 0
+    /// Open settings windows (Phase 11): they count for the policy only.
+    public private(set) var settingsCount = 0
     @ObservationIgnored private var windows: [ObjectIdentifier: (window: NSWindow, token: NSObjectProtocol)] = [:]
+    @ObservationIgnored private var settings: [ObjectIdentifier: (window: NSWindow, tokens: [NSObjectProtocol])] = [:]
     /// SwiftUI may show the same NSWindow again after it was closed, without the
     /// reporter view moving to a window again (P08-REOPEN-POLICY, measured in Phase 10).
     @ObservationIgnored private weak var closedWindow: NSWindow?
@@ -88,6 +97,28 @@ public final class MainWindows {
         changed()
     }
 
+    public var settingsWindow: NSWindow? { settings.values.first?.window }
+
+    /// SwiftUI's Settings window, tracked until it closes; SwiftUI shows the same
+    /// window again next time, which registers it again.
+    public func registerSettings(_ window: NSWindow) {
+        let id = ObjectIdentifier(window)
+        guard settings[id] == nil else { return }
+        let gone: @Sendable (Notification) -> Void = { [weak self] _ in
+            MainActor.assumeIsolated { self?.settingsGone(id) }
+        }
+        let tokens = [NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window,
+                                                             queue: .main, using: gone)]
+        settings[id] = (window, tokens)
+        changed()
+    }
+
+    func settingsGone(_ id: ObjectIdentifier) {
+        guard let entry = settings.removeValue(forKey: id) else { return }
+        entry.tokens.forEach(NotificationCenter.default.removeObserver)
+        changed()
+    }
+
     func closed(_ id: ObjectIdentifier) {
         guard let entry = windows.removeValue(forKey: id) else { return }
         closedWindow = entry.window
@@ -116,7 +147,8 @@ public final class MainWindows {
 
     private func changed() {
         count = windows.count
-        apply(WindowPolicy.activation(mainWindows: count))
+        settingsCount = settings.count
+        apply(WindowPolicy.activation(mainWindows: count, settingsWindows: settingsCount))
     }
 }
 

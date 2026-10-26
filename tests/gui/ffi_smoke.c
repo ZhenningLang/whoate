@@ -107,6 +107,13 @@ int main(int argc, char **argv) {
     char *resumed = whoate_engine_set_active(engine, 1);
     CHECK(resumed && strstr(resumed, "\"active\":true"), "engine_resume");
     whoate_string_free(resumed);
+    char *english = whoate_engine_set_language(engine, 2);
+    CHECK(english && strstr(english, "\"schema\":\"whoate/control-v1\"") && strstr(english, "\"language\":\"en\""),
+          "engine_set_language");
+    whoate_string_free(english);
+    char *bad_language = whoate_engine_set_language(engine, 3);
+    CHECK(bad_language && strstr(bad_language, "\"code\":2"), "engine_set_language_invalid");
+    whoate_string_free(bad_language);
 
     char *tick = whoate_engine_tick(engine);
     CHECK(tick && !strncmp(tick, "{", 1) && strstr(tick, "\"schema\":\"whoate/v1\"") && strstr(tick, "\"owners\":["),

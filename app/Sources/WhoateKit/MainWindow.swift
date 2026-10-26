@@ -60,13 +60,17 @@ public enum MainWindowModel {
         row.kind == .app && aiApps.contains(String(row.id.dropFirst("app:".count)))
     }
 
+    /// The engine's verdict rules the "growing" filter (and its notifications) mean.
+    public static let growingRules: Set<String> = ["fast-growth", "leak-suspect"]
+
     /// Owner kinds a category lists; swarms appear under "all" and the two filters only.
     /// Reads the row's own kind and rule: no owner lookup per row.
+
     public static func matches(_ row: PanelRow, _ category: MainCategory) -> Bool {
         switch category {
         case .all: return true
         case .needsAction: return row.level == .watch || row.level == .act
-        case .growing: return row.rule == "fast-growth" || row.rule == "leak-suspect"
+        case .growing: return row.rule.map(growingRules.contains) ?? false
         case .tmux: return row.kind == .tmuxPane
         case .agents: return row.kind == .agentSession || isAIApp(row)
         case .apps: return row.kind == .app && !isAIApp(row)

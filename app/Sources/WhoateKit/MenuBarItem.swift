@@ -43,6 +43,26 @@ public enum MenuBarItem {
         return made
     }
 
+    /// `display` .iconOnly (Phase 11) drops the text; the image choice is the same.
+    public static func label(_ host: Host?, style: AlertStyle, display: MenuBarDisplay = .iconAndNumber,
+                             language: Language) -> Label {
+        var label = label(host, style: style, language: language)
+        if display == .iconOnly { label.text = "" }
+        return label
+    }
+
+    /// Spoken by VoiceOver whatever is shown: the number and the pressure.
+    public static func accessibilityLabel(_ host: Host?, language: Language) -> String {
+        let used = host.map { Format.bytes($0.memUsedBytes) } ?? "—"
+        let pressure: L10nKey = switch host?.pressure ?? .unknown {
+        case .normal: .pressureNormal
+        case .warn: .pressureWarn
+        case .critical: .pressureCritical
+        default: .pressureUnknown
+        }
+        return "whoate · " + L10n.text(.used, language) + " " + used + " · " + L10n.text(pressure, language)
+    }
+
     public static func label(_ host: Host?, style: AlertStyle, language: Language) -> Label {
         let used = host.map { Format.bytes($0.memUsedBytes) } ?? "—"
         let pressure = host?.pressure ?? .unknown

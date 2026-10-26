@@ -261,3 +261,16 @@ pane 详情（R3）多一张「这个 pane 里的 AI & Agent 会话」卡：每�
 
 横条（面板头部与系统概览，第 8 轮评审）：物理内存一根条，按总量画「其他已用」和「压缩」两段（两段合起来就是已用）；swap 单独一根细条，按 swap 当前总量画已用。swap 不是物理内存，不画在物理内存条上。没有 swap 总量时不画 swap 条，只在文字里写。
 
+
+## 13. 设置窗口（Phase 11）
+
+标准 macOS 设置窗口：SwiftUI `Settings` 场景，五个分页（通用、菜单栏、通知、命令行、关于），每页一个分组表单（`Form` + `.formStyle(.grouped)`），控件全用系统的 `Toggle`、`Picker`、`Button`、`LabeledContent`，不自造样式、不写死字号和颜色。窗口宽 540 pt，高度随内容。
+
+- 入口三个，走同一个打开动作：面板底栏齿轮、应用菜单「设置…」/「Settings…」（⌘,，文案走 L10n）、自动化 `WHOATE_UI_OPEN_SETTINGS_AFTER`。打开后显式激活应用，设置窗口算进激活策略（开着时是 regular，有 Dock 图标、⌘Tab 可达），但不算主窗口。
+- 齿轮放在底栏右侧「完整面板」左边，无边框、次要色，悬停与读屏都是「设置」。退出仍单独在最左（第 5 节 owner 设计关卡的位置），避免误点退出。
+- 选项文字：选项用名词（跟随系统 / 浅色 / 深色），说明文字用 `.callout` 次要色，写清效果（如省电档的三个间隔）。
+- 菜单栏「只显示图标」时，菜单栏项的读屏标签仍读出用量和压力。
+- 关于页的「支持」区：列表为空时整块不显示；有项时链接是按钮，二维码是 64 pt 小图，点开在弹出框里放大。不放占位链接或示例二维码。
+- 首次启动提示：菜单栏项下方的弹出框（8 秒或点别处消失）；找不到菜单栏项或它被刘海挡住时，改在主窗口顶部放一条带「知道了」的横幅（`.bar` 材质，下边一条分隔线）。
+
+依据：HIG Settings「Make settings easy to find」「Avoid putting settings in multiple places」（一个设置窗口，三个入口都打开它）与「Use the standard Settings menu item and its ⌘, shortcut」；HIG Toggles「Use a switch … to toggle the state of a single setting」；HIG Pickers（互斥选项用 picker，选项少时用单选组）；HIG Accessibility「Provide alternative text labels for icons」（齿轮与只显示图标的菜单栏项）。

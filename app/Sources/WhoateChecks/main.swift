@@ -120,6 +120,8 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round10Tests.sidebarKindsAddTheFootprintsTheirListShows", Phase10Round10Tests.sidebarKindsAddTheFootprintsTheirListShows),
     ("Phase10Round10Tests.aiAppsAndSessionsShareAIAndAgent", Phase10Round10Tests.aiAppsAndSessionsShareAIAndAgent),
     ("Phase10Round10Tests.rowsSayWhereTheyWereStarted", Phase10Round10Tests.rowsSayWhereTheyWereStarted),
+    ("Phase11Tests.qa13_aboutShowsVersionLinksAndNoUpdateCheck", Phase11Tests.qa13_aboutShowsVersionLinksAndNoUpdateCheck),
+    ("Phase11Tests.qa15_newTextIsInBothLanguagesWithoutCJKInEnglish", Phase11Tests.qa15_newTextIsInBothLanguagesWithoutCJKInEnglish),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))
@@ -165,11 +167,24 @@ let asyncChecks: [(String, @MainActor () async throws -> Void)] = [
     ("Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow", { try Phase10Tests.jumpButtonIsGreyedOutsideTmuxAndResultsStayWithTheirRow() }),
     ("Phase10Tests.scrolledIntoViewRowsGetHistories", Phase10Tests.scrolledIntoViewRowsGetHistories),
     ("Phase10Round4Tests.onlyWhoatesSelectionsScroll", Phase10Round4Tests.onlyWhoatesSelectionsScroll),
+    ("Phase11Tests.qa4_eachKeyReadsBackFromTheSameSuiteAndBadValuesFallBack", { try Phase11Tests.qa4_eachKeyReadsBackFromTheSameSuiteAndBadValuesFallBack() }),
+    ("Phase11Tests.qa20_firstLaunchRunsOnceAndNeverUnderPlainAutomation", { Phase11Tests.qa20_firstLaunchRunsOnceAndNeverUnderPlainAutomation() }),
+    ("Phase11Tests.qa5_appearanceFollowsTheSettingUnlessAutomationSetsOne", { Phase11Tests.qa5_appearanceFollowsTheSettingUnlessAutomationSetsOne() }),
+    ("Phase11Tests.qa6_languageChangesTheTextAtOnceAndTellsTheEngineOnce", Phase11Tests.qa6_languageChangesTheTextAtOnceAndTellsTheEngineOnce),
+    ("Phase11Tests.qa6_hiddenLanguageChangeReachesTheEngineAtOnce", Phase11Tests.qa6_hiddenLanguageChangeReachesTheEngineAtOnce),
+    ("Phase11Tests.qa7_iconOnlyDropsTheTextAndKeepsTheImage", { try Phase11Tests.qa7_iconOnlyDropsTheTextAndKeepsTheImage() }),
+    ("Phase11Tests.qa8_powerSavingDoublesTheCadenceFromTheNextSleep", Phase11Tests.qa8_powerSavingDoublesTheCadenceFromTheNextSleep),
+    ("Phase11Tests.qa9_openAtLoginShowsTheSystemsStatus", { try Phase11Tests.qa9_openAtLoginShowsTheSystemsStatus() }),
+    ("Phase11Tests.qa10_notificationsAskOnceThrottleAndOpenTheirRow", Phase11Tests.qa10_notificationsAskOnceThrottleAndOpenTheirRow),
+    ("Phase11Tests.qa11_installLinksIntoTheFirstWritableDirectoryOnPath", { try Phase11Tests.qa11_installLinksIntoTheFirstWritableDirectoryOnPath() }),
+    ("Phase11Tests.qa12_copyForAIIsTheBundledCLIsAgentGuide", Phase11Tests.qa12_copyForAIIsTheBundledCLIsAgentGuide),
 ]
 for (name, check) in asyncChecks where filter.map({ name.contains($0) }) ?? true {
     failures = []
-    do { try await check() } catch { fail("threw \(error)") }
-    if failures.isEmpty { passed += 1; print("✔ \(name)") }
+    skipReason = nil
+    do { try await check() } catch { if !(error is RequireFailed) { fail("threw \(error)") } }
+    if failures.isEmpty, let skipReason { skipped += 1; print("– \(name) skipped: \(skipReason)") }
+    else if failures.isEmpty { passed += 1; print("✔ \(name)") }
     else { failed += 1; print("✘ \(name)"); failures.forEach { print("    \($0)") } }
 }
 print("WHOATE_CHECKS passed=\(passed) failed=\(failed) skipped=\(skipped)")

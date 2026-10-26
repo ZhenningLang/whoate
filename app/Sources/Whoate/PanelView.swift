@@ -8,6 +8,8 @@ struct PanelView: View {
     let mainWindows: MainWindows
     var openMain: (String?) -> Void
     let quit: QuitAction
+    /// The footer's gear (Phase 11): opens the settings window and puts the panel away.
+    var openSettings: () -> Void = {}
     /// Receives the panel's window once it has one (to put it away after opening the main window).
     var foundWindow: ((NSWindow) -> Void)?
 
@@ -22,6 +24,7 @@ struct PanelView: View {
             footer
         }
         .frame(width: 420)
+        .environment(\.curveGapLimit, model.profile.gapLimit)
         .coordinateSpace(.named(RowFrames.space))
         .overlay { CloseFlowView(model: model) }
         .background(RefreshVisibility { model.setVisible(panel: $0) }.frame(width: 0, height: 0))
@@ -119,6 +122,12 @@ struct PanelView: View {
                 .rowFrame("footer", "quit")
             Text(footerText).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .center)
+            // Phase 11: settings next to the main-window button, away from quit (research F4).
+            Button { openSettings() } label: { Image(systemName: "gearshape") }
+                .buttonStyle(.borderless).foregroundStyle(.secondary).fixedSize()
+                .help(L10n.text(.settingsTitle, language))
+                .accessibilityLabel(L10n.text(.settingsTitle, language))
+                .rowFrame("footer", "settings")
             Button(WindowPolicy.openLabel(mainWindowExists: mainWindows.exists, language)) { openMain(nil) }
                 .buttonStyle(.bordered).fixedSize()
                 .rowFrame("footer", "showMain")
@@ -127,7 +136,7 @@ struct PanelView: View {
     }
 
     private var footerText: String {
-        Panel.footer(model.report, lastError: model.refreshError, interval: AppModel.refreshInterval, language: language)
+        Panel.footer(model.report, lastError: model.refreshError, interval: model.profile.visible, language: language)
     }
 }
 
@@ -300,12 +309,13 @@ struct Sparkline: View {
     var metric: SortKey = .memory
     /// Process groups keep no history: no curve and no "not enough samples" either.
     var hasHistory = true
+    @Environment(\.curveGapLimit) private var gapLimit
     var body: some View {
         if hasHistory { curve }
     }
     private var curve: some View {
         GeometryReader { geo in
-            switch Format.trend(points, width: geo.size.width, height: geo.size.height - 2, metric: metric) {
+            switch Format.trend(points, width: geo.size.width, height: geo.size.height - 2, metric: metric, gapLimit: gapLimit) {
             case .insufficient:
                 Text(L10n.text(.notEnoughSamples, language))
                     .font(.caption).foregroundStyle(.secondary)
@@ -326,8 +336,9 @@ struct Sparkline: View {
 /// not-enough-samples text, as a "curve\t<line|insufficient>" layout entry.
 struct CurveKind: View {
     let row: PanelRow
+    @Environment(\.curveGapLimit) private var gapLimit
     var body: some View {
-        let line = Format.trend(row.history, width: 1, height: 1) != .insufficient
+        let line = Format.trend(row.history, width: 1, height: 1, gapLimit: gapLimit) != .insufficient
         Color.clear.rowFrame(row.id, "curve\t" + (line ? "line" : "insufficient"))
     }
 }
@@ -361,5 +372,17 @@ extension View {
             Color.clear.preference(key: RowFrames.self,
                                    value: ["\(id)\t\(part)": geo.frame(in: .named(RowFrames.space))])
         })
+    }
+}
+
+/// Curves split where points are further apart than this (Phase 11: it follows the
+/// refresh profile). The panel and the main window set it from AppModel.profile.
+private struct CurveGapLimitKey: EnvironmentKey {
+    static let defaultValue = Format.gapLimit
+}
+extension EnvironmentValues {
+    var curveGapLimit: Int64 {
+        get { self[CurveGapLimitKey.self] }
+        set { self[CurveGapLimitKey.self] = newValue }
     }
 }

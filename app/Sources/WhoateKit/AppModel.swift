@@ -5,10 +5,11 @@ import Observation
 @MainActor @Observable
 public final class AppModel {
     /// Visible views retain the approved 2 s cadence. Hidden menus sample host
-    /// every 5 s and make one full tick, engine still paused, every 30 s.
-    public static let refreshInterval: Double = 2
-    public static let hiddenInterval: Double = 5
-    public static let hiddenFullInterval: Double = 30
+    /// every 5 s and make one full tick, engine still paused, every 30 s. These are
+    /// the standard profile's; the running cadence follows `profile` (Phase 11).
+    public static let refreshInterval: Double = RefreshProfile.standard.visible
+    public static let hiddenInterval: Double = RefreshProfile.standard.hidden
+    public static let hiddenFullInterval: Double = RefreshProfile.standard.hiddenFull
 
     public enum CloseFlow: Equatable {
         case idle
@@ -19,7 +20,23 @@ public final class AppModel {
         case failed(String)
     }
 
-    public let language: Language
+    /// The interface language; the engine is told on its next tick (Phase 11: 立即生效).
+    /// Hidden (only the settings window open), the next sample is the paused full tick,
+    /// so the engine hears it now rather than at the next 30/60 s full sample (review C:B1).
+    public var language: Language {
+        didSet {
+            guard language != oldValue else { return }
+            if !fullRefresh { lastFullAt = nil }
+            refreshNow()
+        }
+    }
+    /// Background refresh cadence; a change takes effect from the next sleep.
+    public var profile: RefreshProfile = .standard {
+        didSet { if profile != oldValue { refreshNow() } }
+    }
+    /// Notification feeds (Phase 11): every host value, every published report.
+    @ObservationIgnored public var onHost: (@MainActor (Host) -> Void)?
+    @ObservationIgnored public var onReport: (@MainActor (Report) -> Void)?
     public var sort: SortKey = .memory
     public private(set) var report: Report?
     public private(set) var engineFailed = false
@@ -60,6 +77,9 @@ public final class AppModel {
     public static let mainHistoryRows = 20
     /// Panel row whose advice text is expanded.
     public var expandedAdvice: String?
+    /// First launch when the menu bar item cannot be pointed at (Phase 11, research F11):
+    /// the main window says where whoate lives instead.
+    public var firstLaunchBanner = false
     /// Raw (not downsampled) history of the owners the panel can show, by owner id.
     /// A tick's own history is capped at 60 evenly spaced points, which hides gaps.
     public private(set) var histories: [String: [HistoryPoint]] = [:]
@@ -85,6 +105,8 @@ public final class AppModel {
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var mainVisible = false
     @ObservationIgnored private var engineIsActive = false
+    /// The language the engine was last told; nil until the first call.
+    @ObservationIgnored private var engineLanguage: Language?
     /// Start of the latest full tick, visible or hidden, on the `now` clock.
     @ObservationIgnored private var lastFullAt: Double?
 
@@ -109,6 +131,11 @@ public final class AppModel {
         if let panel { panelVisible = panel }
         if let main { mainVisible = main }
         guard fullRefresh != previous else { return }
+        refreshNow()
+    }
+
+    /// Drops the current sleep (and any in-flight result) so the loop samples again now.
+    private func refreshNow() {
         revision &+= 1
         sleeper?.cancel()
     }
@@ -188,7 +215,7 @@ public final class AppModel {
             await refresh()
             guard running else { break }
             if current != revision { continue }
-            let interval = fullRefresh ? Self.refreshInterval : Self.hiddenInterval
+            let interval = fullRefresh ? profile.visible : profile.hidden
             // Start-to-start cadence. A slow tick never creates a catch-up queue.
             let delay = max(0, interval - max(0, now() - began))
             let sleep = sleep
@@ -224,7 +251,7 @@ public final class AppModel {
                 trace("pause")
             }
             guard running, revision == current else { return }
-            if lastFullAt.map({ now() - $0 >= Self.hiddenFullInterval - 0.5 }) ?? true {
+            if lastFullAt.map({ now() - $0 >= profile.hiddenFull - 0.5 }) ?? true {
                 if await hiddenFull(current) { return }
                 guard running, revision == current else { return }
             }
@@ -233,7 +260,7 @@ public final class AppModel {
             let value = await Task.detached(priority: .utility) { sample() }.value
             guard running, revision == current else { return }
             switch value {
-            case .value(let sample): host = sample.host; hostTakenAt = sample.takenAt; hostError = nil
+            case .value(let sample): host = sample.host; hostTakenAt = sample.takenAt; hostError = nil; onHost?(sample.host)
             case .failure(let error): hostError = error.message
             }
             return
@@ -253,6 +280,8 @@ public final class AppModel {
             engineIsActive = true
             trace("resume")
         }
+        guard running, revision == current else { return }
+        await syncLanguage(engine)
         guard running, revision == current else { return }
         trace("full")
         lastFullAt = now()
@@ -308,6 +337,8 @@ public final class AppModel {
             engineIsActive = false
         }
         guard running, revision == current, let engine, !engineIsActive else { return false }
+        await syncLanguage(engine)
+        guard running, revision == current else { return true }
         trace("hidden-full")
         let decoded = await Task.detached(priority: .utility) { engine.tick() }.value
         guard running, revision == current else { return true }
@@ -321,6 +352,15 @@ public final class AppModel {
         }
     }
 
+    /// The engine's diagnosis text follows the interface language, off the main thread.
+    private func syncLanguage(_ engine: any RefreshEngine) async {
+        let language = language
+        guard engineLanguage != language else { return }
+        let result = await Task.detached { engine.setLanguage(language) }.value
+        if case .failure(let error) = result { lastError = error.message; return }
+        engineLanguage = language
+    }
+
     static func cpuValues(_ report: Report) -> [(id: String, pct: Double?)] {
         report.owners.map { ($0.id, $0.cpuPct) } + report.swarms.map { ($0.id, $0.cpuPct) }
     }
@@ -332,6 +372,8 @@ public final class AppModel {
         host = report.host
         if report.host != nil { hostTakenAt = report.takenAt }
         lastError = nil
+        if let host = report.host { onHost?(host) }
+        onReport?(report)
     }
 
     /// Where a close was asked for: the main window shows it as a sheet over the

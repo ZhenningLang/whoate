@@ -226,6 +226,79 @@ fn phase09_control_reaches_sampler_without_replacing_history_or_kill_identity() 
 }
 
 #[test]
+fn phase11_set_language_answers_rejects_and_reaches_the_next_tick() {
+    let home = Temp::new();
+    let engine = replay(capture_snapshot(), &home.0);
+    let cjk = |v: &Value| {
+        v.to_string()
+            .chars()
+            .any(|c| ('\u{3400}'..='\u{9fff}').contains(&c))
+    };
+    let before = take(whoate_engine_tick(engine));
+    assert!(!cjk(&before), "the context starts in English");
+    let zh = take(unsafe { super::whoate_engine_set_language(engine, 1) });
+    assert_eq!(zh, json!({"schema":"whoate/control-v1","language":"zh"}));
+    assert!(
+        cjk(&take(whoate_engine_tick(engine))),
+        "the next tick is in Chinese"
+    );
+    let en = take(unsafe { super::whoate_engine_set_language(engine, 2) });
+    assert_eq!(en, json!({"schema":"whoate/control-v1","language":"en"}));
+    let after = take(whoate_engine_tick(engine));
+    assert!(!cjk(&after), "and back in English");
+    for value in [0, 3, -1] {
+        let response = take(unsafe { super::whoate_engine_set_language(engine, value) });
+        assert_eq!(response["error"]["code"], 2, "{value}: {response}");
+    }
+    assert_eq!(
+        take(unsafe { super::whoate_engine_set_language(std::ptr::null_mut(), 1) })["error"]["code"],
+        2
+    );
+    // History is kept across the switches (the replayed frames share one second,
+    // so the series keeps its point rather than growing; the core test checks growth).
+    let id = &before["owners"][0]["id"];
+    let points = |r: &Value| {
+        r["owners"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|o| &o["id"] == id)
+            .map(|o| o["history"].as_array().unwrap().len())
+    };
+    assert!(
+        points(&before).is_some() && points(&after) >= points(&before),
+        "{:?} → {:?}",
+        points(&before),
+        points(&after)
+    );
+    whoate_engine_free(engine);
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn phase11_set_language_on_a_replayed_report_file_is_accepted() {
+    let path = std::ffi::CString::new(
+        root()
+            .join("tests/gui/design-report.json")
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
+    let engine = unsafe { super::whoate_engine_new_from_fixture(path.as_ptr()) };
+    assert!(!engine.is_null());
+    let before = take(whoate_engine_tick(engine));
+    let response = take(unsafe { super::whoate_engine_set_language(engine, 2) });
+    assert_eq!(response["language"], "en");
+    let mut after = take(whoate_engine_tick(engine));
+    after["taken_at"] = before["taken_at"].clone();
+    assert_eq!(
+        after["owners"][0]["verdict"], before["owners"][0]["verdict"],
+        "recorded text stays"
+    );
+    whoate_engine_free(engine);
+}
+
+#[test]
 fn phase05_ffi_tick_and_why_contract() {
     let home = Temp::new();
     let engine = replay(capture_snapshot(), &home.0);

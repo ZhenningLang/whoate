@@ -220,7 +220,9 @@ enum Phase10Round4Tests {
         expect(curve.contains("L10n.text(.curveCPU30, language)") && curve.contains("metric: .cpu"), curve)
         expect(L10n.text(.curveCPU30, .zh) == "CPU · 最近 30 分钟")
         let chart = try R3.slice(detail, from: "struct HistoryChart", to: "static func value")
-        expect(chart.contains("Format.runs(points, metric: metric)") && chart.contains("Format.drawable(points, metric: metric)"))
+        // Phase 11: both also take the refresh profile's gap limit.
+        expect(chart.contains("Format.runs(points, metric: metric, gapLimit: gapLimit)")
+            && chart.contains("Format.drawable(points, metric: metric, gapLimit: gapLimit)"))
         // Review A, round 4: a missing newest stretch hides the panel's curve but never
         // the details' 30 minutes. Same input as Phase10Tests.cpuCurveBreaksWhereCpuIsMissing.
         let tail = [0, 20, 40, 60, 80, 100, 120].map { t in

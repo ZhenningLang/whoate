@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Build dist/whoate.app: release Rust static library, release SwiftPM app,
+# the CLI in Contents/Helpers (Phase 11 settings install it onto PATH),
 # Info.plist, icons, ad-hoc signature (not notarized, U-DEC-1).
 #   scripts/bundle-app.sh          build the bundle from committed icons
 #   scripts/bundle-app.sh icons    regenerate assets/logo/{AppIcon.icns,menubar-template.pdf}
@@ -38,6 +39,7 @@ fi
 # Match the app's minimum macOS; otherwise bundled C objects (SQLite) target the build host.
 export MACOSX_DEPLOYMENT_TARGET=14.0
 cargo build -p whoate-ffi --release --locked --manifest-path "$root/Cargo.toml"
+cargo build -p whoate-cli --release --locked --manifest-path "$root/Cargo.toml"
 WHOATE_FFI_PROFILE=release swift build -c release --package-path "$root/app" --product Whoate
 binary="$(WHOATE_FFI_PROFILE=release swift build -c release --package-path "$root/app" --show-bin-path)/Whoate"
 
@@ -52,9 +54,17 @@ fi
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$root/Cargo.toml" | head -1)
 app="$root/dist/whoate.app"
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Helpers"
 cp "$binary" "$app/Contents/MacOS/Whoate"
+# Not Contents/MacOS/whoate: on a case-insensitive disk that name is Whoate (research F7).
+cp "$root/target/release/whoate" "$app/Contents/Helpers/whoate"
 cp "$logo/AppIcon.icns" "$logo/menubar-template.pdf" "$app/Contents/Resources/"
+# Support QR codes (About tab): whatever images app/Resources/Support holds, none until the owner adds them.
+support=("$root"/app/Resources/Support/*.png)
+if [[ -e "${support[0]}" ]]; then
+    mkdir -p "$app/Contents/Resources/Support"
+    cp "${support[@]}" "$app/Contents/Resources/Support/"
+fi
 cat >"$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -75,6 +85,8 @@ cat >"$app/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 plutil -lint "$app/Contents/Info.plist" >/dev/null
+# Nested code first, then the bundle that seals it.
+codesign --force --sign - "$app/Contents/Helpers/whoate"
 codesign --force --sign - "$app"
-codesign --verify --strict "$app"
+codesign --verify --strict --deep "$app"
 echo "BUNDLE_OK $app"

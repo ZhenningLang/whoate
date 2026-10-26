@@ -1,4 +1,8 @@
-//! 1800 one-second interval points per owner; no synthetic samples across gaps.
+//! Up to 1800 measured points per owner; no synthetic samples across gaps.
+//! Phase 11 D2 (owner approval 2026-10-27): windows are measured in time, so
+//! the GUI's 2–60 s cadence forms trends too. Adjacent points up to
+//! MAX_GAP_S apart are continuous; a failed measurement still breaks the
+//! trend. Strictly one-second input gives the same results as before.
 use crate::{
     model::{HistoryPoint, Owner, OwnerKind},
     snapshot::{Proc, Snapshot},
@@ -8,12 +12,17 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 #[derive(Clone, Debug)]
 struct Point {
     sample: HistoryPoint,
-    delta: Option<i128>,
+    /// Growth since the preceding point, and that point's timestamp.
+    delta: Option<(i128, i64)>,
 }
+/// Longest interval between adjacent samples that still counts as continuous.
+pub const MAX_GAP_S: i64 = 90;
 #[derive(Default)]
 struct Series {
     anchor: Option<(i32, u32, Option<u64>)>,
     points: VecDeque<Point>,
+    /// The last attempt read nothing: the next point gets no delta.
+    broken: bool,
 }
 #[derive(Default)]
 pub struct History {
@@ -75,6 +84,7 @@ impl History {
         // With nothing readable there is no measurement: a gap, never a fabricated zero.
         // Partly readable owners still get a point over the readable part (feedback 1).
         if owner.unknown_mem_count > 0 && owner.unknown_mem_count >= owner.pids.len() {
+            s.broken = true;
             return;
         }
         let unknown = (owner.unknown_mem_count > 0).then_some(owner.unknown_mem_count);
@@ -95,10 +105,20 @@ impl History {
         let delta = s
             .points
             .back()
-            .filter(|p| p.sample.timestamp_s + 1 == time_s && p.sample.unknown_mem_count == unknown)
-            .map(|p| owner.mem_bytes as i128 - p.sample.mem_bytes as i128);
-        // Each retained point carries its preceding one-second interval delta.
-        // This measures a real 1800-second window without retaining an 1801st point.
+            .filter(|p| {
+                !s.broken
+                    && time_s - p.sample.timestamp_s <= MAX_GAP_S
+                    && p.sample.unknown_mem_count == unknown
+            })
+            .map(|p| {
+                (
+                    owner.mem_bytes as i128 - p.sample.mem_bytes as i128,
+                    p.sample.timestamp_s,
+                )
+            });
+        s.broken = false;
+        // Each retained point carries its preceding interval delta. This
+        // measures a real 1800-second window without retaining an 1801st point.
         s.points.push_back(Point {
             sample: HistoryPoint {
                 timestamp_s: time_s,
@@ -127,27 +147,29 @@ impl History {
             .and_then(|s| s.points.back())
             .is_some_and(|p| p.sample.timestamp_s == time_s)
     }
+    /// Trend over the last `seconds` ending at the newest point: an unbroken
+    /// chain of deltas back to a point at or before `end - seconds`. Growth
+    /// can cover up to one sampling interval more than `seconds`.
     pub fn window(&self, id: &str, seconds: usize) -> Option<Trend> {
         let points = &self.owners.get(id)?.points;
-        if seconds == 0 || points.len() < seconds {
+        if seconds == 0 {
             return None;
         }
+        let start = points.back()?.sample.timestamp_s - seconds as i64;
         let mut growth = 0;
         let mut monotonic = true;
-        let mut last = None;
-        for p in points.iter().skip(points.len() - seconds) {
-            if last.is_some_and(|last| last + 1 != p.sample.timestamp_s) {
-                return None;
-            }
-            let d = p.delta?;
+        for p in points.iter().rev() {
+            let (d, previous) = p.delta?;
             growth += d;
             monotonic &= d >= 0;
-            last = Some(p.sample.timestamp_s);
+            if previous <= start {
+                return Some(Trend {
+                    growth_bytes: growth,
+                    monotonic,
+                });
+            }
         }
-        Some(Trend {
-            growth_bytes: growth,
-            monotonic,
-        })
+        None
     }
 }
 
@@ -242,8 +264,13 @@ mod tests {
         assert!(trend.monotonic);
         h.record_at(&o, &[p.clone()], 1800);
         assert_eq!(h.series(&o.id).len(), 1800);
+        // Phase 11 D2 (owner approval 2026-10-27): a 2-second gap is
+        // continuous now; only gaps over MAX_GAP_S break the window.
         h.record_at(&o, &[p.clone()], 1802);
+        assert!(h.window(&o.id, 1800).is_some());
+        h.record_at(&o, &[p.clone()], 1802 + super::MAX_GAP_S + 1);
         assert!(h.window(&o.id, 1800).is_none());
+        assert!(h.window(&o.id, 1).is_none());
         p.start_time = Some(2);
         h.record_at(&o, &[p], 1803);
         assert_eq!(h.series(&o.id).len(), 1);

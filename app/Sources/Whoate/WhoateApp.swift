@@ -45,18 +45,31 @@ struct WhoateApp: App {
     nonisolated(unsafe) static var automation = Automation.off
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         MenuBarExtra {
             PanelView(model: delegate.model, mainWindows: delegate.mainWindows,
                       openMain: { PanelActions.showMain($0, open: open, dismiss: delegate.dismissPanel) },
-                      quit: delegate.quit, foundWindow: { delegate.panelWindow = $0 })
+                      quit: delegate.quit, openSettings: { delegate.showSettings(fromPanel: true) },
+                      foundWindow: { delegate.panelWindow = $0 })
         } label: {
             // Owner design gate 2026-10-21: style D (a system symbol, alerts as triangles).
-            MenuBarLabel(label: MenuBarItem.label(delegate.model.host, style: .systemSymbol, language: delegate.model.language))
-                .task { await delegate.runAutomation(open: open) }
+            MenuBarLabel(label: MenuBarItem.label(delegate.model.host, style: .systemSymbol, display: delegate.settings.menuBarDisplay,
+                                                  language: delegate.model.language),
+                         accessibility: MenuBarItem.accessibilityLabel(delegate.model.host, language: delegate.model.language))
+                .task {
+                    delegate.connect(open: open, openSettings: { openSettings() })
+                    await delegate.runAutomation(open: open)
+                }
         }
         .menuBarExtraStyle(.window)
+
+        // Phase 11: the standard settings window (⌘, and whoate → 设置…).
+        Settings {
+            SettingsView(model: delegate.settingsModel, settings: delegate.settings, app: delegate.model,
+                         found: { delegate.settingsWindowFound($0) })
+        }
 
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {
             MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows)
@@ -66,6 +79,11 @@ struct WhoateApp: App {
             // The regular-policy app menu's ⌘Q goes through the same QuitAction.
             CommandGroup(replacing: .appTermination) {
                 Button(L10n.text(.quit, delegate.model.language)) { delegate.quit() }.keyboardShortcut("q")
+            }
+            // The system's own item follows the bundle's localizations (none): ours follows L10n.
+            CommandGroup(replacing: .appSettings) {
+                Button(L10n.text(.settingsMenu, delegate.model.language)) { delegate.showSettings(fromPanel: false) }
+                    .keyboardShortcut(",")
             }
         }
     }
@@ -91,6 +109,21 @@ struct WhoateApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
+    let settings: AppSettings
+    let settingsModel: SettingsModel
+    let storeKind: StoreKind
+    var notifications = NotificationPolicy()
+    /// Where the first-launch hint went (state file `hint`).
+    var hint = FirstLaunchHint.none
+    /// The status-item hint's own window (automation screenshot), while shown.
+    weak var hintWindow: NSWindow?
+    /// The settings window's became-key observer (re-reads login item and permission).
+    var settingsKeyToken: NSObjectProtocol?
+    var firstLaunch = false
+    weak var settingsWindow: NSWindow?
+    /// SwiftUI's openers, from the menu bar label (the one view that always exists).
+    var openMainAction: ((String?) -> Void)?
+    var openSettingsAction: (() -> Void)?
     let mainWindows = MainWindows()
     let quit = QuitAction()
     /// After openWindow on a reused main window: it is shown within the first
@@ -107,21 +140,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         let automation = WhoateApp.automation
-        model = AppModel(language: .system(), makeEngine: { Main.makeEngine(automation) }, trace: { mode in
+        let environment = ProcessInfo.processInfo.environment
+        let (store, kind) = SettingsStores.make(environment: environment)
+        storeKind = kind
+        settings = AppSettings(store: store)
+        model = AppModel(language: settings.resolvedLanguage(), makeEngine: { Main.makeEngine(automation) }, trace: { mode in
             guard let path = automation.scheduleLog else { return }
             // Opt-in safe event log; no process, argv or session source content.
             appendLine("\(Date().timeIntervalSince1970)\t\(mode)\n", to: path, failure: "schedule_log_failed")
         })
+        model.profile = settings.refreshProfile
+        settingsModel = Self.makeSettingsModel(settings, automation: automation)
+        firstLaunch = FirstLaunch.shouldRun(store: store, automation: automation.isActive, environment: environment)
         super.init()
+        wireSettings()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let automation = WhoateApp.automation
-        switch automation.appearance {
-        case .light: NSApp.appearance = NSAppearance(named: .aqua)
-        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
-        case nil: break
-        }
+        if let assignments = automation.assignments { settings.apply(assignments) }
+        applyAppearance()
         if let sort = automation.sort { model.sort = sort }
         model.start()
         if automation.panelWindow { Task { await showPanelWindow(automation) } }
@@ -187,6 +225,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let after = automation.returnAfter { at(after) { [mainWindows] in Self.press(key: 36, "\r", in: mainWindows.all.first) } }
         if let after = automation.mainCloseAfter { at(after) { [mainWindows] in mainWindows.closeAll() } }
         if let after = automation.quitAfter { at(after) { [quit] in quit() } }
+        scheduleSettingsAutomation(automation, at: at)
         if let path = automation.stateFile { await recordState(to: path) }
     }
 
@@ -248,6 +287,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ]
                 fields += Self.listSelection(main) + Self.toolbarGeometry(main) + Self.closeSheet(main, close: model.close)
             }
+            fields += settingsState()
             let line = fields.joined(separator: "\t")
             if line != last {
                 last = line
@@ -323,7 +363,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openMain: { [weak self] id in
                 PanelActions.showMain(id, open: { self?.openMain?($0) }, dismiss: { self?.dismissPanel() })
             },
-            quit: quit))
+            quit: quit, openSettings: { [weak self] in self?.showSettings(fromPanel: true) }))
         panelWindow = window
         await waitForReport()
         if let confirm = automation.confirm {
@@ -447,26 +487,19 @@ extension AppDelegate {
     }
 }
 
-/// Appends to an opt-in automation file, creating it on first use.
-func appendLine(_ line: String, to path: String, failure: String) {
-    if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
-    do {
-        let file = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
-        defer { try? file.close() }
-        try file.seekToEnd()
-        try file.write(contentsOf: Data(line.utf8))
-    } catch { FileHandle.standardError.write(Data((failure + "\n").utf8)) }
-}
-
 /// Template image plus system-font text; the system colours both for the
 /// menu bar's appearance. Nothing here is ever tinted (feedback 5).
 struct MenuBarLabel: View {
     let label: MenuBarItem.Label
+    /// Phase 11: VoiceOver hears the number even when only the icon shows.
+    var accessibility: String?
     var body: some View {
         HStack(spacing: 4) {
             Image(nsImage: MenuBarItem.image(label.image, logo: Self.logo))
-            Text(label.text).monospacedDigit()
+            if !label.text.isEmpty { Text(label.text).monospacedDigit() }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibility ?? label.text)
     }
 
     /// The bundled template PDF (gallery styles A–C). launch.py wrapper bundles

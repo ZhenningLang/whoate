@@ -61,6 +61,9 @@ public final class Engine: RefreshEngine, @unchecked Sendable {
     public func setActive(_ active: Bool) -> Decoded<RefreshControl> {
         queue.sync { decode(RefreshControl.self, from: take(whoate_engine_set_active(handle, active ? 1 : 0))) }
     }
+    public func setLanguage(_ language: Language) -> Decoded<LanguageControl> {
+        queue.sync { decode(LanguageControl.self, from: take(whoate_engine_set_language(handle, language == .zh ? 1 : 2))) }
+    }
     public static func host() -> Decoded<HostSample> {
         decode(HostSample.self, from: take(whoate_host_json()))
     }

@@ -75,6 +75,16 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case copyTmux, copyWindow, copyReason, copySuggestion, copyProcesses, copyMore, copyNoArgv
     case lastActive
     case memAllHelp, launchTerminal, launchPaneClosed, launchDetached, launchInApp, howLaunchedFrom
+    // Phase 11: settings window, notifications, first launch.
+    case settingsMenu, settingsTitle, tabGeneral, tabMenuBar, tabNotifications, tabCLI, tabAbout, openAtLogin
+    case loginOn, loginOff, loginNeedsApproval, loginFailed, loginMoveNote, loginTranslocated, loginOnlyApp, openSystemSettings
+    case appearance, followSystem, appearanceLight, appearanceDark, interfaceLanguage, languageZh, languageEn, menuBarShows
+    case displayIconAndNumber, displayIconOnly, backgroundRefresh, profileStandard, profilePowerSaving, profileNote, notifyEnabled, notifyPressureToggle
+    case notifyGrowingToggle, notifyDenied, notifyNote, notifyTightTitle, notifyCriticalTitle, notifyPressureBody, notifyGrowingTitle, notifyGrowingBody
+    case cliInstalled, cliPathLabel, cliSourceLabel, cliVersionLabel, cliSourceApp, cliSourceBrew, cliSourceOther, cliBroken
+    case cliReinstall, cliNotInstalled, cliInstall, cliNoBundled, cliConflict, cliManual, cliManualPath, cliInstalledAt
+    case cliBrewNote, cliNoShell, cliAgentUsage, cliCopyForAI, cliCopyCommand, aboutVersion, aboutDevBuild, aboutLicense
+    case aboutRepository, aboutReportIssue, aboutUpdateFormula, aboutUpdateCask, aboutSupport, firstLaunchHint, firstLaunchBanner, gotIt
 }
 
 public enum L10n {
@@ -350,6 +360,79 @@ public enum L10n {
         .copyMore: ("另有 %@ 个未列出", "%@ more not listed"),
         .copyNoArgv: ("命令行不可用", "Command lines unavailable"),
         .lastActive: ("最近活动", "Last active"),
+        // Phase 11.
+        .settingsMenu: ("设置…", "Settings…"),
+        .settingsTitle: ("设置", "Settings"),
+        .tabGeneral: ("通用", "General"),
+        .tabMenuBar: ("菜单栏", "Menu Bar"),
+        .tabNotifications: ("通知", "Notifications"),
+        .tabCLI: ("命令行", "Command Line"),
+        .tabAbout: ("关于", "About"),
+        .openAtLogin: ("开机启动", "Open at login"),
+        .loginOn: ("已开启", "On"),
+        .loginOff: ("已关闭", "Off"),
+        .loginNeedsApproval: ("需要你在系统设置里批准", "Needs your approval in System Settings"),
+        .loginFailed: ("没能更改开机启动：%@", "Could not change open at login: %@"),
+        .loginMoveNote: ("移动 whoate 后需要重新打开这个开关", "After moving whoate, turn this on again"),
+        .loginTranslocated: ("先把 whoate 移到「应用程序」文件夹", "Move whoate to the Applications folder first"),
+        .loginOnlyApp: ("只有打包的 whoate.app 能设置开机启动", "Only the packaged whoate.app can open at login"),
+        .openSystemSettings: ("打开系统设置", "Open System Settings"),
+        .appearance: ("颜色模式", "Appearance"),
+        .followSystem: ("跟随系统", "System"),
+        .appearanceLight: ("浅色", "Light"),
+        .appearanceDark: ("深色", "Dark"),
+        .interfaceLanguage: ("界面语言", "Language"),
+        .languageZh: ("中文", "Chinese"),
+        .languageEn: ("English", "English"),
+        .menuBarShows: ("菜单栏显示", "Menu bar shows"),
+        .displayIconAndNumber: ("图标 + 数字", "Icon and number"),
+        .displayIconOnly: ("只显示图标", "Icon only"),
+        .backgroundRefresh: ("后台刷新", "Background refresh"),
+        .profileStandard: ("标准", "Standard"),
+        .profilePowerSaving: ("省电", "Power saving"),
+        .profileNote: ("窗口开着时每 %@ 秒刷新；收起后每 %@ 秒看一次内存，每 %@ 秒完整采样一次", "Every %@ s while a window is open; when hidden, memory every %@ s and a full sample every %@ s"),
+        .notifyEnabled: ("发送通知", "Send notifications"),
+        .notifyPressureToggle: ("内存变得偏紧或紧张", "Memory gets tight or critical"),
+        .notifyGrowingToggle: ("某一行持续在涨", "A row keeps growing"),
+        .notifyDenied: ("系统没有允许 whoate 发通知，可以在系统设置里打开。", "whoate is not allowed to send notifications. You can allow it in System Settings."),
+        .notifyNote: ("每类、每个对象 30 分钟内最多提醒一次。通知只在本机，不联网。", "At most one notification per kind and item every 30 minutes. Notifications stay on this Mac."),
+        .notifyTightTitle: ("内存偏紧", "Memory is getting tight"),
+        .notifyCriticalTitle: ("内存紧张", "Memory is critical"),
+        .notifyPressureBody: ("已用 %@，共 %@，点开查看", "%@ used of %@. Click to see."),
+        .notifyGrowingTitle: ("%@ 还在涨", "%@ is still growing"),
+        .notifyGrowingBody: ("现在 %@，点开查看", "Now %@. Click to see."),
+        .cliInstalled: ("已安装", "Installed"),
+        .cliPathLabel: ("路径", "Path"),
+        .cliSourceLabel: ("来源", "Source"),
+        .cliVersionLabel: ("版本", "Version"),
+        .cliSourceApp: ("来自 whoate.app", "From whoate.app"),
+        .cliSourceBrew: ("Homebrew", "Homebrew"),
+        .cliSourceOther: ("其他", "Other"),
+        .cliBroken: ("链接失效：%@", "Broken link: %@"),
+        .cliReinstall: ("重新安装", "Reinstall"),
+        .cliNotInstalled: ("未安装", "Not installed"),
+        .cliInstall: ("安装", "Install"),
+        .cliNoBundled: ("这个 whoate.app 里没有命令行工具", "This whoate.app has no command line tool"),
+        .cliConflict: ("已有别的 whoate：%@，没有覆盖", "Another whoate is already at %@; left as is"),
+        .cliManual: ("没有可写、又在 PATH 里的目录。在终端里运行：", "No folder on your PATH is writable. Run this in Terminal:"),
+        .cliManualPath: ("然后把 ~/.local/bin 加进 PATH", "Then add ~/.local/bin to your PATH"),
+        .cliInstalledAt: ("已安装到 %@", "Installed at %@"),
+        .cliBrewNote: ("以后用 Homebrew 安装 whoate 时，先运行 brew link --overwrite whoate", "If you later install whoate with Homebrew, run brew link --overwrite whoate first"),
+        .cliNoShell: ("没读到你的 shell 环境，按默认 PATH 判断", "Could not read your shell's PATH; using the default one"),
+        .cliAgentUsage: ("给 AI agent：让它运行 whoate top --json 看谁占内存，whoate why <pid> 看某个进程归谁。", "For AI agents: have them run whoate top --json to see what uses memory, and whoate why <pid> for one process."),
+        .cliCopyForAI: ("复制给 AI", "Copy for AI"),
+        .cliCopyCommand: ("复制命令", "Copy command"),
+        .aboutVersion: ("版本 %@ · 构建 %@", "Version %@ · build %@"),
+        .aboutDevBuild: ("开发版", "development build"),
+        .aboutLicense: ("MIT 许可", "Released under the MIT license"),
+        .aboutRepository: ("GitHub 仓库", "GitHub repository"),
+        .aboutReportIssue: ("报告问题", "Report an issue"),
+        .aboutUpdateFormula: ("用 Homebrew 更新：brew upgrade whoate", "Update with Homebrew: brew upgrade whoate"),
+        .aboutUpdateCask: ("只装了 app 的用：brew upgrade --cask whoate", "App only: brew upgrade --cask whoate"),
+        .aboutSupport: ("支持 whoate", "Support whoate"),
+        .firstLaunchHint: ("whoate 在菜单栏这里", "whoate lives here in the menu bar"),
+        .firstLaunchBanner: ("whoate 在屏幕右上角的菜单栏里；如果看不到，可能被刘海挡住了。", "whoate is in the menu bar at the top right of the screen; if you cannot see it, the notch may be hiding it."),
+        .gotIt: ("知道了", "Got it"),
     ]
 
     public static func text(_ key: L10nKey, _ language: Language) -> String {

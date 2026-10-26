@@ -19,6 +19,7 @@ use whoate_core::{
         host_cpu::{CpuMeter, PlatformCpu},
     },
     snapshot::Snapshot,
+    verdict::Language,
 };
 
 /// Each owner's curve in a tick is capped; whoate_why returns the full series.
@@ -43,12 +44,16 @@ trait Tick {
     /// The snapshot behind the latest report, borrowed for whoate_why's process list.
     fn snapshot(&self) -> Option<&Snapshot>;
     fn set_active(&mut self, active: bool);
+    fn set_language(&mut self, language: Language);
     #[cfg(test)]
     fn series(&self, id: &str) -> Vec<HistoryPoint>;
 }
 impl<S: Sampler, C: Clock> Tick for (Engine<S, C>, bool) {
     fn set_active(&mut self, active: bool) {
         self.0.set_active(active);
+    }
+    fn set_language(&mut self, language: Language) {
+        self.0.set_language(language);
     }
     fn tick(&mut self) -> Result<(Report, Option<Snapshot>), SampleError> {
         let report = self.0.tick()?;
@@ -475,6 +480,33 @@ pub unsafe extern "C" fn whoate_engine_set_active(
             Source::Report(..) => {}
         }
         json!({"schema":"whoate/control-v1","active":active != 0})
+    })
+}
+
+/// Diagnosis text language from the next tick on (Phase 11): 1 = zh, 2 = en.
+/// History, caches and kill state are kept. A replayed report keeps its own text.
+/// # Safety
+/// `engine` is NULL or an exclusively used live engine pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn whoate_engine_set_language(
+    engine: *mut WhoateEngine,
+    language: i32,
+) -> *mut c_char {
+    guarded(|| {
+        let language = match language {
+            1 => Language::Zh,
+            2 => Language::En,
+            _ => return error(2, "invalid_language"),
+        };
+        let Some(engine) = (unsafe { engine.as_mut() }) else {
+            return error(2, "null_engine");
+        };
+        match &mut engine.source {
+            Source::Live(engine) => engine.set_language(language),
+            #[cfg(debug_assertions)]
+            Source::Report(..) => {}
+        }
+        json!({"schema":"whoate/control-v1","language":language.choose("zh", "en")})
     })
 }
 
