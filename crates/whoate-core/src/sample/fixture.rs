@@ -728,6 +728,8 @@ impl Redactor {
             if let Some(socket) = &mut proc.tmux {
                 *socket = "<redacted>".into();
             }
+            // R22: only attribution uses it; a recorded fixture does not carry it.
+            proc.launched_app = None;
             if let Some(thread) = &mut proc.codex_thread_id {
                 let next = format!("thread-{}", self.threads.len() + 1);
                 *thread = self.threads.entry(thread.clone()).or_insert(next).clone();
@@ -834,6 +836,9 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
             .is_some_and(|value| !safe_thread(value))
         {
             return Err(SampleError::new("privacy", "unsafe_codex_thread"));
+        }
+        if proc.launched_app.is_some() {
+            return Err(SampleError::new("privacy", "unsafe_launched_app"));
         }
     }
     for pane in &snapshot.tmux_panes {

@@ -160,12 +160,14 @@ fn qa43_procargs_keeps_only_the_codex_thread_variable() {
     let mut bytes = 1_i32.to_ne_bytes().to_vec();
     bytes.extend(b"/opt/homebrew/bin/python3.13\0\0\0python3.13\0");
     bytes.extend(
-        b"HOME=/Users/demo\0CODEX_THREAD_ID=t-a\0OPENAI_API_KEY=sk-secret\0CODEX_HOME=/x\0",
+        b"HOME=/Users/demo\0CODEX_THREAD_ID=t-a\0OPENAI_API_KEY=sk-secret\0CODEX_HOME=/x\0XPC_SERVICE_NAME=0\0",
     );
     let args = parse_procargs(&bytes).unwrap();
     assert_eq!(args.codex_thread_id.as_deref(), Some("t-a"));
     assert_eq!(args.argv, vec!["python3.13"]);
     assert_eq!((&args.tmux, &args.tmux_pane), (&None, &None));
+    // R22 (review B1): XPC_SERVICE_NAME is read only for its derived app id; a shell's `0` is none.
+    assert_eq!(args.launched_app, None);
     let text = format!("{args:?}");
     for leaked in ["sk-secret", "/Users/demo", "CODEX_HOME"] {
         assert!(!text.contains(leaked), "{leaked}");

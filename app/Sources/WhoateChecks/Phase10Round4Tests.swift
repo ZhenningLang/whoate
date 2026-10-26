@@ -180,7 +180,7 @@ enum Phase10Round4Tests {
     static func relationShowsNoTechnicalIdentifiers() throws {
         let report = try Phase10Tests.designReport()
         let banned = ["TMUX_PANE", "CODEX_THREAD_ID", "com.", "pid", "PID", "确定", "推断", "较弱", "Certain", "Inferred", "Weak",
-                      "pane_ancestor", "tmux_environment", "agent_source", "app_bundle", "responsible_", "runtime_home",
+                      "pane_ancestor", "tmux_environment", "tmux_launch", "agent_source", "app_bundle", "responsible_", "runtime_home",
                       "other_uid", "service_fallback", "codex_thread_env", "为它负责"]
         let webkit = [R3.proc(9, 1, "com.apple.WebKit.WebContent", member: true, mem: 1 << 20)]
         for owner in report.owners {

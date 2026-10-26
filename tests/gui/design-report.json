@@ -3011,6 +3011,517 @@
    }
   },
   {
+   "id": "app:com.pilotmoon.scroll-reverser",
+   "kind": "app",
+   "label": "Scroll Reverser",
+   "mem_bytes": 23068672,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.1,
+   "pids": [
+    976000
+   ],
+   "origin": {
+    "tmux_pane": null,
+    "pane_alive": null,
+    "cwd": "/Users/demo",
+    "ports": null
+   },
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.pilotmoon.scroll-reverser",
+     "confidence": "certain"
+    },
+    {
+     "kind": "tmux_launch",
+     "detail": "%505",
+     "confidence": "weak"
+    }
+   ],
+   "parts": [
+    {
+     "name": "Scroll Reverser",
+     "mem_bytes": 23068672,
+     "process_count": 1,
+     "pids": [
+      976000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 23068672,
+     "cpu_pct": 0.1
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 9227468,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
+   }
+  },
+  {
    "id": "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4",
    "kind": "agent_session",
    "label": "给归属规则补回归测试",
@@ -8864,6 +9375,14 @@
    "name": "node",
    "in_owner": true,
    "mem_bytes": 214748364
+  },
+  {
+   "pid": 976000,
+   "ppid": 1,
+   "comm": "Scroll Reverser",
+   "name": "Scroll Reverser",
+   "in_owner": true,
+   "mem_bytes": 23068672
   }
  ]
 }

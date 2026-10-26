@@ -38,6 +38,7 @@ impl whoate_core::sample::libproc::ProcessReader for WindowReader {
             tmux: None,
             tmux_pane: None,
             codex_thread_id: None,
+            launched_app: None,
         })
     }
     fn responsible_pid(&mut self, _: i32) -> Option<i32> {

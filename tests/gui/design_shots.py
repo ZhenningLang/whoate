@@ -31,6 +31,7 @@ FIXTURE = os.path.join(ROOT, "tests/gui/design-report.json")
 ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
 WEBKIT = 'swarm:["com.apple.WebKit"]'
+OPENED = "app:com.pilotmoon.scroll-reverser"
 
 # name, window kind, automation mode, extra env, seconds to settle after the window line
 SHOTS = [
@@ -55,6 +56,8 @@ SHOTS = [
                                                  "WHOATE_UI_CLOSE_AT": "3", "WHOATE_UI_CLOSE_STEP": "force"}, 5.0),
     # Round 7 (R19): a spread process group (WebKit) in plain words, with who uses it.
     ("main-webkit", "main", "main-window", {"WHOATE_UI_SELECT": WEBKIT}, 5.0),
+    # Round 9 (R22): an app opened with `open` from a closed pane, its process tree in view.
+    ("main-opened-app", "main", "main-window", {"WHOATE_UI_SELECT": OPENED, "WHOATE_UI_DETAIL_SCROLL": "relation"}, 6.0),
 ]
 ENGLISH = {"panel", "main-agent", "main-webkit"}
 # Owner id prefix (or test) the selected row must have, per main window shot.
@@ -63,7 +66,7 @@ SELECTED = {"main-agent": lambda i: i.startswith("agent:"), "main-orphan": lambd
             "main-pane": lambda i: i == "pane:%22", "main-agent-tree": lambda i: i.startswith("agent:"),
             "main-browser-cpu": lambda i: i == "app:com.brave.Browser",
             "main-close": lambda i: i.startswith("orphan:"), "main-close-force": lambda i: i.startswith("orphan:"),
-            "main-webkit": lambda i: i == WEBKIT}
+            "main-webkit": lambda i: i == WEBKIT, "main-opened-app": lambda i: i == OPENED}
 
 
 def fresh_fixture(path):

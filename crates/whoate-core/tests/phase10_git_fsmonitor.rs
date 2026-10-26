@@ -268,6 +268,7 @@ impl libproc::ProcessReader for Reader {
             tmux: None,
             tmux_pane: None,
             codex_thread_id: None,
+            launched_app: None,
         })
     }
     fn responsible_pid(&mut self, _: i32) -> Option<i32> {

@@ -70,6 +70,13 @@ the path itself is `origin.cwd`, hidden by `--redact`), or `service:git-fsmonito
 the repository could not be read; evidence kind `git_fsmonitor`, verdict normal. Its
 worktrees share the repository's row. git restarts it on its next run; leave it alone.
 
+An app LaunchServices started as itself (`open`, Finder, Dock) from a tmux pane belongs
+to the app (`app:<bundle id>`), not to that pane or to the orphans, even after the pane
+closes: it only inherits `TMUX_PANE`. The pane is kept as weak evidence `tmux_launch`.
+Everything else keeps the pane rules: terminal apps, runtimes such as node or framework
+Python (whose executable sits in `Python.app`), command-line tools shipped inside an app
+bundle, agents, and apps whose Info.plist could not be read.
+
 The default top sort is memory, descending; unknown CPU sorts after known values.
 `--by` and `-n` apply only to top. JSON is available on the single-query commands;
 watch uses `--json-lines`. Kill also accepts `--json` for its separate result envelope;

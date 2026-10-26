@@ -10,6 +10,9 @@ pub struct ProcArgs {
     pub tmux_pane: Option<String>,
     /// The Codex session a tool call runs in (phase 10 R7).
     pub codex_thread_id: Option<String>,
+    /// R22: the bundle id LaunchServices started the process as, derived from
+    /// `XPC_SERVICE_NAME=application.<id>.<n>.<n>`; the raw value is not kept.
+    pub launched_app: Option<String>,
 }
 
 fn nul_string<'a>(bytes: &'a [u8], cursor: &mut usize) -> SampleResult<&'a [u8]> {
@@ -27,6 +30,38 @@ fn utf8(bytes: &[u8]) -> SampleResult<String> {
     std::str::from_utf8(bytes)
         .map(str::to_owned)
         .map_err(|_| SampleError::new("procargs", "invalid_utf8"))
+}
+
+/// `application.com.example.App.659599856.659599862` → `com.example.App`: the
+/// last two all-digit parts are LaunchServices' own numbers; the id itself may
+/// end in digits (`com.sublimetext.4`). A new instance (`open -n`, an app that
+/// relaunches itself) has a UUID after them, dropped first (review B1, round 9).
+/// Anything else (`0` in a shell, a plain XPC service name) is no app launch.
+fn launched_app(value: &str) -> Option<String> {
+    let mut id = value.strip_prefix("application.")?;
+    if let Some((head, tail)) = id.rsplit_once('.')
+        && uuid(tail)
+    {
+        id = head;
+    }
+    for _ in 0..2 {
+        let (head, tail) = id.rsplit_once('.')?;
+        if tail.is_empty() || !tail.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        id = head;
+    }
+    (!id.is_empty() && !id.bytes().all(|b| b.is_ascii_digit() || b == b'.')).then(|| id.into())
+}
+
+/// `8-4-4-4-12` hexadecimal digits, as LaunchServices writes an instance UUID.
+fn uuid(text: &str) -> bool {
+    let groups: Vec<_> = text.split('-').collect();
+    groups.len() == 5
+        && groups
+            .iter()
+            .zip([8, 4, 4, 4, 12])
+            .all(|(g, n)| g.len() == n && g.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
 pub fn parse_procargs(bytes: &[u8]) -> SampleResult<ProcArgs> {
@@ -54,6 +89,7 @@ pub fn parse_procargs(bytes: &[u8]) -> SampleResult<ProcArgs> {
         tmux: None,
         tmux_pane: None,
         codex_thread_id: None,
+        launched_app: None,
     };
     while cursor < bytes.len() {
         let field = nul_string(bytes, &mut cursor)?;
@@ -66,6 +102,8 @@ pub fn parse_procargs(bytes: &[u8]) -> SampleResult<ProcArgs> {
             result.tmux = Some(utf8(value)?);
         } else if let Some(value) = field.strip_prefix(b"CODEX_THREAD_ID=") {
             result.codex_thread_id = Some(utf8(value)?).filter(|id| !id.is_empty());
+        } else if let Some(value) = field.strip_prefix(b"XPC_SERVICE_NAME=") {
+            result.launched_app = std::str::from_utf8(value).ok().and_then(launched_app);
         }
     }
     Ok(result)

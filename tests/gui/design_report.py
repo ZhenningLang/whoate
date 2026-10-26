@@ -16,6 +16,8 @@ Round 4 (owner check 2026-10-24): Brave with three processes whose CPU is
 unreadable (R12), the pane %15 the Claude Code session runs in, live panes'
 `tmux_target`, and made-up `procs` that debug replay hands to whoate_why for
 the process trees (R10), with real-machine kernel names (review B:B1).
+Round 9 (owner check 2026-10-26, R22): a menu bar app opened with `open` from
+pane %505, since closed: the app's own row, with the pane as weak evidence.
 History: 30 minutes at 20 s, the Claude Code session with one 120 s gap.
 
   design_report.py [out]    (default: tests/gui/design-report.json next to this file)
@@ -113,6 +115,8 @@ def procs():
     out += [proc(960000, 1, "ChatGPT", member=False), proc(960001, 960000, "codex", member=False),
             proc(960100, 960001, "python3.13", 0.25 * G), proc(960101, 960001, "python3.13", 0.25 * G),
             proc(960102, 960001, "node", 0.2 * G)]
+    # R22: opened with `open` from a pane, so launchd is its parent.
+    out += [proc(976000, 1, "Scroll Reverser", 22 * M)]
     return out
 
 
@@ -175,6 +179,12 @@ def report():
               evidence=[ev("app_bundle", "com.anthropic.claudefordesktop", "certain")],
               parts=[part("Claude Helper (Renderer)", 1.0 * G, 5, 962002), part("Claude", 0.6 * G, 1, 962000)],
               hist=history(1.5 * G, 1.6 * G, cpu=2)),
+        # R22: kept among the apps; QA49 copies the last owner (an agent session).
+        owner("app:com.pilotmoon.scroll-reverser", "app", "Scroll Reverser", 22 * M, 0.1, [976000],
+              verdict("ok", "default", "正常"),
+              origin={"tmux_pane": None, "pane_alive": None, "cwd": "/Users/demo", "ports": None},
+              evidence=[ev("app_bundle", "com.pilotmoon.scroll-reverser", "certain"), ev("tmux_launch", "%505", "weak")],
+              parts=[part("Scroll Reverser", 22 * M, 1, 976000)], hist=history(22 * M, 22 * M, cpu=0.1)),
         owner("agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4", "agent_session", "给归属规则补回归测试", 2.6 * G, 31.0,
               list(range(970000, 970008)),
               verdict("watch", "fast-growth", "近 10 分钟 +400M，还在涨。"),

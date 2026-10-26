@@ -416,9 +416,22 @@ pub fn attribute(
             .find(|(_, a)| a.session_id.is_some())
             .copied()
             .or_else(|| pane.and_then(|_| candidates.last().copied()));
-        let environment_pane = (reaches_launchd && !monitor)
+        let inherited_pane = (reaches_launchd && !monitor)
             .then(|| chain.iter().find_map(|p| p.tmux_pane.as_ref()))
             .flatten();
+        // R22 (owner 2026-10-26): `open` from a pane has LaunchServices start the
+        // app; TMUX_PANE is only inherited. When the root was launched as its own
+        // non-terminal app, it keeps its app identity (rule ②) and the pane stays
+        // as weak evidence. A runtime inside a bundle (framework Python) or a CLI
+        // shipped in an app was not launched as one, so the pane rules stay.
+        let opened_app = inherited_pane.is_some()
+            && root.launched_app.as_deref().is_some_and(|launched| {
+                root.exe_path
+                    .as_deref()
+                    .and_then(|exe| app(exe, cfg).ok().flatten())
+                    .is_some_and(|(id, _)| id == launched && !terminals::is_terminal(&id))
+            });
+        let environment_pane = inherited_pane.filter(|_| !opened_app);
         let mut evidence = vec![];
         let mut origin = Origin {
             cwd: proc.cwd.clone(),
@@ -463,6 +476,12 @@ pub fn attribute(
                 } else {
                     Confidence::Weak
                 },
+            ));
+        } else if let Some(pane_id) = inherited_pane {
+            evidence.push(Evidence::new(
+                "tmux_launch",
+                pane_id.clone(),
+                Confidence::Weak,
             ));
         }
         let (id, kind, label, owner_agent) = if monitor {

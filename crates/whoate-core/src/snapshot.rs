@@ -47,6 +47,10 @@ pub struct Proc {
     /// (`<repo>/.git` or `<repo>/.git/worktrees/<name>`); None when unreadable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub git_dir: Option<String>,
+    /// R22: the bundle id LaunchServices started this process as (from
+    /// `XPC_SERVICE_NAME`); None for anything a shell or a parent started.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launched_app: Option<String>,
     pub footprint_bytes: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resident_bytes: Option<u64>,
@@ -76,6 +80,7 @@ impl Proc {
             tmux: None,
             codex_thread_id: None,
             git_dir: None,
+            launched_app: None,
             footprint_bytes: None,
             resident_bytes: None,
             cpu_time_ns: None,

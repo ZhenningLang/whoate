@@ -68,7 +68,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case paneSessions, paneSessionsLine, andMore, codexSession, byFolder, other
     case relationHow, relationGuess, relationRest, relationStarter, relationMarked, relationPane, relationPaneOnly, relationWindow
     case relationPaneClosed, relationApp, relationSession, relationMCP, relationExited, copyEvidence
-    case howOwnApp, howSession, howCodex, howPane, howLauncher, howNoSession, howPaneClosed, howOrphan
+    case howOwnApp, howOpenedFromPane, howSession, howCodex, howPane, howLauncher, howNoSession, howPaneClosed, howOrphan
     case howResponsible, howOtherUser, howService, howDefault
     case gitMonitor, gitMonitorOf, gitMonitorCopies, gitMonitorNoRepo, howGitMonitor, howGitMonitorNoRepo, gitMonitorAdvice
     case copyHeader, copyOwner, copySession, copyKind, copyKindAgent, copyMemory, copyUnknown, copyCwd
@@ -300,6 +300,8 @@ public enum L10n {
         .relationExited: ("已退出", "exited"),
         .copyEvidence: ("原始证据", "Raw evidence"),
         .howOwnApp: ("%@ 自己的进程。", "%@'s own processes."),
+        .howOpenedFromPane: ("它是在 tmux 分屏里打开的，但由 macOS 启动，不归分屏管。",
+                             " It was opened from a tmux split, but macOS launched it, so the split does not own it."),
         .howSession: ("这些进程都是这个 %@ 会话启动的。", "This %@ session started these processes."),
         .howCodex: ("Codex 给这些进程标记了这个会话。", "Codex marked these processes with this session."),
         .howPane: ("这些进程都是在这个分屏里启动的。", "These processes were all started in this split."),

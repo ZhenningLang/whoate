@@ -116,6 +116,7 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round7Tests.memoryNumbersSayWhatTheyAre", Phase10Round7Tests.memoryNumbersSayWhatTheyAre),
     ("Phase10Round7Tests.everyShownMemoryNumberHasALabel", Phase10Round7Tests.everyShownMemoryNumberHasALabel),
     ("Phase10Round7Tests.verdictSentencesGetUnitsAndTheLabel", Phase10Round7Tests.verdictSentencesGetUnitsAndTheLabel),
+    ("Phase10Round9Tests.appOpenedFromAPaneReadsAsTheApp", Phase10Round9Tests.appOpenedFromAPaneReadsAsTheApp),
 ]
 #if WHOATE_FIXTURE
 checks.append(("DecodeTests.replayTickDecodes", DecodeTests.replayTickDecodes))

@@ -470,6 +470,8 @@ public enum Detail {
             decided = weakest(["responsible_app"])
         } else if owner.kind == .app, kinds.contains("app_bundle") {
             sentence = L10n.format(.howOwnApp, language, name)
+            // R22: opened with `open` from a pane; the pane is only where it came from.
+            if kinds.contains("tmux_launch") { sentence += L10n.text(.howOpenedFromPane, language) }
             decided = weakest(["app_bundle"])
         } else if kinds.contains("other_uid") {
             sentence = L10n.text(.howOtherUser, language)
