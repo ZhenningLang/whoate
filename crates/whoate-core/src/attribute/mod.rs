@@ -337,6 +337,131 @@ fn bundle_owns<'a>((id, label): (String, String), evidence: &mut Vec<Evidence>) 
     Unowned::App(id, label)
 }
 
+/// The first launcher on a chain, from its first process up (that process
+/// included): a terminal app, or an app LaunchServices started as itself (R22's
+/// signal, `launched_app`). A runtime or CLI that merely lives in an app bundle
+/// (framework Python, Docker's CLI, an app's helpers) is passed over (review
+/// round 2 B:B1). Results are kept per pid: chains share their upper parts, so
+/// one tick reads each process's app at most once.
+fn first_app(
+    chain: &[&Proc],
+    cfg: &ConfigReader,
+    memo: &mut BTreeMap<i32, Option<(String, String)>>,
+) -> Option<(String, String)> {
+    let mut walked = vec![];
+    let mut found = None;
+    for p in chain {
+        if let Some(known) = memo.get(&p.pid) {
+            found = known.clone();
+            break;
+        }
+        walked.push(p.pid);
+        if let Some(a) = p
+            .exe_path
+            .as_deref()
+            .and_then(|exe| app(exe, cfg).ok().flatten())
+            .filter(|(id, _)| {
+                terminals::is_terminal(id) || p.launched_app.as_deref() == Some(id.as_str())
+            })
+        {
+            found = Some(a);
+            break;
+        }
+    }
+    for pid in walked {
+        memo.insert(pid, found.clone());
+    }
+    found
+}
+
+/// R25 (owner 2026-10-26): where an owner was started from. A pane: tmux, named
+/// by the terminal of its session's most recently active client (none attached:
+/// `attached: false`; a closed pane: tmux alone). Otherwise the first app above
+/// the owner's anchor (its agent process, else its chain's root), a terminal or a
+/// desktop app; otherwise the terminal responsible for the adopted root (rule ④).
+/// The anchor's own bundle and the other members never count (review B1: a
+/// session's Python.app child, a CLI shipped in an app). None when nothing says.
+fn launched_from(
+    origin: &Origin,
+    anchor: &Proc,
+    snap: &Snapshot,
+    index: &BTreeMap<i32, &Proc>,
+    cfg: &ConfigReader,
+    memo: &mut BTreeMap<i32, Option<(String, String)>>,
+) -> Option<LaunchedFrom> {
+    let named = |via, (id, name): (String, String)| LaunchedFrom {
+        via,
+        bundle_id: Some(id),
+        name: Some(name),
+        attached: None,
+    };
+    let kind = |(id, name): (String, String)| {
+        let via = if terminals::is_terminal(&id) {
+            LaunchVia::Terminal
+        } else {
+            LaunchVia::App
+        };
+        named(via, (id, name))
+    };
+    if origin.tmux_pane.is_some() {
+        let tmux = LaunchedFrom {
+            via: LaunchVia::Tmux,
+            bundle_id: None,
+            name: None,
+            attached: None,
+        };
+        let Some(session) = origin
+            .tmux_target
+            .as_deref()
+            .and_then(|t| t.split(':').next())
+        else {
+            return Some(tmux);
+        };
+        // Clients not captured: the terminal is unknown, not "unattached".
+        let Some(clients) = &snap.tmux_clients else {
+            return Some(tmux);
+        };
+        let client = clients
+            .iter()
+            .filter(|c| c.session == session)
+            .max_by_key(|c| (c.activity, c.pid));
+        let Some(client) = client else {
+            return Some(LaunchedFrom {
+                attached: Some(false),
+                ..tmux
+            });
+        };
+        let terminal = index.get(&client.pid).and_then(|p| {
+            let (chain, _) = ancestors(p, index);
+            first_app(&chain, cfg, memo)
+        });
+        return Some(match terminal {
+            Some(t) => LaunchedFrom {
+                attached: Some(true),
+                ..named(LaunchVia::Tmux, t)
+            },
+            None => LaunchedFrom {
+                attached: Some(true),
+                ..tmux
+            },
+        });
+    }
+    let (chain, reaches_launchd) = ancestors(anchor, index);
+    if let Some(found) = first_app(&chain[1..], cfg, memo) {
+        return Some(kind(found));
+    }
+    // The chain's last process is its root.
+    chain
+        .last()?
+        .responsible_pid
+        .filter(|pid| reaches_launchd && *pid > 1)
+        .and_then(|pid| index.get(&pid))
+        .and_then(|r| r.exe_path.as_deref())
+        .and_then(|exe| app(exe, cfg).ok().flatten())
+        .filter(|(id, _)| terminals::is_terminal(id))
+        .map(|t| named(LaunchVia::Terminal, t))
+}
+
 /// Codex sessions whose process has no Codex app on its chain are dropped (R7).
 /// Codex sessions count only when a Codex app started the session's first
 /// process: above the topmost process carrying this session id, not counting
@@ -387,6 +512,7 @@ pub fn attribute(
         .iter()
         .any(|issue| matches!(issue.stage.as_str(), "tmux" | "command" | "command_spawn"));
     let mut owners: BTreeMap<String, Owner> = BTreeMap::new();
+    let mut apps = BTreeMap::new();
     for proc in &snap.procs {
         let (chain, reaches_launchd) = ancestors(proc, &index);
         let root = *chain.last().unwrap_or(&proc);
@@ -484,6 +610,8 @@ pub fn attribute(
                 Confidence::Weak,
             ));
         }
+        // R25: where the owner was started is read from its agent process, else its root.
+        let mut anchor = root;
         let (id, kind, label, owner_agent) = if monitor {
             // Worktrees share their main repository's row (spec R17 leaves the choice).
             let repo = proc.git_dir.as_deref().and_then(git_repository);
@@ -508,6 +636,13 @@ pub fn attribute(
                 None,
             )
         } else if let Some((agent_proc, agent)) = agent {
+            // One session can span several processes carrying its id (Codex): the
+            // source is read above the topmost of them (review round 2 A [risk]).
+            anchor = candidates
+                .iter()
+                .rev()
+                .find(|(_, a)| a.tool == agent.tool && a.session_id == agent.session_id)
+                .map_or(agent_proc, |(p, _)| *p);
             agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else if let Some(pane) = pane {
             (
@@ -530,6 +665,7 @@ pub fn attribute(
                 // agent on the chain owns it; the closed pane stays as a fact.
                 match candidates.last().copied() {
                     Some((agent_proc, agent)) => {
+                        anchor = agent_proc;
                         agent_owner(agent_proc, agent, &mut origin, &mut evidence)
                     }
                     None => (
@@ -555,6 +691,7 @@ pub fn attribute(
         } else if let Some((agent_proc, agent)) = candidates.last().copied() {
             // D1 = C ①: outside a pane, an agent on the chain still owns it,
             // grouped by the agent's pid when it has no session.
+            anchor = agent_proc;
             agent_owner(agent_proc, agent, &mut origin, &mut evidence)
         } else {
             let context = Chain {
@@ -566,6 +703,7 @@ pub fn attribute(
             };
             match unowned(&context, cfg, agents, &index, &mut evidence) {
                 Unowned::Agent(agent_proc, agent) => {
+                    anchor = agent_proc;
                     agent_owner(agent_proc, agent, &mut origin, &mut evidence)
                 }
                 Unowned::Orphan => (
@@ -631,6 +769,15 @@ pub fn attribute(
             target.pane_title = origin.pane_title;
             target.window_name = origin.window_name;
             target.tmux_target = origin.tmux_target;
+        }
+        // R25: macOS starts apps (the GUI says so with its kind word) and other
+        // users' processes; git detaches its fsmonitor from the terminal on purpose
+        // (review B [question]). None of them gets a launch source.
+        if target.launched_from.is_none()
+            && !monitor
+            && !matches!(owner.kind, OwnerKind::App | OwnerKind::System)
+        {
+            target.launched_from = launched_from(target, anchor, snap, &index, cfg, &mut apps);
         }
         // Deterministic context choice when several children provide cwd values.
         if let Some(cwd) = origin.cwd

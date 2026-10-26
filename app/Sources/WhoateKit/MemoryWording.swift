@@ -4,9 +4,9 @@
 // Activity Monitor's Memory column) split into an estimate of the part in physical
 // memory, min(RSS, footprint), and the rest, compressed or swapped out. RSS counts
 // shared pages, so both parts are estimates; the split is given only when the
-// footprint and the RSS were read in full. The sidebar adds those estimates (spike
-// 2026-10-25 on the owner's Mac: footprints 36.9G, RSS 9.0G, capped 8.4G, physical
-// memory used 19.0G of 24G). app/DESIGN.md §12.
+// footprint and the RSS were read in full (spike 2026-10-25 on the owner's Mac:
+// footprints 36.9G, RSS 9.0G, capped 8.4G, physical memory used 19.0G of 24G). Since
+// R23 the sidebar adds footprints, like the list. app/DESIGN.md §12.
 import Foundation
 
 public enum MemoryWording {
@@ -87,15 +87,6 @@ public enum MemoryWording {
         }
         return Format.Memory(text: L10n.format(.memSplit, language, Format.bytes(physical), Format.bytes(outside), total.text),
                              help: nil)
-    }
-
-    /// Sidebar total for a kind of owners: the physical memory of each (nil when its RSS
-    /// could not be read). A lower bound "≥" when some are nil, "—" when all are.
-    public static func physicalTotal(_ values: [UInt64?]) -> String {
-        let read = values.compactMap { $0 }
-        if values.isEmpty { return Format.bytes(0) }
-        if read.isEmpty { return "—" }
-        return (read.count < values.count ? "≥ " : "") + Format.bytes(read.reduce(0, +))
     }
 
     /// Core verdict sentences (verdict/rules.rs, frozen; the CLI and JSON keep them as they

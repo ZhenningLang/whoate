@@ -148,7 +148,7 @@ struct SidebarView: View {
         let rows = model.rows(limit: .max)
         let selection = Binding<MainCategory?>(get: { model.category }, set: { if let c = $0 { model.category = c } })
         List(selection: selection) {
-            // R21: the kinds' totals are their owners' physical memory.
+            // R23: the kinds' totals are their rows' footprints, as in the list.
             Section(L10n.text(.memSectionOwners, language)) {
                 ForEach([MainCategory.all, .tmux, .agents, .apps, .orphans, .system], id: \.self) { item($0, rows) }
             }
@@ -160,9 +160,10 @@ struct SidebarView: View {
     }
 
     private func item(_ category: MainCategory, _ rows: [PanelRow]) -> some View {
-        let total = model.report == nil ? "" : MainWindowModel.total(rows, category)
+        let total = model.report == nil ? nil : MainWindowModel.total(rows, category, model.language)
         return Label(category.title(model.language), systemImage: category.symbol)
-            .badge(Text(total).monospacedDigit())
+            .badge(Text(total?.text ?? "").monospacedDigit())
+            .help(total?.help ?? "")
             .tag(category)
     }
 }

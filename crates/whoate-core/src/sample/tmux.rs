@@ -2,10 +2,13 @@ use super::{
     SampleError, SampleResult,
     command::{Output, read_command},
 };
-use crate::snapshot::TmuxPane;
+use crate::snapshot::{TmuxClient, TmuxPane};
 use std::{sync::atomic::AtomicBool, time::Duration};
 
 pub const FORMAT: &str = "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{q/a:window_name}\t#{pane_pid}\t#{q/a:pane_current_path}\t#{q/a:pane_title}";
+/// R25: listed after the panes in the same tmux call; the session is unescaped
+/// like the pane target's, so the two compare as they are.
+pub const CLIENT_FORMAT: &str = "client\t#{client_pid}\t#{client_session}\t#{client_activity}";
 
 fn decode_arg(text: &str) -> SampleResult<String> {
     // q/a emits bare, double-quoted, or single-quoted vis-escaped tokens.
@@ -106,19 +109,51 @@ pub fn parse_panes(text: &str) -> SampleResult<Vec<TmuxPane>> {
         .collect()
 }
 
+/// Pane lines and R25's client lines from one output. A malformed client line is
+/// skipped: clients only name the terminal, panes stay strict.
+pub fn parse(text: &str) -> SampleResult<(Vec<TmuxPane>, Vec<TmuxClient>)> {
+    let (clients, panes): (Vec<_>, Vec<_>) = text.lines().partition(|l| l.starts_with("client\t"));
+    let clients = clients
+        .iter()
+        .filter_map(|line| {
+            let fields: Vec<_> = line.split('\t').collect();
+            let [_, pid, session, activity] = fields[..] else {
+                return None;
+            };
+            Some(TmuxClient {
+                pid: pid.parse().ok().filter(|pid| *pid > 0)?,
+                session: session.into(),
+                activity: activity.parse().ok(),
+            })
+        })
+        .collect();
+    Ok((parse_panes(&panes.join("\n"))?, clients))
+}
+
 pub fn valid_pane(value: &str) -> bool {
     value
         .strip_prefix('%')
         .is_some_and(|s| !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit()))
 }
 
-pub fn capture() -> SampleResult<Vec<TmuxPane>> {
-    capture_with(|| {
+pub fn capture() -> SampleResult<(Vec<TmuxPane>, Vec<TmuxClient>)> {
+    capture_all_with(|| {
         read_command(
             "tmux",
             // read_command pins LC_ALL=C for numeric tools. Force tmux's UTF-8
             // client mode or it replaces tabs/Unicode with underscores.
-            &["-u", "list-panes", "-a", "-F", FORMAT],
+            // R25: the clients come from the same call (";" separates tmux commands).
+            &[
+                "-u",
+                "list-panes",
+                "-a",
+                "-F",
+                FORMAT,
+                ";",
+                "list-clients",
+                "-F",
+                CLIENT_FORMAT,
+            ],
             &AtomicBool::new(false),
             Duration::from_secs(super::cache::FRESH_SECONDS as u64),
             (super::top::MAX_PROCESSES + 1) * libc::PATH_MAX as usize,
@@ -128,21 +163,28 @@ pub fn capture() -> SampleResult<Vec<TmuxPane>> {
 
 /// The production command boundary also accepts deterministic platform outcomes.
 pub fn capture_with(run: impl FnOnce() -> SampleResult<Output>) -> SampleResult<Vec<TmuxPane>> {
+    capture_all_with(run).map(|(panes, _)| panes)
+}
+
+/// Panes and clients (R25).
+pub fn capture_all_with(
+    run: impl FnOnce() -> SampleResult<Output>,
+) -> SampleResult<(Vec<TmuxPane>, Vec<TmuxClient>)> {
     // Platform tool output is isolated. Ordinary missing server is not an error.
     let output = match run() {
         Err(e) if e.stage == "command_spawn" && e.code == format!("errno={}", libc::ENOENT) => {
-            return Ok(vec![]);
+            return Ok((vec![], vec![]));
         }
         result => result?,
     };
     if !output.success {
         let error = String::from_utf8_lossy(&output.stderr);
         if error.contains("no server running") || error.contains("No such file or directory") {
-            return Ok(vec![]);
+            return Ok((vec![], vec![]));
         }
         return Err(SampleError::new("tmux", "nonzero_exit"));
     }
     let text = std::str::from_utf8(&output.stdout)
         .map_err(|_| SampleError::new("tmux", "invalid_utf8"))?;
-    parse_panes(text)
+    parse(text)
 }

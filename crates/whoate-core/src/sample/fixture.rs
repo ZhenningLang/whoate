@@ -736,6 +736,8 @@ impl Redactor {
             }
             proc.argv = self.redact_argv(&proc.argv);
         }
+        // R25: clients name real sessions and processes; only attribution uses them.
+        snapshot.tmux_clients = None;
         for pane in &mut snapshot.tmux_panes {
             pane.target = format!("session:{}", pane.pane_id);
             pane.window_name = pane.window_name.as_ref().map(|_| "window".into());
@@ -840,6 +842,9 @@ pub fn validate_safe(snapshot: &Snapshot) -> SampleResult<()> {
         if proc.launched_app.is_some() {
             return Err(SampleError::new("privacy", "unsafe_launched_app"));
         }
+    }
+    if snapshot.tmux_clients.is_some() {
+        return Err(SampleError::new("privacy", "unsafe_tmux_client"));
     }
     for pane in &snapshot.tmux_panes {
         if !tmux::valid_pane(&pane.pane_id)

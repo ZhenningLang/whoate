@@ -93,7 +93,10 @@
     "cwd": "/Users/demo/src/site/worker",
     "ports": [
      8799
-    ]
+    ],
+    "launched_from": {
+     "via": "tmux"
+    }
    },
    "agent": null,
    "evidence": [
@@ -3011,6 +3014,521 @@
    }
   },
   {
+   "id": "app:com.moonshot.kimichat",
+   "kind": "app",
+   "label": "Kimi",
+   "mem_bytes": 375809638,
+   "unknown_mem_count": 0,
+   "cpu_pct": 0.3,
+   "pids": [
+    963000,
+    963001,
+    963002,
+    963003
+   ],
+   "origin": null,
+   "agent": null,
+   "evidence": [
+    {
+     "kind": "app_bundle",
+     "detail": "com.moonshot.kimichat",
+     "confidence": "certain"
+    }
+   ],
+   "parts": [
+    {
+     "name": "Kimi Helper (Renderer)",
+     "mem_bytes": 268435456,
+     "process_count": 3,
+     "pids": [
+      963001,
+      963002,
+      963003
+     ],
+     "unknown_mem_count": 0
+    },
+    {
+     "name": "Kimi",
+     "mem_bytes": 107374182,
+     "process_count": 1,
+     "pids": [
+      963000
+     ],
+     "unknown_mem_count": 0
+    }
+   ],
+   "facts": [],
+   "insights": [],
+   "history": [
+    {
+     "timestamp_s": 1792650600,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650620,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650640,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650660,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650680,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650700,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650720,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650740,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.2
+    },
+    {
+     "timestamp_s": 1792650760,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650780,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650800,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650820,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650840,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650860,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650880,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650900,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650920,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650940,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650960,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792650980,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651000,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651020,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651040,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651060,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651080,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651100,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651120,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651140,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651160,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651180,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651200,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651220,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651240,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651260,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651280,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651300,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651320,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651340,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651360,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651380,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651400,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651420,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651440,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651460,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651480,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651500,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651520,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651540,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651560,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651580,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651600,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651620,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651640,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651660,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651680,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651700,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651720,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651740,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651760,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651780,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651800,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651820,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651840,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651860,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651880,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651900,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651920,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651940,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651960,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792651980,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652000,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652020,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652040,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652060,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652080,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652100,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652120,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652140,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652160,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652180,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652200,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652220,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652240,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.3
+    },
+    {
+     "timestamp_s": 1792652260,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652280,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652300,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652320,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652340,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652360,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652380,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    },
+    {
+     "timestamp_s": 1792652400,
+     "mem_bytes": 375809638,
+     "cpu_pct": 0.4
+    }
+   ],
+   "verdict": {
+    "level": "ok",
+    "rule": "default",
+    "text": "正常"
+   },
+   "reclaimable_physical": {
+    "bytes": 150323855,
+    "unknown_count": 0,
+    "basis": "rss",
+    "reason": null
+   }
+  },
+  {
    "id": "app:com.pilotmoon.scroll-reverser",
    "kind": "app",
    "label": "Scroll Reverser",
@@ -3547,7 +4065,13 @@
      5173
     ],
     "window_name": "main",
-    "pane_title": "claude"
+    "pane_title": "claude",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": {
     "tool": "claude",
@@ -4089,7 +4613,13 @@
     "cwd": "/Users/demo/src/notes",
     "ports": null,
     "window_name": "main",
-    "pane_title": "opencode"
+    "pane_title": "opencode",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": {
     "tool": "opencode",
@@ -5611,7 +6141,13 @@
     "cwd": "/Users/demo/src/atlas",
     "ports": null,
     "window_name": "main",
-    "pane_title": "claude"
+    "pane_title": "claude",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": null,
    "evidence": [
@@ -6121,7 +6657,13 @@
     "cwd": "/Users/demo/src/atlas",
     "ports": null,
     "window_name": "main",
-    "pane_title": "zsh"
+    "pane_title": "zsh",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": null,
    "evidence": [
@@ -6638,7 +7180,12 @@
     "tmux_pane": null,
     "pane_alive": null,
     "cwd": "/Users/demo/src/export-kit",
-    "ports": null
+    "ports": null,
+    "launched_from": {
+     "via": "app",
+     "bundle_id": "com.openai.codex",
+     "name": "ChatGPT"
+    }
    },
    "agent": {
     "tool": "codex",
@@ -7179,7 +7726,13 @@
     "cwd": "/Users/demo/src/atlas",
     "ports": null,
     "window_name": "main",
-    "pane_title": "claude"
+    "pane_title": "claude",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": {
     "tool": "claude",
@@ -7720,7 +8273,13 @@
     "cwd": "/Users/demo/src/atlas",
     "ports": null,
     "window_name": "main",
-    "pane_title": "opencode"
+    "pane_title": "opencode",
+    "launched_from": {
+     "via": "tmux",
+     "bundle_id": "com.mitchellh.ghostty",
+     "name": "Ghostty",
+     "attached": true
+    }
    },
    "agent": {
     "tool": "opencode",
@@ -8250,7 +8809,10 @@
     "tmux_pane": "%301",
     "pane_alive": false,
     "cwd": "/Users/demo/src/old-api",
-    "ports": null
+    "ports": null,
+    "launched_from": {
+     "via": "tmux"
+    }
    },
    "agent": {
     "tool": "opencode",

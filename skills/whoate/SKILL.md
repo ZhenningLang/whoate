@@ -77,6 +77,15 @@ Everything else keeps the pane rules: terminal apps, runtimes such as node or fr
 Python (whose executable sits in `Python.app`), command-line tools shipped inside an app
 bundle, agents, and apps whose Info.plist could not be read.
 
+Optional `origin.launched_from` says where an owner was started from: `via: "tmux"`
+(a pane; `name`/`bundle_id` are the terminal of the session's most recently active
+client, `attached: false` when no client is attached, only `via` for a closed pane),
+`"terminal"` (a terminal app above the owner's agent process or root, or responsible for
+an adopted root) or `"app"` (a desktop app LaunchServices started as itself, above them,
+e.g. ChatGPT for its Codex sessions; the owner's own bundle and runtimes that merely live in
+an app bundle, such as framework Python, never count). It is absent
+when whoate cannot tell, and for app, system and git fsmonitor owners.
+
 The default top sort is memory, descending; unknown CPU sorts after known values.
 `--by` and `-n` apply only to top. JSON is available on the single-query commands;
 watch uses `--json-lines`. Kill also accepts `--json` for its separate result envelope;

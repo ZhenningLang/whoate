@@ -37,13 +37,17 @@ enum Phase10Tests {
     static func sidebarFiltersAndCpuOrder() throws {
         let report = try designReport()
         let all = rows(report)
-        // R21 (round 8): kinds add their owners' physical memory (an unreadable one makes it "≥").
-        let physical = { (kinds: Set<OwnerKind>) in
-            MemoryWording.physicalTotal(report.owners.filter { kinds.contains($0.kind) }.map { MemoryWording.split($0).physical })
+        // R23 (round 10, replaces R21's physical sum): kinds add their owners' footprints (an
+        // unreadable one makes it "≥"); since R24 the AI apps count under "AI & Agent", not "Apps".
+        let footprint = { (owners: [Owner]) in
+            Format.memory(owners.reduce(0) { $0 + $1.memBytes }, unknown: owners.reduce(0) { $0 + $1.unknownMemCount }, .zh).text
         }
-        // Brave's footprint is partly unreadable, so is its RSS: the apps' total is a lower bound.
-        expect(MainWindowModel.total(all, .apps) == physical([.app]) && physical([.app]).hasPrefix("≥"))
-        expect(MainWindowModel.total(all, .system) == physical([.system, .service]) && physical([.system, .service]).hasPrefix("≥"))
+        let apps = report.owners.filter { $0.kind == .app && !MainWindowModel.aiApps.contains($0.bundleID ?? "") }
+        // Brave's footprint is partly unreadable: the apps' total is a lower bound.
+        expect(MainWindowModel.total(all, .apps, .zh).text == footprint(apps) && footprint(apps).hasPrefix("≥"))
+        let system = report.owners.filter { $0.kind == .system || $0.kind == .service }
+        // Every system footprint was read: exact (R21's "≥" came from the RSS it lacked).
+        expect(MainWindowModel.total(all, .system, .zh).text == footprint(system) && !footprint(system).hasPrefix("≥"))
         let cpu = Panel.rows(report, sort: .cpu, language: .zh, limit: .max)
         expect(cpu.first?.id == "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4", "highest CPU first, act not pinned")
         expect(cpu.firstIndex { $0.id == "orphan:948211" }! > 0, "the act orphan (0.1 %) is not on top")
@@ -67,7 +71,8 @@ enum Phase10Tests {
         // Since R10 the evidence is a sentence in the process relation card (Phase10Round4Tests).
         guard case .relation(let relation) = try require(cards.first(where: { if case .relation = $0 { true } else { false } }))
         else { return fail("relation card") }
-        expect(relation.how == "这些进程都是这个 Claude Code 会话启动的。", relation.how)
+        // R25: the row's launch label closes the sentence.
+        expect(relation.how == "这些进程都是这个 Claude Code 会话启动的。启动位置：Ghostty · tmux main:1.0。", relation.how)
         expect(Words.status("made_up_status", .zh) == "made_up_status", "unknown codes stay visible")
         expect(Words.confidence(.weak, .en) == "Weak" && Words.status("waiting", .zh) == "等你回复")
     }
@@ -225,10 +230,11 @@ enum Phase10Tests {
     /// CONFORM:B3: "All" counts owners only; a process group overlays them.
     static func allTotalCountsOwnersOnce() throws {
         let report = try designReport()
-        // R21 (round 8): physical memory, owners only (a process group never adds to it).
-        let owners = MemoryWording.physicalTotal(report.owners.map { MemoryWording.split($0).physical })
-        expect(MainWindowModel.total(rows(report), .all) == owners)
-        expect(MainWindowModel.total(rows(report), .needsAction) == "4", "filters still count rows")
+        // R23 (round 10): footprints, owners only (a process group never adds to it).
+        let owners = Format.memory(report.owners.reduce(0) { $0 + $1.memBytes },
+                                   unknown: report.owners.reduce(0) { $0 + $1.unknownMemCount }, .zh)
+        expect(MainWindowModel.total(rows(report), .all, .zh).text == owners.text)
+        expect(MainWindowModel.total(rows(report), .needsAction, .zh).text == "4", "filters still count rows")
     }
 
     /// CONFORM:B4: a session outside tmux keeps a greyed jump button; A should: late results stay with their row.

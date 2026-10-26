@@ -8,6 +8,11 @@ pub struct Snapshot {
     pub host: Option<Host>,
     pub procs: Vec<Proc>,
     pub tmux_panes: Vec<TmuxPane>,
+    /// R25: tmux clients, for the terminal each session is shown in. None when not
+    /// captured (fixtures, archives, a failed tmux call): no session then reads as
+    /// unattached. Never in a recorded fixture (redaction drops them).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tmux_clients: Option<Vec<TmuxClient>>,
     pub system_procs: SystemProcs,
     /// Safe codes, never command lines, environment values or filesystem paths.
     #[serde(default)]
@@ -21,6 +26,7 @@ impl Snapshot {
             host: None,
             procs,
             tmux_panes: vec![],
+            tmux_clients: None,
             system_procs: SystemProcs::missing(),
             issues: vec![],
         }
@@ -138,6 +144,15 @@ pub struct TmuxPane {
     pub pane_title: Option<String>,
     pub pane_pid: i32,
     pub cwd: Option<String>,
+}
+
+/// R25: a client attached to a tmux session: its process, the session, and when
+/// it was last active (Unix seconds).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TmuxClient {
+    pub pid: i32,
+    pub session: String,
+    pub activity: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

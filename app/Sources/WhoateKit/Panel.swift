@@ -31,9 +31,6 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var rule: String?
     /// Process groups only: the owners the group's processes belong to (R14 falls back to one).
     public var members: [String] = []
-    /// R21: owners only, the part of `memBytes` in physical memory (MemoryWording.split);
-    /// nil when its RSS could not be read, and for process groups.
-    public var physicalBytes: UInt64?
 }
 
 extension PanelRow {
@@ -75,7 +72,7 @@ public enum Panel {
                 history: histories.map { $0[o.id] ?? [] } ?? o.history,
                 closable: o.verdict.level == .act && !isProtected(o), insights: o.insights,
                 unknownMemCount: o.unknownMemCount, cpuReadable: o.cpuPctReadable, unknownCPUCount: o.unknownCPUCount,
-                kind: o.kind, rule: o.verdict.rule, physicalBytes: MemoryWording.split(o).physical)
+                kind: o.kind, rule: o.verdict.rule)
         }
         let swarms = report.swarms.map { s in
             // R19: a spread group is normal in the GUI (not in "needs action", grey pill); the core's level stays.
@@ -152,12 +149,16 @@ public enum Panel {
         return o.label
     }
 
-    /// Sessions: tool · tmux window (pane title) · directory · idle time, missing parts omitted.
+    /// Sessions: where it was started (R25) · tool · tmux window (pane title) · directory ·
+    /// idle time, missing parts omitted.
     public static func agentSubtitle(_ o: Owner, _ agent: Agent, _ language: Language) -> String {
-        var parts = [agent.tool]
-        if o.origin?.paneAlive == false {
+        let launch = RowNames.launch(o, language)
+        var parts = (launch.map { [$0] } ?? []) + [agent.tool]
+        // The launch label already says "split closed" and the pane address; only what it lacks is added.
+        let closed = o.origin?.paneAlive == false
+        if closed, launch == nil {
             parts.append(L10n.text(.paneClosed, language))
-        } else if let origin = o.origin, let window = origin.windowName ?? origin.tmuxPane {
+        } else if !closed, let origin = o.origin, let window = origin.windowName ?? (launch == nil ? origin.tmuxPane : nil) {
             parts.append(windowLabel(window, origin))
         }
         if let cwd = Detail.folder(o), cwd != "/" {
@@ -179,7 +180,11 @@ public enum Panel {
         }
         var parts: [String] = []
         if let origin = o.origin {
-            if origin.paneAlive == false {
+            // R25: where it was started comes first and replaces the pane wording.
+            if let launch = RowNames.launch(o, language) {
+                parts.append(launch)
+                if origin.paneAlive != false, let window = origin.windowName { parts.append(window) }
+            } else if origin.paneAlive == false {
                 parts.append(L10n.text(.paneClosed, language))
             } else if let pane = origin.tmuxPane {
                 parts.append("tmux " + (origin.windowName.map { "\($0) \(pane)" } ?? pane))

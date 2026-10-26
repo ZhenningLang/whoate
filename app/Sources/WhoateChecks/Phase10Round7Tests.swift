@@ -134,7 +134,7 @@ enum Phase10Round7Tests {
         // Not in "needs action", grey pill; a burst (possible runaway) still is.
         expect(!MainWindowModel.matches(spread, .needsAction) && MainWindowModel.matches(burst, .needsAction))
         expect(spread.pill == "多个应用在用" && spread.pillLevel == .ok && spread.level == .ok)
-        expect(MainWindowModel.total(rows, .needsAction) == "1", MainWindowModel.total(rows, .needsAction))
+        expect(MainWindowModel.total(rows, .needsAction, .zh).text == "1", MainWindowModel.total(rows, .needsAction, .zh).text)
         expect(spread.title == "网页内容进程（WebKit） × 16", spread.title)
         expect(spread.subtitle == "16 个进程：Mail 4、wpsoffice 3、AgentsView 3…", spread.subtitle)
 
@@ -287,17 +287,19 @@ enum Phase10Round7Tests {
         let braveRow = try require(Phase10Tests.rows(design).first { $0.id == braveOwner.id })
         let line = try require(Detail.header(braveOwner, row: braveRow, language: .zh).memorySplit)
         expect(line.text.contains(braveRow.memory(.zh).text) && line.help == braveRow.memory(.zh).help, line.text)
-        expect(MemoryWording.physicalTotal([1 << 30, 2 << 30]) == "3.0G" && MemoryWording.physicalTotal([1 << 30, nil]) == "≥ 1.0G")
-        expect(MemoryWording.physicalTotal([nil]) == "—" && MemoryWording.physicalTotal([]) == "0B")
-
-        // The sidebar's kinds add physical memory: never past the machine's total, and the section says so.
+        // R23 (owner 2026-10-26, replaces R21's physical sidebar): the kinds add the footprints
+        // their list shows, the section says so, and "all" says why it may exceed physical memory.
         let report = try Phase10Tests.designReport()
         let rows = Phase10Tests.rows(report)
-        let all = MainWindowModel.total(rows, .all)
-        expect(all.hasPrefix("≥ "), "the design report's system owner is unreadable: \(all)")
-        let physical = rows.compactMap(\.physicalBytes).reduce(0, +)
-        expect(physical < (report.host?.memTotalBytes ?? 0), "\(physical)")
-        expect(L10n.text(.memSectionOwners, .zh) == "归属 · 物理内存")
+        let all = MainWindowModel.total(rows, .all, .zh)
+        let owners = rows.filter { $0.source == .owner }
+        expect(all.text == Format.memory(owners.reduce(0) { $0 + $1.memBytes },
+                                         unknown: owners.reduce(0) { $0 + $1.unknownMemCount }, .zh).text, all.text)
+        expect(all.text.hasPrefix("≥ "), "the design report's system owner is unreadable: \(all.text)")
+        expect(all.help?.hasPrefix(L10n.text(.memAllHelp, .zh)) == true && all.help?.contains("读不到内存") == true, all.help ?? "")
+        expect(L10n.text(.memAllHelp, .zh).contains("可以超过物理内存") && !L10n.text(.memAllHelp, .zh).contains("含压缩"))
+        expect(MemoryWording.hostHelp(.zh).contains("左栏和列表都是各归属的占用") && !MemoryWording.hostHelp(.zh).contains("比已用少"))
+        expect(L10n.text(.memSectionOwners, .zh) == "归属 · 占用" && L10n.text(.memSectionOwners, .en) == "Owners · footprint")
         // Defined, not "includes" (owner turned that wording down): 占用 = 物理内存 + 压缩/swap.
         expect(L10n.format(.memListHeader, .zh, "6") == "6 个归属 · 按占用排序")
         expect(L10n.text(.memPanelCaption, .zh) == "占用 = 物理内存 + 压缩/swap")
@@ -366,7 +368,7 @@ enum Phase10Round7Tests {
             shown += overview.zones.map { (overview.zonesTitle ?? "", $0.1) }
             shown += overview.gpu.map { [(t(.gpuMemory), $0)] } ?? []
             shown += [MainCategory.all, .tmux, .agents, .apps, .orphans, .system].map {
-                (t(.memSectionOwners), MainWindowModel.total(rows, $0))
+                (t(.memSectionOwners), MainWindowModel.total(rows, $0, language).text)
             }
             for row in rows {
                 shown += [(list, row.memory(language).text), (list, row.subtitle), ("", t(.memFootprint) + " " + row.memory(language).text)]

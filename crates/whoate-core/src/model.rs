@@ -86,6 +86,36 @@ pub struct Origin {
     pub pane_alive: Option<bool>,
     pub cwd: Option<String>,
     pub ports: Option<Vec<u16>>,
+    /// R25 (owner 2026-10-26): where the owner was started from; absent when
+    /// whoate cannot tell, and for apps (macOS starts them).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launched_from: Option<LaunchedFrom>,
+}
+
+/// R25: `tmux` (a pane; `app` is the terminal of the session's most recently
+/// active client), `terminal` (a terminal app on the parent chain, or the one
+/// responsible for it) or `app` (a desktop app on the parent chain, such as
+/// ChatGPT for its Codex sessions).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LaunchedFrom {
+    pub via: LaunchVia,
+    /// The terminal or app's bundle id and display name; absent when not known.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bundle_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// tmux only: whether any client is attached to the pane's session; absent
+    /// for a closed pane and when the clients were not captured.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attached: Option<bool>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LaunchVia {
+    Tmux,
+    Terminal,
+    App,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

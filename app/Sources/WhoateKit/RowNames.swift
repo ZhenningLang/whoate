@@ -22,15 +22,40 @@ public enum RowNames {
     }
 
     /// Panel.title, except a Codex session without a name (R7): "Codex 会话 · <folder>",
-    /// and git's fsmonitor (R17): "git 文件监视 · <repository>".
+    /// git's fsmonitor (R17): "git 文件监视 · <repository>", and any other session
+    /// without a title (R25): "<tool> · <folder>", never an id.
     public static func title(_ o: Owner, _ language: Language) -> String {
         if isGitMonitor(o) {
             return gitMonitorRepo(o).map { L10n.format(.gitMonitorOf, language, $0) } ?? L10n.text(.gitMonitor, language)
         }
-        guard let agent = o.agent, agent.tool == "codex", (agent.name ?? "").isEmpty else { return Panel.title(o) }
-        let session = L10n.text(.codexSession, language)
-        guard let cwd = Detail.folder(o), cwd != "/" else { return session }
-        return session + " · " + URL(fileURLWithPath: cwd).lastPathComponent
+        let folder = Detail.folder(o).flatMap { $0 == "/" ? nil : URL(fileURLWithPath: $0).lastPathComponent }
+        if let agent = o.agent, agent.tool == "codex", (agent.name ?? "").isEmpty {
+            let session = L10n.text(.codexSession, language)
+            return folder.map { session + " · " + $0 } ?? session
+        }
+        let plain = Panel.title(o)
+        if let agent = o.agent, o.kind == .agentSession, plain == agent.tool, let folder {
+            return tool(agent.tool) + " · " + folder
+        }
+        return plain
+    }
+
+    /// R25 (owner 2026-10-26): where a row was started from, first in its subtitle
+    /// (list and panel alike) and in the details' "how whoate decided": "Ghostty ·
+    /// tmux main:10.1", "iTerm2", "ChatGPT 桌面版". Apps keep their kind word; nil when
+    /// the core could not tell.
+    public static func launch(_ o: Owner, _ language: Language) -> String? {
+        guard o.kind != .app, let from = o.origin?.launchedFrom, let via = from.via else { return nil }
+        let name = from.bundleID == "com.apple.Terminal" ? L10n.text(.launchTerminal, language) : from.name
+        switch via {
+        case .tmux:
+            if o.origin?.paneAlive == false { return L10n.text(.launchPaneClosed, language) }
+            let tmux = (["tmux"] + [o.origin?.tmuxTarget].compactMap { $0 }).joined(separator: " ")
+            if from.attached == false { return L10n.format(.launchDetached, language, tmux) }
+            return name.map { $0 + " · " + tmux } ?? tmux
+        case .terminal: return name
+        case .app: return name.map { L10n.format(.launchInApp, language, $0) }
+        }
     }
 
     /// "会话：A、B 等 3 个" for a pane running agent sessions (R3); nil without any.
@@ -90,11 +115,16 @@ public enum RowNames {
             for (_, indices) in Dictionary(grouping: named.indices, by: { named[$0].title }) where indices.count > 1 {
                 // The shortest id (com.openai.codex before com.openai.codex.cli) keeps the plain title.
                 let sorted = indices.sorted { (named[$0].id.count, named[$0].id) < (named[$1].id.count, named[$1].id) }
-                for index in sorted.dropFirst() {
+                for (offset, index) in sorted.dropFirst().enumerated() {
                     let row = named[index]
-                    let extra = switch pass {
-                    case 1: suffix(row, owner: owners[row.id], language: language)
-                    case 2: String(row.id.split(separator: ":").last ?? Substring(row.id))
+                    // R25: a session's id ("agent:kilo:pid:86021") is never shown.
+                    let session = owners[row.id]?.kind == .agentSession ? owners[row.id]?.agent : nil
+                    let extra = switch (pass, session) {
+                    case (1, _): suffix(row, owner: owners[row.id], language: language)
+                    case (2, let agent?): agent.sessionId.map { String($0.prefix(8)) }
+                        ?? "pid " + String(row.id.split(separator: ":").last ?? "")
+                    case (2, nil): String(row.id.split(separator: ":").last ?? Substring(row.id))
+                    case (_, _?): "\(offset + 2)"
                     default: row.id
                     }
                     named[index].title += " · " + extra
@@ -126,6 +156,9 @@ public enum RowNames {
             return part
         }
         if let owner, owner.kind != .app, let word = kindWord(owner.kind, language) { return word }
+        if let owner, owner.kind == .agentSession, let agent = owner.agent {
+            return launch(owner, language) ?? tool(agent.tool)
+        }
         return String(row.id.split(separator: ".").last ?? Substring(row.id))
     }
 

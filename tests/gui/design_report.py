@@ -61,7 +61,7 @@ def part(name, mem, count, first_pid, unknown=0):
 
 
 def owner(id, kind, label, mem, cpu, pids, verdict, origin=None, agent=None, evidence=(), parts=(), insights=(),
-          hist=(), unknown=0, cpu_unknown=None, reclaimable=None):
+          hist=(), unknown=0, cpu_unknown=None, reclaimable=None, launched=None):
     o = {"id": id, "kind": kind, "label": label, "mem_bytes": int(mem), "unknown_mem_count": unknown,
          "cpu_pct": cpu, "pids": pids, "origin": origin, "agent": agent, "evidence": list(evidence),
          "parts": list(parts), "facts": [], "insights": list(insights), "history": list(hist), "verdict": verdict}
@@ -76,7 +76,16 @@ def owner(id, kind, label, mem, cpu, pids, verdict, origin=None, agent=None, evi
         o["reclaimable_physical"] = {"bytes": int(reclaimable), "unknown_count": 0, "basis": "rss", "reason": None}
     if cpu_unknown is not None:  # R12: `cpu` is then only the readable part
         o["cpu_pct"], o["cpu_pct_readable"], o["unknown_cpu_count"] = None, cpu, cpu_unknown
+    # R25: where it was started. The made-up tmux server is attached from Ghostty, as on
+    # the owner's Mac; a closed pane says tmux only; apps get none.
+    if launched is None and origin and origin.get("tmux_pane") and kind != "app":
+        launched = GHOSTTY if origin.get("pane_alive") else {"via": "tmux"}
+    if launched is not None:
+        o["origin"] = {**origin, "launched_from": launched}
     return o
+
+
+GHOSTTY = {"via": "tmux", "bundle_id": "com.mitchellh.ghostty", "name": "Ghostty", "attached": True}
 
 
 def proc(pid, ppid, comm, mem=None, member=True, name=None):
@@ -179,6 +188,12 @@ def report():
               evidence=[ev("app_bundle", "com.anthropic.claudefordesktop", "certain")],
               parts=[part("Claude Helper (Renderer)", 1.0 * G, 5, 962002), part("Claude", 0.6 * G, 1, 962000)],
               hist=history(1.5 * G, 1.6 * G, cpu=2)),
+        # R24: on the AI app list, so under "AI & Agent" with ChatGPT and Claude.
+        owner("app:com.moonshot.kimichat", "app", "Kimi", 0.35 * G, 0.3, list(range(963000, 963004)),
+              verdict("ok", "default", "正常"),
+              evidence=[ev("app_bundle", "com.moonshot.kimichat", "certain")],
+              parts=[part("Kimi Helper (Renderer)", 0.25 * G, 3, 963001), part("Kimi", 0.1 * G, 1, 963000)],
+              hist=history(0.35 * G, 0.35 * G, cpu=0.3)),
         # R22: kept among the apps; QA49 copies the last owner (an agent session).
         owner("app:com.pilotmoon.scroll-reverser", "app", "Scroll Reverser", 22 * M, 0.1, [976000],
               verdict("ok", "default", "正常"),
@@ -233,6 +248,7 @@ def report():
               [960100, 960101, 960102],
               verdict("ok", "default", "正常"),
               origin={"tmux_pane": None, "pane_alive": None, "cwd": "/Users/demo/src/export-kit", "ports": None},
+              launched={"via": "app", "bundle_id": "com.openai.codex", "name": "ChatGPT"},
               agent=codex_agent("019a7c2e-4f1b-7d20-9c3a-5e8b1d6f0a42", "重构导出模块", "/Users/demo/src/export-kit",
                                 "refactor/export", END - 300),
               evidence=[ev("agent_source", "codex", "certain"),

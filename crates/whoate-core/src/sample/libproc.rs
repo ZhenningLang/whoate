@@ -570,11 +570,11 @@ impl Sampler for MacSampler {
                 issue(&mut issues, error);
             }
         }
-        let tmux_panes = match tmux::capture() {
-            Ok(panes) => panes,
+        let (tmux_panes, tmux_clients) = match tmux::capture() {
+            Ok((panes, clients)) => (panes, Some(clients)),
             Err(e) => {
                 issue(&mut issues, e);
-                vec![]
+                (vec![], None)
             }
         };
         if tmux_panes
@@ -640,6 +640,7 @@ impl Sampler for MacSampler {
             host: Some(host),
             procs,
             tmux_panes,
+            tmux_clients,
             system_procs: cache.status(now),
             issues,
         })

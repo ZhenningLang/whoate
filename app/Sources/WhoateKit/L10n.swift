@@ -74,6 +74,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case copyHeader, copyOwner, copySession, copyKind, copyKindAgent, copyMemory, copyUnknown, copyCwd
     case copyTmux, copyWindow, copyReason, copySuggestion, copyProcesses, copyMore, copyNoArgv
     case lastActive
+    case memAllHelp, launchTerminal, launchPaneClosed, launchDetached, launchInApp, howLaunchedFrom
 }
 
 public enum L10n {
@@ -111,8 +112,8 @@ public enum L10n {
         .memCompressedOf: ("其中压缩 %@", "incl. compressed %@"),
         .memSwapLine: ("swap %@ / %@ · %@", "swap %@ / %@ · %@"),
         .memSwapUsed: ("swap 已用 %@", "swap used %@"),
-        .memHostHelp: ("物理内存：已用 / 总量。压缩：压缩器占用的物理内存，是已用的一部分。swap：硬盘上的交换文件，已用 / 当前文件总量，macOS 会按需扩大。左栏是各类进程的物理内存估算；压缩器和联动内存不归任何进程，所以左栏通常比已用少；它按含共享页的常驻内存估算，只是估算。",
-                       "Physical memory: used / total. Compressed: physical memory the compressor holds, part of used. swap: swap files on disk, used / their current total; macOS grows them on demand. The sidebar estimates each kind's physical memory; the compressor and wired memory belong to no process, so the sidebar usually adds up to less than used; it estimates from resident memory, shared pages included."),
+        .memHostHelp: ("物理内存：已用 / 总量。压缩：压缩器占用的物理内存，是已用的一部分。swap：硬盘上的交换文件，已用 / 当前文件总量，macOS 会按需扩大。左栏和列表都是各归属的占用（占用 = 物理内存 + 压缩/swap），所以相加可以超过物理内存总量。",
+                       "Physical memory: used / total. Compressed: physical memory the compressor holds, part of used. swap: swap files on disk, used / their current total; macOS grows them on demand. The sidebar and the list show each owner's footprint (footprint = physical + compressed/swap), so they can add up to more than physical memory."),
         .memSplit: ("物理内存约 %@ · 压缩或 swap 约 %@ · 合计（占用）%@", "In physical memory ~%@ · compressed or swapped ~%@ · total (footprint) %@"),
         .memSplitUnknown: ("合计（占用）%@ · 物理内存部分读不到", "Total (footprint) %@ · physical part not readable"),
         .memSplitPartial: ("合计（占用）%@ · 有进程读不到，拆不出物理内存和压缩/swap",
@@ -129,7 +130,9 @@ public enum L10n {
         .memOverviewWired: ("其中联动", "incl. wired"),
         .memWiredOf: ("其中联动 %@", "incl. wired %@"),
         .memSwapGrows: ("（macOS 会按需扩大 swap）", " (macOS grows swap on demand)"),
-        .memSectionOwners: ("归属 · 物理内存", "Owners · physical memory"),
+        .memSectionOwners: ("归属 · 占用", "Owners · footprint"),
+        .memAllHelp: ("占用 = 物理内存 + 压缩/swap，所以各归属相加可以超过物理内存总量。",
+                      "Footprint = physical + compressed/swap, so the owners together can exceed physical memory."),
         .memListHeader: ("%@ 个归属 · 按占用排序", "%@ owners · by footprint"),
         .memCardSuffix: (" · 占用", " · footprint"),
         .memProcessCaption: ("数字是各进程的占用（占用 = 物理内存 + 压缩/swap）", "Each process's footprint (footprint = physical + compressed/swap)"),
@@ -220,7 +223,7 @@ public enum L10n {
         .ownedBy: ("分属 %@ 个归属：%@", "across %@ owners: %@"),
         .sessionsOf: ("%@ 会话", "%@ sessions"),
         .categoryAll: ("全部", "All"),
-        .categoryAgents: ("助手会话", "Agent sessions"),
+        .categoryAgents: ("AI & Agent", "AI & Agent"),
         .categoryApps: ("应用", "Apps"),
         .categoryOrphans: ("孤儿", "Orphans"),
         .categorySystem: ("系统", "System"),
@@ -278,7 +281,7 @@ public enum L10n {
         .linuxNote: ("Docker 数字按 Linux 口径统计", "Docker figures use Linux accounting"),
         .confirmSummary: ("会结束 %@ 个进程，预计腾出约 %@ 物理内存。", "Ends %@ processes and frees about %@ of physical memory."),
         .confirmSummaryUnknown: ("会结束 %@ 个进程，腾出多少内存无法预估。", "Ends %@ processes; cannot estimate the memory freed."),
-        .paneSessions: ("这个 pane 里的助手会话", "Agent sessions in this pane"),
+        .paneSessions: ("这个 pane 里的 AI & Agent 会话", "AI & Agent sessions in this pane"),
         .paneSessionsLine: ("会话：%@", "Sessions: %@"),
         .andMore: ("等 %@ 个", "%@ in all"),
         .codexSession: ("Codex 会话", "Codex session"),
@@ -325,12 +328,17 @@ public enum L10n {
         .howGitMonitorNoRepo: ("这是 git 开的文件监视后台（仓库读不到），git 故意让它脱离终端运行。",
                                "git started this file-watching helper (repository unreadable) and detached it from the terminal on purpose."),
         .howDefault: ("按进程的父子关系归到这里。", "Grouped here by parent and child processes."),
+        .howLaunchedFrom: ("启动位置：%@。", " Started from %@."),
+        .launchTerminal: ("终端", "Terminal"),
+        .launchPaneClosed: ("tmux（分屏已关闭）", "tmux (split closed)"),
+        .launchDetached: ("%@（未连接）", "%@ (not attached)"),
+        .launchInApp: ("%@ 桌面版", "%@ desktop app"),
         .copyHeader: ("whoate 归属信息 · %@ · 帮我判断保留还是关闭。不含对话内容。",
                       "whoate owner info · %@ · Help me decide whether to keep or close it. No conversation content."),
         .copyOwner: ("软件/会话", "Software/session"),
         .copySession: ("%@ 会话「%@」", "%@ session “%@”"),
         .copyKind: ("种类", "Kind"),
-        .copyKindAgent: ("助手会话（%@）", "Agent session (%@)"),
+        .copyKindAgent: ("AI & Agent 会话（%@）", "AI & Agent session (%@)"),
         .copyMemory: ("内存", "Memory"),
         .copyUnknown: ("（%@ 个进程读不到内存，只计读得到的）", " (%@ processes unreadable; counted the rest)"),
         .copyCwd: ("工作目录", "Working folder"),

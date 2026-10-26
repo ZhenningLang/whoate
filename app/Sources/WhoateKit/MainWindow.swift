@@ -46,6 +46,20 @@ public enum MainWindowModel {
         row.kind == .app && browsers.contains(String(row.id.dropFirst("app:".count)))
     }
 
+    /// R24 (owner 2026-10-26): AI desktop apps, listed whole under "AI & Agent" with the
+    /// sessions instead of under "Apps". The one place this list lives. Each id is the
+    /// app's CFBundleIdentifier (`defaults read /Applications/<App>.app/Contents/Info
+    /// CFBundleIdentifier`); to add an app, append its id. The owner's first list,
+    /// 2026-10-26; ChatGPT ships as com.openai.codex on the owner's Mac.
+    public static let aiApps: Set<String> = [
+        "com.openai.chat", "com.openai.codex", "com.anthropic.claudefordesktop", "com.anysphere.sand",
+        "com.moonshot.kimichat", "com.google.Gemini", "ai.perplexity.mac",
+    ]
+
+    public static func isAIApp(_ row: PanelRow) -> Bool {
+        row.kind == .app && aiApps.contains(String(row.id.dropFirst("app:".count)))
+    }
+
     /// Owner kinds a category lists; swarms appear under "all" and the two filters only.
     /// Reads the row's own kind and rule: no owner lookup per row.
     public static func matches(_ row: PanelRow, _ category: MainCategory) -> Bool {
@@ -54,21 +68,29 @@ public enum MainWindowModel {
         case .needsAction: return row.level == .watch || row.level == .act
         case .growing: return row.rule == "fast-growth" || row.rule == "leak-suspect"
         case .tmux: return row.kind == .tmuxPane
-        case .agents: return row.kind == .agentSession
-        case .apps: return row.kind == .app
+        case .agents: return row.kind == .agentSession || isAIApp(row)
+        case .apps: return row.kind == .app && !isAIApp(row)
         case .orphans: return row.kind == .orphan
         case .system: return row.kind == .system || row.kind == .service
         }
     }
 
-    /// Sidebar total: physical memory for kinds (R21: footprints add up past the machine's
-    /// memory, so the kinds show their owners' physical part, labelled in the section
-    /// title), row count for filters. Process groups are an overlay on owners and never
-    /// counted twice.
-    public static func total(_ rows: [PanelRow], _ category: MainCategory) -> String {
+    /// Sidebar number: for a kind, the footprint of the rows its list shows, added up
+    /// like a row's number (R23, owner 2026-10-26: the sidebar and the list use one
+    /// measure, so a kind is never smaller than one of its rows); "≥" with the hover
+    /// when some processes could not be read. "All" can exceed physical memory, and its
+    /// hover says why. Row count for filters. Process groups are an overlay on owners
+    /// and never counted twice.
+    public static func total(_ rows: [PanelRow], _ category: MainCategory, _ language: Language) -> Format.Memory {
         let shown = rows.filter { matches($0, category) }
-        guard !category.isFilter else { return "\(shown.count)" }
-        return MemoryWording.physicalTotal(shown.filter { $0.source == .owner }.map(\.physicalBytes))
+        guard !category.isFilter else { return Format.Memory(text: "\(shown.count)", help: nil) }
+        let owners = shown.filter { $0.source == .owner }
+        var total = Format.memory(owners.reduce(0) { $0 + $1.memBytes }, unknown: owners.reduce(0) { $0 + $1.unknownMemCount },
+                                  language)
+        if category == .all {
+            total.help = ([L10n.text(.memAllHelp, language)] + (total.help.map { [$0] } ?? [])).joined(separator: "\n")
+        }
+        return total
     }
 
     /// WHOATE_UI_SELECT: an owner id, kind:orphan|agent|browser, or overview.

@@ -140,7 +140,7 @@ enum Phase10Round3Tests {
         procs.append(proc(40999, 1, "zsh", member: false))
         let text = CopyInfo.text(owner: owner, procs: procs, report: try Phase10Tests.designReport(), language: .zh,
                                  home: "/Users/demo")
-        for want in ["帮我判断保留还是关闭", "软件/会话：Claude Code 会话「修复登录页跳转」", "种类：助手会话（claude）",
+        for want in ["帮我判断保留还是关闭", "软件/会话：Claude Code 会话「修复登录页跳转」", "种类：AI & Agent 会话（claude）",
                      "内存：≥ 1.2G（3 个进程读不到内存", "CPU：12%", "工作目录：~/Projects/demo", "tmux：pane %41，窗口「api」",
                      "归属理由：", "建议：30 分钟只涨不降，疑似泄漏", "进程（3 个）：", "另有 5 个未列出",
                      "41034  node  node ~/redacted/path-34 --port"] {

@@ -210,9 +210,34 @@ public struct Origin: Decodable, Sendable, Equatable {
     /// The live pane's `session:window.pane` (R10).
     public var tmuxTarget: String?
     public var ports: [UInt16]?
+    /// R25: where the owner was started from; nil when the core cannot tell, and for apps.
+    public var launchedFrom: LaunchedFrom?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case tmuxPane = "tmux_pane", paneAlive = "pane_alive", cwd
         case paneTitle = "pane_title", windowName = "window_name", tmuxTarget = "tmux_target", ports
+        case launchedFrom = "launched_from"
+    }
+}
+
+/// R25: tmux (`name` is the terminal of the session's latest client), a terminal, or a desktop app.
+/// A source this build does not know decodes as `via` nil and shows no label.
+public struct LaunchedFrom: Decodable, Sendable, Equatable {
+    public enum Via: String, Decodable, Sendable { case tmux, terminal, app }
+    public var via: Via?
+    public var bundleID: String?
+    public var name: String?
+    /// tmux only: false when no client is attached to the session.
+    public var attached: Bool?
+    enum CodingKeys: String, CodingKey { case via, bundleID = "bundle_id", name, attached }
+    public init(via: Via?, bundleID: String? = nil, name: String? = nil, attached: Bool? = nil) {
+        (self.via, self.bundleID, self.name, self.attached) = (via, bundleID, name, attached)
+    }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        via = try c.decodeIfPresent(String.self, forKey: .via).flatMap(Via.init(rawValue:))
+        bundleID = try c.decodeIfPresent(String.self, forKey: .bundleID)
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        attached = try c.decodeIfPresent(Bool.self, forKey: .attached)
     }
 }
 

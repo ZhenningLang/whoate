@@ -129,8 +129,8 @@ public enum Detail {
             return parts.joined(separator: " · ")
         }
         let kind = RowNames.kindLabel(owner.kind, language) ?? ""
-        let id = owner.bundleID ?? owner.id
-        return [kind, id, L10n.format(.processCount, language, "\(owner.pids.count)")]
+        // R25: internal ids ("orphan:948211", "pane:%22") stay out of the interface; apps keep their bundle id.
+        return [kind, owner.bundleID ?? "", L10n.format(.processCount, language, "\(owner.pids.count)")]
             .filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
@@ -483,6 +483,8 @@ public enum Detail {
             sentence = L10n.text(.howDefault, language)
             decided = weakest(nil)
         }
+        // R25: where it was started, in the row's words.
+        if let launch = RowNames.launch(owner, language) { sentence += L10n.format(.howLaunchedFrom, language, launch) }
         return (sentence, decided == .inferred || decided == .weak)
     }
 
