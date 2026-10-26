@@ -24,5 +24,11 @@ cask "whoate" do
     (系统设置 → 隐私与安全性 →「仍要打开」), then confirm.
     Or remove the quarantine flag:
       xattr -d com.apple.quarantine /Applications/whoate.app
+
+    The app does not put `whoate` on your PATH. For the command line tool:
+      brew install zhenninglang/tap/whoate
+    or, app only: whoate Settings > Command Line > Install.
+    If both are installed and Homebrew reports a link conflict:
+      brew link --overwrite whoate
   EOS
 end

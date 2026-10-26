@@ -32,6 +32,10 @@ not enabled until step 5, so that run is expected to fail; step 5 reruns it.
 
 ## 2. Build the assets (clean tree)
 
+Before building, date the release in a commit of its own on `main`: in
+`CHANGELOG.md` change `## [0.1.0] - Unreleased` to `## [0.1.0] - <YYYY-MM-DD>`,
+commit, push, and wait for CI as in step 1.
+
 ```sh
 git status --porcelain                # must be empty
 scripts/release.sh                    # ends with RELEASE_OK $OUT
@@ -51,7 +55,7 @@ git fetch origin main
     $OUT/whoate-v$VERSION-aarch64-apple-darwin.tar.gz \
     $OUT/whoate-v$VERSION-macos-arm64-app.zip \
     $OUT/SHA256SUMS.txt \
-    --title "whoate v$VERSION" --notes "Apple Silicon, macOS 14+. The app is not notarized; see the README for the first-launch steps."
+    --title "whoate v$VERSION" --notes-file docs/releases/v$VERSION.md
 )
 gh release view v$VERSION --json assets --jq '.assets[].name'
 ```
@@ -110,3 +114,27 @@ brew uninstall --cask whoate
 If Homebrew refuses the unnotarized cask, record the full output, point README
 and the tap README at the Release zip only, and bring notarization (U-DEC-1)
 back to the owner.
+
+## 8. Repository facade (仓库门面)
+
+Prerequisite: `guard-gitops` + owner approval in the current conversation. These
+commands change public repository settings; nothing in this repository runs them.
+
+```sh
+gh repo edit ZhenningLang/whoate \
+  --description "See which agent session, tmux pane or app is eating your Mac's memory, and let your coding agent ask too. Menu bar app + CLI with JSON, zero tokens." \
+  --homepage https://zhenninglang.github.io/whoate/ \
+  --add-topic macos,memory,menubar,activity-monitor,claude-code,codex,tmux,rust,swiftui
+gh repo view ZhenningLang/whoate --json description,homepageUrl,repositoryTopics
+```
+
+Social preview (manual step, there is no CLI for it): on github.com open the
+repository's **Settings → General → Social preview → Edit → Upload an image** and
+pick `assets/social/preview.png` (1280×640). Check by pasting the repository URL
+into a chat app that shows link previews.
+
+## 9. Launch posts (owner only)
+
+Drafts are in `docs/launch/` (Show HN, X thread, V2EX / 即刻). They are not part of
+any automated step: the owner reviews them and posts them, or approves each post
+explicitly, after the Release, the tap and Pages are live.

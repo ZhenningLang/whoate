@@ -118,7 +118,7 @@ RELEASE_OK $out
 Remote steps (not run; owner approval and guard-gitops first, see packaging/RELEASE_RUNBOOK.md):
   git push origin main            # fast-forward or merge only, never squash/rebase
   # only when HEAD == origin/main ($commit): the tag must match the build
-  gh release create $tag --target $commit "$out/$cli_asset" "$out/$app_asset" "$out/SHA256SUMS.txt" --title "whoate $tag" --notes-file <notes>
+  gh release create $tag --target $commit "$out/$cli_asset" "$out/$app_asset" "$out/SHA256SUMS.txt" --title "whoate $tag" --notes-file docs/releases/$tag.md
   gh repo create ZhenningLang/homebrew-tap --public   # first release only
   # copy $out/homebrew-tap/* into the tap repository, commit, push
   gh api -X POST repos/ZhenningLang/whoate/pages -f build_type=workflow   # first release only

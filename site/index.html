@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>whoate · who ate my RAM?</title>
 <meta name="description" content="whoate shows whose processes are eating memory and CPU on your Mac: the coding-agent session, the tmux pane, the browser's tab processes, or the orphan a closed terminal left behind. Per-software insight for people, structured JSON for agents, zero tokens.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://zhenninglang.github.io/whoate/">
+<meta property="og:title" content="whoate · who ate my RAM?">
+<meta property="og:description" content="See which agent session, tmux pane or app is eating your Mac's memory, and let your coding agent ask too. Menu bar app and CLI, zero tokens.">
+<meta property="og:image" content="https://zhenninglang.github.io/whoate/img/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="whoate: memory grouped by agent session, tmux pane and app, with the whoate main window">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="whoate · who ate my RAM?">
+<meta name="twitter:description" content="See which agent session, tmux pane or app is eating your Mac's memory, and let your coding agent ask too.">
+<meta name="twitter:image" content="https://zhenninglang.github.io/whoate/img/og.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
@@ -14,8 +26,8 @@
   --fg: #2a2418;
   --muted: #6b6150;
   --border: #e2d6bd;
-  --accent: #a0740a;
-  --accent-ink: #7a5806;
+  --accent: #e0472a;
+  --accent-ink: #b23519;
   --code-bg: #2a2418;
   --code-fg: #f3ead8;
   --code-dim: #b3a78f;
@@ -31,8 +43,8 @@
     --fg: #efe6d4;
     --muted: #a99d86;
     --border: #3a3326;
-    --accent: #d9a92e;
-    --accent-ink: #e7c46a;
+    --accent: #ff7a5c;
+    --accent-ink: #ff9a80;
     --code-bg: #0f0d0a;
     --code-fg: #efe6d4;
   }
@@ -53,7 +65,7 @@ code, pre { font-family: var(--mono); font-size: 14px; }
 
 header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0; }
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; color: var(--fg); text-decoration: none; }
-.brand img { width: 40px; height: 30px; }
+.brand img { width: 36px; height: 36px; }
 nav.links { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; }
 nav.links a { color: var(--muted); text-decoration: none; }
 nav.links a:hover { color: var(--fg); }
@@ -133,7 +145,7 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#"><img src="favicon.svg" alt="" width="40" height="30">whoate</a>
+    <a class="brand" href="#"><img src="favicon.svg" alt="" width="36" height="36">whoate</a>
     <nav class="links" aria-label="Site">
       <a href="#insight">Per-software insight</a>
       <a href="#agents">For agents</a>
@@ -147,11 +159,14 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
     <div class="hero">
       <div>
         <h1>Who <em>ate</em> my RAM?</h1>
-        <p class="lede">whoate tells you <strong>whose</strong> processes are eating memory and CPU on your Mac: the coding-agent session, the tmux pane, the browser's tab processes, the app, or the orphan a closed terminal left behind. Not just a process name.</p>
+        <p class="lede">See <strong>which agent session, tmux pane or app</strong> is eating your Mac's memory — and let your coding agent ask too. whoate groups processes by who started them, finds the orphans closed terminals left behind, and answers agents in JSON for zero tokens.</p>
         <div class="install"><span class="prompt">$</span><code>brew install zhenninglang/tap/whoate</code></div>
         <p class="meta">Apple Silicon · macOS 14+ · MIT · menu bar app via <code>--cask</code> or <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a></p>
       </div>
-      <img class="shot" src="img/main-agent-en-light.png" width="1600" height="1028" alt="whoate main window: a Claude Code session in a tmux pane, still growing, with its project, idle time, confidence and memory history">
+      <picture>
+        <source srcset="img/demo-still.png" media="(prefers-reduced-motion: reduce)">
+        <img class="shot" src="img/demo.gif" width="960" height="616" alt="Demo with made-up data: the AI &amp; Agent view with a Claude Code session in tmux main:1.0, the menu bar panel, a browser and its helper processes, an orphan left by a closed tmux split, and the Command Line settings">
+      </picture>
     </div>
 
     <section id="insight">
@@ -161,7 +176,7 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
       <table class="versus">
         <thead><tr><th>Software</th><th>What the process list shows</th><th>What whoate says</th></tr></thead>
         <tbody>
-          <tr><td>Coding agents</td><td class="raw">node, node, npx, python3, uv …</td><td class="said"><strong>Claude Code session in pane %12 · repo whoate</strong><span>Its MCP servers and dev servers grouped under the session, with session title and idle time.</span></td></tr>
+          <tr><td>Coding agents</td><td class="raw">node, node, npx, python3, uv …</td><td class="said"><strong>Claude Code session · Ghostty · tmux main:1.0 · atlas</strong><span>Listed under AI &amp; Agent, with its MCP servers (here playwright) and child processes grouped under the session, its title and idle time.</span></td></tr>
           <tr><td>Chrome, Brave</td><td class="raw">Google Chrome Helper (Aperitif Renderer) × 32</td><td class="said"><strong>Tab processes · Extensions · GPU · Network service</strong><span>Plus whether Memory Saver is on, read from the browser's own preferences.</span></td></tr>
           <tr><td>Docker Desktop</td><td class="raw">com.apple.Virtualization.VirtualMachine</td><td class="said"><strong>The Linux VM, with per-container statistics</strong><span>Container figures stay separate: they are never added to the VM's footprint.</span></td></tr>
           <tr><td>VS Code, JetBrains</td><td class="raw">Code Helper (Plugin), node, java …</td><td class="said"><strong>Extension hosts · TypeScript language server · file watchers</strong><span>Plus the settings that drive them, such as watcher exclusions or the JVM heap from your vmoptions.</span></td></tr>
@@ -211,16 +226,26 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
     <section id="app">
       <p class="kicker">The menu bar app</p>
       <h2>For people: owners ranked, verdicts in plain language.</h2>
-      <p class="intro">The same engine behind a menu bar panel and a three-column window, in light and dark, English and Chinese.</p>
+      <p class="intro">The same engine behind a menu bar panel, a three-column window and a settings window, in light and dark, English and Chinese. The left column's numbers are footprint: physical memory plus compressed or swapped memory, so owners can add up to more than your RAM. Each row starts with where it was launched from, such as Ghostty · tmux main:1.0.</p>
       <div class="gallery">
-        <figure>
-          <img class="shot" src="img/main-browser-dark.png" width="1600" height="1028" alt="whoate main window in dark mode and Chinese: Brave Browser with its renderer, GPU and main processes and a memory curve">
-          <figcaption>A browser and its helper processes, in dark mode and Chinese.</figcaption>
-        </figure>
         <div class="stack">
           <figure>
-            <img class="shot" src="img/panel-en-light.png" width="840" height="1176" alt="whoate menu bar panel: memory pressure bar and owners ranked by memory, each with a verdict such as Consider closing or Still growing">
+            <img class="shot" src="img/main-orphan-en-light.png" width="1600" height="1028" alt="whoate main window on Orphans: wrangler (node) left running by a closed tmux split, 9.7G footprint, marked Consider closing, with its process tree and memory curve">
+            <figcaption>An orphan: a dev server a closed tmux split left running.</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/main-agent-en-dark.png" width="1600" height="1028" alt="whoate main window in dark mode on AI &amp; Agent: a Claude Code session launched from Ghostty in tmux main:1.0, its MCP server and process tree">
+            <figcaption>AI &amp; Agent in dark mode.</figcaption>
+          </figure>
+        </div>
+        <div class="stack">
+          <figure>
+            <img class="shot" src="img/panel-en-light.png" width="840" height="1310" alt="whoate menu bar panel: Memory tight, owners ranked by footprint, each with a verdict such as Consider closing or Still growing">
             <figcaption>The menu bar panel.</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/settings-cli-en-light.png" width="1080" height="524" alt="whoate Settings, Command Line tab: Install the bundled CLI, the one-line usage for AI agents and a Copy for AI button">
+            <figcaption>Settings → Command Line: install the CLI, copy the usage for your agent.</figcaption>
           </figure>
         </div>
       </div>
@@ -236,7 +261,7 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
           <p>Then <code>whoate top</code>. The JSON Schema is installed under <code>$(brew --prefix)/share/whoate/</code>.</p>
           <h3>Menu bar app</h3>
           <div class="install"><span class="prompt">$</span><code>brew install --cask zhenninglang/tap/whoate</code></div>
-          <p>Or download the app zip from <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a>.</p>
+          <p>Or download the app zip from <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a>. The app carries the CLI too: Settings → Command Line → Install. Update with <code>brew upgrade</code>; the app never checks online.</p>
         </div>
         <div>
           <h3>First launch</h3>
@@ -254,7 +279,7 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
     <section id="zh" lang="zh-CN">
       <div class="zh">
         <h2>中文说明：谁吃了我的内存？</h2>
-        <p>whoate 告诉你占内存和 CPU 的进程属于谁：哪个编程助手会话、哪个 tmux pane、浏览器的标签页进程、哪个应用，还是终端关掉后留下的孤儿进程。</p>
+        <p>看清是哪个编程助手会话、哪个 tmux 分屏、哪个应用在吃 Mac 的内存，也让你的编程助手自己来查。和活动监视器的不同：按会话、分屏、应用归属，而不是一串进程名；能看出终端关掉后留下的孤儿进程；给 agent 用的命令行输出 JSON 和退出码，零 token。应用左栏有「AI &amp; Agent」一类，数字是占用（物理内存 + 压缩/swap）。</p>
         <p><strong>按软件定制的洞察</strong>：按各个软件自己的结构解释进程，建议来自内置知识库，每条都附出处与核对日期。<strong>给 agent 用，零 token</strong>：一条命令输出结构化 JSON 和有含义的退出码，诊断在本机按规则完成，不调用模型、不联网。</p>
         <p>安装：<code>brew install zhenninglang/tap/whoate</code>（菜单栏应用加 <code>--cask</code>）。应用未做 Apple 公证，首次打开被拦下时，打开「系统设置 → 隐私与安全性」，点「仍要打开」，或执行 <code>xattr -d com.apple.quarantine /Applications/whoate.app</code>。</p>
       </div>
@@ -267,6 +292,8 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
       <a href="https://github.com/ZhenningLang/whoate">GitHub</a>
       <a href="https://github.com/ZhenningLang/whoate/releases">Releases</a>
       <a href="https://github.com/ZhenningLang/whoate/blob/main/docs/install.md">Install guide</a>
+      <a href="https://github.com/ZhenningLang/whoate/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/ZhenningLang/whoate/blob/main/LICENSE">License</a>
     </nav>
   </footer>
 </div>

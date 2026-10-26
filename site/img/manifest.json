@@ -1,32 +1,127 @@
 {
-  "generator": "tests/gui/design_shots.py --strict",
   "fixture": "tests/gui/design-report.json",
-  "fixture_sha256": "d1023b51f11ba10466e6e399e46c36b9a0ffe4f6238d91908e5e1bf8064b64c7",
-  "app_tree": "2e0909226dc021f3be44a0d42e32455e5a4cd8c4",
+  "fixture_sha256": "83858d4fe29b3583eee91c392632fda15221b42d1ad333637f35774358f2601b",
+  "app_tree": "8beda3422e1bcc31783bcb61e191eca08d6a0ba0",
   "images": [
     {
-      "file": "main-agent-en-light.png",
-      "sha256": "8198b02c4c8e43cc77f8939653db727f16f5bc1c11f9cbf9432af0e108c73faa",
-      "shot": "main-agent-en-light",
-      "source_sha256": "a7742cb3175f0ca391896908827bc05c43ad1aab5c4be513fbd5db061546a221",
-      "width": 1600,
-      "height": 1028
-    },
-    {
       "file": "panel-en-light.png",
-      "sha256": "8f8a3c703919798c336789ef5827ad32ecb040f9f224565117f859a5220f9a88",
+      "sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
       "shot": "panel-en-light",
-      "source_sha256": "8f8a3c703919798c336789ef5827ad32ecb040f9f224565117f859a5220f9a88",
+      "generator": "design_shots.capture",
+      "source_sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
       "width": 840,
-      "height": 1176
+      "height": 1310
     },
     {
-      "file": "main-browser-dark.png",
-      "sha256": "0c04cbbc8640a8cdd9a17aa88ec8a9dbeb0029b90e01dc98ce4066ce19108b9e",
-      "shot": "main-browser-dark",
-      "source_sha256": "b78725aabf3f49ee795cfdf18d46d18b7273382ea663b79a3e0087f739919041",
+      "file": "main-agent-en-light.png",
+      "sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618",
+      "shot": "main-agent-en-light",
+      "generator": "design_shots.capture",
+      "source_sha256": "72ce1a4ba35687c18b6a8b1bf4118a346c9b0fd218ba2a3b0a95ec47d34b6f1c",
       "width": 1600,
       "height": 1028
+    },
+    {
+      "file": "main-browser-en-light.png",
+      "sha256": "8169fae77ba588cae17acb4635f0b40a92410bcaa40218244a40c4fc4072c5ee",
+      "shot": "main-browser-en-light",
+      "generator": "design_shots.capture",
+      "source_sha256": "a2bbcc8a9d8724debc989b639d24e7de311f9ba0336ffbbcf783d307139c185e",
+      "width": 1600,
+      "height": 1028
+    },
+    {
+      "file": "main-orphan-en-light.png",
+      "sha256": "666139513e840ad9a3a5858d68c5cc6930bdbc8059e880764559a8ba98704f34",
+      "shot": "main-orphan-en-light",
+      "generator": "design_shots.capture",
+      "source_sha256": "0a831259f09aa8eb33dae9f12b7b2b7f6d5a5befdd40fb88652cdb66ac3ecb94",
+      "width": 1600,
+      "height": 1028
+    },
+    {
+      "file": "main-agent-en-dark.png",
+      "sha256": "74154d4fd5f2babe7e35d1a87db1f8bbbd62092d8e430d53445597da77603e4f",
+      "shot": "main-agent-en-dark",
+      "generator": "design_shots.capture",
+      "source_sha256": "6b2b2c158a2b54ce444b8d50619b8a71037e86dc85fd94fda6c392637e90f157",
+      "width": 1600,
+      "height": 1028
+    },
+    {
+      "file": "settings-cli-en-light.png",
+      "sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
+      "shot": "settings-cli-en-light",
+      "generator": "phase11_checks.py shots",
+      "source_sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
+      "width": 1080,
+      "height": 524
     }
-  ]
+  ],
+  "demo": {
+    "file": "demo.gif",
+    "sha256": "454d29d2e5809e78854ec6d39c5f6395e464a24749ee5be0765d1a7f2c722e1c",
+    "bytes": 1260831,
+    "duration_s": 12.2,
+    "width": 960,
+    "height": 616,
+    "fps": 10,
+    "fade_s": 0.3,
+    "colours": 128,
+    "ffmpeg": "9.0.1",
+    "frames": [
+      {
+        "shot": "main-agent-en-light",
+        "file": "main-agent-en-light.png",
+        "sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618",
+        "duration_s": 2.5
+      },
+      {
+        "shot": "panel-en-light",
+        "file": "panel-en-light.png",
+        "sha256": "4dac30f012938c704b8f8864acb56f564078f995d8480d96c9efed717aafd625",
+        "duration_s": 2.3
+      },
+      {
+        "shot": "main-browser-en-light",
+        "file": "main-browser-en-light.png",
+        "sha256": "8169fae77ba588cae17acb4635f0b40a92410bcaa40218244a40c4fc4072c5ee",
+        "duration_s": 2.3
+      },
+      {
+        "shot": "main-orphan-en-light",
+        "file": "main-orphan-en-light.png",
+        "sha256": "666139513e840ad9a3a5858d68c5cc6930bdbc8059e880764559a8ba98704f34",
+        "duration_s": 2.3
+      },
+      {
+        "shot": "settings-cli-en-light",
+        "file": "settings-cli-en-light.png",
+        "sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
+        "duration_s": 2.8
+      }
+    ],
+    "still": {
+      "file": "demo-still.png",
+      "sha256": "8fe6b4c6b6baa84d32c6dc513b30d5a5d03e373c5c84af12f7e0275d4913a832",
+      "source": "main-agent-en-light.png",
+      "source_sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618",
+      "width": 960,
+      "height": 616
+    }
+  },
+  "social": {
+    "source": "assets/social/preview.svg",
+    "file": "assets/social/preview.png",
+    "og": "og.png",
+    "sha256": "2abd3d3e5e81f38ee028109ff1ace611428fbaa195c3e167dd14516dce2c5dc1",
+    "width": 1280,
+    "height": 640,
+    "embeds": [
+      {
+        "file": "main-agent-en-light.png",
+        "sha256": "537ad6139e6e1cc48c14e699fdc3b11e3dbc918b55461040c1ebf0c22dda1618"
+      }
+    ]
+  }
 }

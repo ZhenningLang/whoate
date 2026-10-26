@@ -19,7 +19,23 @@ The formula installs:
 | `$(brew --prefix)/share/whoate/whoate-v1.schema.json` | JSON Schema of `whoate/v1` |
 | `$(brew --prefix)/share/whoate/skills/whoate/SKILL.md` | agent instructions (same text as `whoate agent-guide`) |
 
-Upgrade with `brew upgrade whoate` and `brew upgrade --cask whoate`.
+Upgrade with `brew upgrade whoate` and `brew upgrade --cask whoate`. The app never
+checks for updates and never goes online; Homebrew is the update channel.
+
+## The CLI inside the app
+
+`whoate.app` carries its own copy of the CLI in `whoate.app/Contents/Helpers/whoate`.
+The cask does not link it into your PATH, so the formula stays the only owner of
+`$(brew --prefix)/bin/whoate`:
+
+- Want the command line tool (for yourself or a coding agent)? Install the formula:
+  `brew install zhenninglang/tap/whoate`.
+- Installed only the app? Open whoate **Settings → Command Line → Install**
+  (设置 → 命令行 →「安装」). It links the bundled CLI into the first writable folder
+  on your PATH (`/opt/homebrew/bin`, then `~/.local/bin`) and never replaces another
+  `whoate` it finds there.
+- Installed the app's CLI first and the formula later? Homebrew then reports a link
+  conflict; let the formula take over with `brew link --overwrite whoate`.
 
 ## GitHub Release
 
@@ -62,6 +78,17 @@ xattr -d com.apple.quarantine /Applications/whoate.app
 brew uninstall whoate
 brew uninstall --cask whoate        # add --zap to also remove caches and preferences
 brew untap zhenninglang/tap
+```
+
+Uninstalling the cask leaves the link that Settings → Command Line → Install made.
+Remove it only if it still points into `whoate.app` (a formula's link is left alone):
+
+```sh
+for link in /opt/homebrew/bin/whoate ~/.local/bin/whoate; do
+  if [ -L "$link" ] && readlink "$link" | grep -q '/whoate\.app/Contents/Helpers/whoate$'; then
+    rm "$link" && echo "removed $link"
+  fi
+done
 ```
 
 whoate keeps a cache in `~/Library/Caches/whoate` (override: `WHOATE_CACHE_DIR`).
