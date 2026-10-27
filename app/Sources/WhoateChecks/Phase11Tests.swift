@@ -521,8 +521,10 @@ enum Phase11Tests {
         expect(info.repository == "https://github.com/ZhenningLang/whoate" && info.issues == info.repository + "/issues")
         expect(info.updateLines.contains { $0.contains("brew upgrade whoate") }
             && info.updateLines.contains { $0.contains("brew upgrade --cask whoate") })
-        // Owner 2026-10-27: no support entries yet, so no support area.
-        expect(Links.support.isEmpty && info.support.isEmpty)
+        // Owner 2026-10-27 11:49: WeChat Pay and a star in Chinese, only the star in English.
+        expect(info.support.map(\.name) == ["微信支付", "在 GitHub 上点个 Star"], "\(info.support.map(\.name))")
+        expect(AboutInfo.make(info: nil, language: .en).support.map(\.name) == ["Star whoate on GitHub"])
+        expect(Links.support.filter { $0.target == .link(Links.repository) }.count == 2, "the star opens the repository")
         // The four combinations with stand-in data (never shipped).
         let paypal = SupportItem(name: "Link EN", target: .link("https://example.invalid/en"), audience: .en)
         let wechat = SupportItem(name: "QR ZH", target: .qrCode(resource: "zh.png"), audience: .zh)

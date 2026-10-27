@@ -1,15 +1,21 @@
 // The one source of whoate's outside links (Phase 11): the About tab here,
-// README and the product page in Phase 06. Support entries stay empty until the
-// owner gives real ones (owner 2026-10-27 00:31: "先把这个空位给我留出来");
-// filling them in changes `support` below and the images in app/Resources/Support,
-// no code. Never a placeholder link or a sample QR code.
+// README and the product page in Phase 06. Support entries are the owner's real ones
+// (owner 2026-10-27 11:49): WeChat Pay for Chinese, a GitHub star for everyone (PayPal
+// and GitHub Sponsors do not serve mainland China accounts). Changing them changes
+// `support` below and the images in app/Resources/Support, no code. Never a
+// placeholder link or a sample QR code.
 import Foundation
 
 public enum Links {
     public static let repository = "https://github.com/ZhenningLang/whoate"
     public static let issues = repository + "/issues"
     /// Ways to support whoate, shown in About when not empty.
-    public static let support: [SupportItem] = []
+    public static let support: [SupportItem] = [
+        SupportItem(name: "微信支付", target: .qrCode(resource: "wechat-pay.png"), audience: .zh),
+        // The repository itself: a star helps more people find whoate (owner goal: be known first).
+        SupportItem(name: "在 GitHub 上点个 Star", target: .link(repository), audience: .zh),
+        SupportItem(name: "Star whoate on GitHub", target: .link(repository), audience: .en),
+    ]
 }
 
 public struct SupportItem: Equatable, Sendable {
