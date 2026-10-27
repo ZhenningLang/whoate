@@ -829,11 +829,18 @@ def support_problems(links_swift, docs, funding):
         if footer(docs["site/index.html"]).count(url) != 1:
             problems.append(f"product page footer must list {url} once")
     for name in codes:
-        if not os.path.isfile(os.path.join("app/Resources/Support", name)):
-            problems.append(f"QR code app/Resources/Support/{name} is missing")
+        source = os.path.join("app/Resources/Support", name)
+        if not os.path.isfile(source):
+            problems.append(f"QR code {source} is missing")
         for path in ("README.md", "site/index.html"):
             if name not in docs[path]:
                 problems.append(f"{path} does not show QR code {name}")
+        # The product page ships its own copy in site/support (site/ is published alone; site/img
+        # holds only screenshot-manifest images); it must be the same file.
+        copy = os.path.join("site/support", name)
+        if f"support/{name}" in docs["site/index.html"] and os.path.isfile(source) and (
+                not os.path.isfile(copy) or open(copy, "rb").read() != open(source, "rb").read()):
+            problems.append(f"{copy} differs from {source}")
     return problems
 
 
@@ -846,9 +853,10 @@ def support():
     # Negative control: the same documents against a Links.swift copy with one made-up link (temp only).
     with tempfile.TemporaryDirectory() as tmp:
         fake = os.path.join(tmp, "Links.swift")
-        open(fake, "w").write(links_swift.replace(
-            "public static let support: [SupportItem] = []",
-            'public static let support: [SupportItem] = [\n        SupportItem(name: "x", target: .link("https://example.invalid/support"), audience: .all),\n    ]'))
+        fake_item = '\n        SupportItem(name: "x", target: .link("https://example.invalid/support"), audience: .all),'
+        open(fake, "w").write(re.sub(r"(public static let support: \[SupportItem\] = \[)\]?",
+                                     lambda m: m.group(1) + fake_item + ("\n    ]" if m.group(0).endswith("]") else ""),
+                                     links_swift, count=1))
         caught = support_problems(open(fake).read(), docs, False)
         check(caught, f"negative control: a support link missing from README and page is caught ({len(caught)})")
 

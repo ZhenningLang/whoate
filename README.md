@@ -161,6 +161,10 @@ whoate only reads local process and session information. It does not use the
 network, does not call any model, and never changes another application's
 settings; advice is for you to act on.
 
+## Support whoate
+
+If whoate helped, [star it on GitHub](https://github.com/ZhenningLang/whoate): it helps other people find it.
+
 ## 中文说明
 
 **看清是哪个编程助手会话、哪个 tmux 分屏、哪个应用在吃 Mac 的内存，也让你的编程助手自己来查。**
@@ -195,6 +199,12 @@ brew install --cask zhenninglang/tap/whoate     # 菜单栏应用
 - `whoate agent-guide` 打印 SKILL.md，按上文放进 `.claude/skills/whoate/` 等目录即可。
 - 结束进程先 `whoate kill <目标> --dry-run` 预览，人同意后才加 `--yes`。
 - 自定义规则写在 `~/.config/whoate/rules.toml`，格式见上文「Your own rules」。
+
+### 支持 whoate
+
+觉得有用，请在 GitHub 上点个 Star，让更多人看到它。也可以微信扫码支持：
+
+<img src="app/Resources/Support/wechat-pay.png" alt="微信支付二维码" width="180">
 
 介绍页：<https://zhenninglang.github.io/whoate/> · 更新记录：[CHANGELOG.md](CHANGELOG.md)
 
