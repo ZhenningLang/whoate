@@ -290,7 +290,12 @@ enum Phase10Round7Tests {
         let designRows = Phase10Tests.rows(try Phase10Tests.designReport())
         let titled = try require(designRows.first { $0.id == "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4" })
         expect(titled.subtitle.hasPrefix("claude · Ghostty · tmux main:1.0"), titled.subtitle)
-        for row in designRows where row.kind == .agentSession && row.title.lowercased().hasPrefix("kilo") {
+        // A title that only starts with the word keeps the tool (owner's "CLAUDE_KICKOFF 交接任务").
+        let kickoff = try decodeValue(Report.self, reportJSON(owners: [
+            try Phase08Tests.session("agent:claude:k", name: "7-f2", source: "derived", title: "CLAUDE_KICKOFF 交接任务")]))
+        let kickoffRow = try require(Phase10Tests.rows(kickoff).first)
+        expect(kickoffRow.title == "CLAUDE_KICKOFF 交接任务" && kickoffRow.subtitle.hasPrefix("claude"), "\(kickoffRow.title) | \(kickoffRow.subtitle)")
+        for row in designRows where row.kind == .agentSession && row.title.lowercased().hasPrefix("kilo · ") {
             expect(!row.subtitle.lowercased().hasPrefix("kilo"), "not repeated: \(row.title) | \(row.subtitle)")
         }
         // RSS counts shared pages: the estimate is capped at the footprint (min(RSS, footprint)).

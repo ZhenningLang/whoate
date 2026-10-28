@@ -158,7 +158,10 @@ public enum Panel {
     /// title already starts with it ("kilo · atlas").
     public static func agentSubtitle(_ o: Owner, _ agent: Agent, _ language: Language) -> String {
         let launch = RowNames.launch(o, language)
-        let named = title(o).lowercased().hasPrefix(agent.tool.lowercased())
+        // "kilo · atlas" (a label the core made from the tool), not a title that merely starts
+        // with the word ("CLAUDE_KICKOFF 交接任务", owner 2026-10-29).
+        let shown = title(o).lowercased(), tool = agent.tool.lowercased()
+        let named = shown == tool || shown.hasPrefix(tool + " · ")
         var parts = (named ? [] : [agent.tool]) + (launch.map { [$0] } ?? [])
         // The launch label already says "split closed" and the pane address; only what it lacks is added.
         let closed = o.origin?.paneAlive == false
