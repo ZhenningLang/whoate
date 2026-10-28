@@ -37,7 +37,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case considerClosing, possibleLeak, growing, idleFor, possibleRunaway, usedByApps, watch, eachAbout, adviceOne
     case webContent, spreadUnknown, spreadSomeApps, spreadUnknownClause, spreadAndMore, spreadWebKit, spreadGeneric, spreadAdvice
     case memPhysicalLine, memCompressedOf, memSwapLine, memSwapUsed, memHostHelp, memSplit, memSplitHover, memSplitUnknown
-    case memSplitNote, memFootprint, memSectionOwners, memListHeader, memCardSuffix, memProcessCaption, memPanelCaption
+    case memSplitNote, memFootprint, memSectionOwners, cpuSectionOwners, cpuKindHelp, memListHeader, memCardSuffix, memProcessCaption, memPanelCaption
     case memOverviewPhysical, memOverviewCompressed, memOverviewWired, memWiredOf, memSwapGrows
     case memSplitPartial, memSplitNoneRead, memPartOfUsed, memOtherUsed, memFootprintAfter, memFootprintInline
     case spreadVerbOne, spreadVerbEach, spreadNoneRecognised
@@ -142,6 +142,9 @@ public enum L10n {
         .memWiredOf: ("其中联动 %@", "incl. wired %@"),
         .memSwapGrows: ("（macOS 会按需扩大 swap）", " (macOS grows swap on demand)"),
         .memSectionOwners: ("归属 · 占用", "Owners · footprint"),
+        .cpuSectionOwners: ("归属 · CPU", "Owners · CPU"),
+        .cpuKindHelp: ("各行 CPU 相加，按单核算：100% 是占满一个核，所以可以超过 100%。右上角的整机 CPU 按全部核算。",
+                       "The rows' CPU added up, per core: 100% is one full core, so it can exceed 100%. Whole-machine CPU at the top right is over all cores."),
         .memAllHelp: ("占用 = 物理内存 + 压缩/swap，所以各归属相加可以超过物理内存总量。",
                       "Footprint = physical + compressed/swap, so the owners together can exceed physical memory."),
         .memListHeader: ("%@ 个归属 · 按占用排序", "%@ owners · by footprint"),

@@ -85,10 +85,20 @@ public enum MainWindowModel {
     /// when some processes could not be read. "All" can exceed physical memory, and its
     /// hover says why. Row count for filters. Process groups are an overlay on owners
     /// and never counted twice.
-    public static func total(_ rows: [PanelRow], _ category: MainCategory, _ language: Language) -> Format.Memory {
+    public static func total(_ rows: [PanelRow], _ category: MainCategory, _ language: Language,
+                             sort: SortKey = .memory) -> Format.Memory {
         let shown = rows.filter { matches($0, category) }
         guard !category.isFilter else { return Format.Memory(text: "\(shown.count)", help: nil) }
         let owners = shown.filter { $0.source == .owner }
+        // Owner 2026-10-29: in CPU order the kinds add the rows' CPU (per core, like a row);
+        // "≥" when some processes could not be read.
+        if sort == .cpu {
+            let readable = owners.reduce(0.0) { $0 + ($1.cpuPct ?? $1.cpuReadable ?? 0) }
+            let unknown = owners.reduce(0) { $0 + ($1.cpuPct == nil ? max($1.unknownCPUCount ?? 1, 1) : 0) }
+            var cpu = Format.cpu(unknown > 0 ? nil : readable, readable: readable, unknown: unknown, language)
+            cpu.help = ([L10n.text(.cpuKindHelp, language)] + (cpu.help.map { [$0] } ?? [])).joined(separator: "\n")
+            return cpu
+        }
         var total = Format.memory(owners.reduce(0) { $0 + $1.memBytes }, unknown: owners.reduce(0) { $0 + $1.unknownMemCount },
                                   language)
         // Owner 2026-10-28: the hover splits it like a row when every owner's split is known.

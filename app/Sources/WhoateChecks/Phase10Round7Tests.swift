@@ -277,6 +277,14 @@ enum Phase10Round7Tests {
                                           "WhoateCommit": "e12f515", "WhoateBuiltAt": "2026-10-28 23:22"], language: .zh)
         expect(about.build == "e12f515 · 2026-10-28 23:22" && about.short == "v0.1.0 · e12f515", "\(about)")
         expect(AboutInfo.make(info: nil, language: .zh).short == "开发版")
+        // Owner 2026-10-29: in CPU order the sidebar adds the rows' CPU, per core like a row.
+        let cpuReport = try decodeValue(Report.self, reportJSON(owners: [
+            ownerJSON("app:c1", mem: 1 << 30, overrides: ["cpu_pct": 93.0]),
+            ownerJSON("app:c2", mem: 1 << 30, overrides: ["cpu_pct": 22.0])]))
+        let cpuApps = MainWindowModel.total(Phase10Tests.rows(cpuReport), .apps, .zh, sort: .cpu)
+        expect(cpuApps.text == "115%" && cpuApps.help == L10n.text(.cpuKindHelp, .zh), "\(cpuApps)")
+        expect(MainWindowModel.total(Phase10Tests.rows(cpuReport), .apps, .zh).text == "2.0G", "memory order unchanged")
+        expect(L10n.text(.cpuSectionOwners, .zh) == "归属 · CPU")
         // RSS counts shared pages: the estimate is capped at the footprint (min(RSS, footprint)).
         let shared = try decodeValue(Owner.self, ownerJSON("app:b", mem: 1 << 30, overrides: ["reclaimable_physical": rss(3 << 30)]))
         expect(MemoryWording.split(shared) == .init(physical: 1 << 30, outside: 0, total: 1 << 30), "capped at the footprint")
@@ -334,7 +342,7 @@ enum Phase10Round7Tests {
         let detail = try R3.source("DetailView.swift"), main = try R3.source("MainWindowView.swift")
         expect(detail.components(separatedBy: "L10n.text(.memCardSuffix, language)").count - 1 == 5, "five memory cards say 占用")
         expect(detail.contains("Text(L10n.text(.memFootprint, language))") && detail.contains("header.memorySplit"))
-        expect(main.contains("Section(L10n.text(.memSectionOwners, language))") && main.contains("MemoryWording.physical(host, language)")
+        expect(main.contains("Section(L10n.text(model.sort == .cpu ? .cpuSectionOwners : .memSectionOwners, language))") && main.contains("MemoryWording.physical(host, language)")
                && main.contains("Text(MemoryWording.swap(host, language))"), "the toolbar's two lines")
         // The list defines its number under the count line, as the panel does above its rows.
         expect(main.contains("Text(L10n.text(.memPanelCaption, language))"))

@@ -75,7 +75,7 @@ enum Phase10Round10Tests {
         expect(L10n.text(.memSectionOwners, .zh) == "归属 · 占用" && L10n.text(.memSectionOwners, .en) == "Owners · footprint")
         expect(L10n.text(.memFootprint, .en).lowercased() == "footprint", "the glossary's word for 占用")
         let main = try R3.source("MainWindowView.swift")
-        expect(main.contains(".help(total?.help ?? \"\")") && main.contains("MainWindowModel.total(rows, category, model.language)"))
+        expect(main.contains(".help(total?.help ?? \"\")") && main.contains("MainWindowModel.total(rows, category, model.language, sort: model.sort)"))
     }
 
     // QA68 (R24)
