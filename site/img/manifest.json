@@ -62,13 +62,13 @@
     "source": "assets/social/preview.svg",
     "file": "assets/social/preview.png",
     "og": "og.png",
-    "sha256": "8bd7fa8333ff64cd81d0389c6337dbd63f23f35ff109fa8debbea5c6f4f1259a",
+    "sha256": "8909c7fe5dd2776375dc3ab4a1aae50713536755c433c9f199509b2b30a285d6",
     "width": 1280,
     "height": 640,
     "embeds": [
       {
         "file": "main-agent-en-light.png",
-        "sha256": "f96961827117e663f822af2b7d1925498e7fdd863aa710903a7a0d5db4b18a35"
+        "sha256": "9c073a41536758142aec35405717dff20c9d6429c93cd5ac5dd6c9835dfb689b"
       }
     ]
   },
