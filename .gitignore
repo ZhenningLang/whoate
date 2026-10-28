@@ -8,3 +8,7 @@
 *.review-inbox.md
 *.drafts.json
 .long-loop/
+
+# Python bytecode (tests/gui, tests/integration scripts)
+__pycache__/
+*.pyc
