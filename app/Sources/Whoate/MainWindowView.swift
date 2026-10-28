@@ -164,7 +164,8 @@ struct SidebarView: View {
     private func item(_ category: MainCategory, _ rows: [PanelRow]) -> some View {
         let total = model.report == nil ? nil : MainWindowModel.total(rows, category, model.language)
         return Label(category.title(model.language), systemImage: category.symbol)
-            .badge(Text(total?.text ?? "").monospacedDigit())
+            // "All" has no number (owner 2026-10-28): no empty badge either.
+            .badge((total?.text).flatMap { $0.isEmpty ? nil : Text($0).monospacedDigit() })
             .help(total?.help ?? "")
             .tag(category)
     }

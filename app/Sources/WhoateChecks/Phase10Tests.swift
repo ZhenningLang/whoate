@@ -233,7 +233,9 @@ enum Phase10Tests {
         // R23 (round 10): footprints, owners only (a process group never adds to it).
         let owners = Format.memory(report.owners.reduce(0) { $0 + $1.memBytes },
                                    unknown: report.owners.reduce(0) { $0 + $1.unknownMemCount }, .zh)
-        expect(MainWindowModel.total(rows(report), .all, .zh).text == owners.text)
+        // Owner 2026-10-28: "All" shows no number; the kinds still add owners only.
+        expect(MainWindowModel.total(rows(report), .all, .zh).text.isEmpty, "no total for All")
+        expect(!owners.text.isEmpty)
         expect(MainWindowModel.total(rows(report), .needsAction, .zh).text == "4", "filters still count rows")
     }
 

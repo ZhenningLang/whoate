@@ -259,8 +259,10 @@ enum Phase10Round7Tests {
             ["bytes": bytes.map { $0 as Any } ?? NSNull(), "unknown_count": bytes == nil ? 1 : 0, "basis": "rss", "reason": NSNull()]
         }
         let owner = try decodeValue(Owner.self, ownerJSON("app:a", mem: 10 << 30, overrides: ["reclaimable_physical": rss(4 << 30)]))
-        expect(MemoryWording.splitLine(owner, .zh) == .init(text: "物理内存约 4.0G · 压缩或 swap 约 6.0G · 合计（占用）10.0G", help: nil))
-        expect(MemoryWording.splitLine(owner, .en).text == "In physical memory ~4.0G · compressed or swapped ~6.0G · total (footprint) 10.0G")
+        // Owner 2026-10-28: the physical part first; the header above already gives the footprint.
+        expect(MemoryWording.splitLine(owner, .zh) == .init(text: "其中约 4.0G 在物理内存里，约 6.0G 已压缩或换到 swap", help: nil))
+        expect(MemoryWording.splitLine(owner, .en).text == "Of this, ~4.0G is in physical memory and ~6.0G is compressed or swapped out")
+        expect(L10n.text(.memSplitNote, .zh).contains("按压缩前的大小算"))
         // RSS counts shared pages: the estimate is capped at the footprint (min(RSS, footprint)).
         let shared = try decodeValue(Owner.self, ownerJSON("app:b", mem: 1 << 30, overrides: ["reclaimable_physical": rss(3 << 30)]))
         expect(MemoryWording.split(shared) == .init(physical: 1 << 30, outside: 0, total: 1 << 30), "capped at the footprint")
@@ -291,14 +293,11 @@ enum Phase10Round7Tests {
         // their list shows, the section says so, and "all" says why it may exceed physical memory.
         let report = try Phase10Tests.designReport()
         let rows = Phase10Tests.rows(report)
+        // Owner 2026-10-28: "All" has no number, only the hover saying why and where to look.
         let all = MainWindowModel.total(rows, .all, .zh)
-        let owners = rows.filter { $0.source == .owner }
-        expect(all.text == Format.memory(owners.reduce(0) { $0 + $1.memBytes },
-                                         unknown: owners.reduce(0) { $0 + $1.unknownMemCount }, .zh).text, all.text)
-        expect(all.text.hasPrefix("≥ "), "the design report's system owner is unreadable: \(all.text)")
-        expect(all.help?.hasPrefix(L10n.text(.memAllHelp, .zh)) == true && all.help?.contains("读不到内存") == true, all.help ?? "")
-        expect(L10n.text(.memAllHelp, .zh).contains("可以超过物理内存") && !L10n.text(.memAllHelp, .zh).contains("含压缩"))
-        expect(MemoryWording.hostHelp(.zh).contains("左栏和列表都是各归属的占用") && !MemoryWording.hostHelp(.zh).contains("比已用少"))
+        expect(all.text.isEmpty && all.help == L10n.text(.memAllHelp, .zh), "\(all)")
+        expect(L10n.text(.memAllHelp, .zh).contains("会超过物理内存") && L10n.text(.memAllHelp, .zh).contains("右上角"))
+        expect(MemoryWording.hostHelp(.zh).contains("左栏分类和列表是各归属的占用") && !MemoryWording.hostHelp(.zh).contains("比已用少"))
         expect(L10n.text(.memSectionOwners, .zh) == "归属 · 占用" && L10n.text(.memSectionOwners, .en) == "Owners · footprint")
         // Defined, not "includes" (owner turned that wording down): 占用 = 物理内存 + 压缩/swap.
         expect(L10n.format(.memListHeader, .zh, "6") == "6 个归属 · 按占用排序")

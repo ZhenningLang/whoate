@@ -72,7 +72,8 @@ public enum MemoryWording {
     }
 
     /// The detail line under the header, with the header's precision ("≥" and its hover):
-    /// "物理内存约 7.5G · 压缩或 swap 约 2.2G · 合计（占用）9.7G";
+    /// "其中约 7.5G 在物理内存里，约 2.2G 已压缩或换到 swap" (the header above already
+    /// gives the footprint; owner 2026-10-28: the physical part first, the total not again);
     /// "合计（占用）≥ 4.2G · 有进程读不到，拆不出物理内存和压缩/swap";
     /// "合计（占用）读不到"; "合计（占用）9.7G · 物理内存部分读不到".
     public static func splitLine(_ o: Owner, _ language: Language) -> Format.Memory {
@@ -85,7 +86,7 @@ public enum MemoryWording {
         guard let physical = s.physical, let outside = s.outside else {
             return Format.Memory(text: L10n.format(.memSplitUnknown, language, total.text), help: nil)
         }
-        return Format.Memory(text: L10n.format(.memSplit, language, Format.bytes(physical), Format.bytes(outside), total.text),
+        return Format.Memory(text: L10n.format(.memSplit, language, Format.bytes(physical), Format.bytes(outside)),
                              help: nil)
     }
 
