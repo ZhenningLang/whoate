@@ -32,6 +32,8 @@ ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
 WEBKIT = 'swarm:["com.apple.WebKit"]'
 OPENED = "app:com.pilotmoon.scroll-reverser"
+# The bare debug executable has no Info.plist: the shots show this version, not "开发版".
+VERSION = next(l.split('"')[1] for l in open(os.path.join(ROOT, "Cargo.toml")) if l.startswith("version = "))
 
 # name, window kind, automation mode, extra env, seconds to settle after the window line
 SHOTS = [
@@ -85,7 +87,7 @@ def capture(binary, out_dir, fixture, shot, appearance, language):
     state_file = window_file + ".state"
     env = dict(WHOATE_UI_AUTOMATION=mode, WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_WINDOW_FILE=window_file,
                WHOATE_UI_STATE_FILE=state_file, WHOATE_UI_FIXTURE=fixture, WHOATE_UI_MENUBAR_ICON=ICON,
-               LC_ALL=language, **extra)
+               WHOATE_UI_VERSION=VERSION, LC_ALL=language, **extra)
     launcher = launch.Launcher()
     app = launcher.start(binary, env=env)
     suffix = "" if language == ZH else "-en"

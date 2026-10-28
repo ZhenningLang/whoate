@@ -164,7 +164,7 @@ struct SidebarView: View {
         // Owner 2026-10-28: the version at the bottom left, settings at the bottom right.
         .safeAreaInset(edge: .bottom) {
             HStack {
-                Text(AboutInfo.make(info: Bundle.main.infoDictionary, language: language).short)
+                Text(AboutInfo.make(info: AboutInfo.bundleInfo(), language: language).short)
                     .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     .textSelection(.enabled)
                 Spacer(minLength: 8)

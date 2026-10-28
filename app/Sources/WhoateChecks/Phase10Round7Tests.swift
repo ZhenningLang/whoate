@@ -277,6 +277,11 @@ enum Phase10Round7Tests {
                                           "WhoateCommit": "e12f515", "WhoateBuiltAt": "2026-10-28 23:22"], language: .zh)
         expect(about.build == "e12f515 · 2026-10-28 23:22" && about.short == "v0.1.0 · e12f515", "\(about)")
         expect(AboutInfo.make(info: nil, language: .zh).short == "开发版")
+        // Screenshots from the bare debug executable: WHOATE_UI_VERSION stands in for Info.plist only.
+        expect(AboutInfo.make(info: AboutInfo.bundleInfo(environment: ["WHOATE_UI_VERSION": "0.1.0"], bundle: nil),
+                              language: .zh).short == "v0.1.0")
+        expect(AboutInfo.bundleInfo(environment: ["WHOATE_UI_VERSION": "9.9.9"],
+                                    bundle: ["CFBundleShortVersionString": "0.1.0"])?["CFBundleShortVersionString"] as? String == "0.1.0")
         // Owner 2026-10-29: in CPU order the sidebar adds the rows' CPU, per core like a row.
         let cpuReport = try decodeValue(Report.self, reportJSON(owners: [
             ownerJSON("app:c1", mem: 1 << 30, overrides: ["cpu_pct": 93.0]),

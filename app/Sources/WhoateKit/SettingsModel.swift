@@ -59,7 +59,7 @@ public final class SettingsModel {
     public private(set) var cliInstall: CommandLineTool.InstallResult?
 
     public init(settings: AppSettings, login: any LoginItemService, notifier: any Notifier,
-                bundlePath: String = Bundle.main.bundlePath, info: [String: Any]? = Bundle.main.infoDictionary,
+                bundlePath: String = Bundle.main.bundlePath, info: [String: Any]? = AboutInfo.bundleInfo(),
                 cli: CLIEnvironment) {
         self.settings = settings
         self.login = login

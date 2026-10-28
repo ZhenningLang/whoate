@@ -42,7 +42,7 @@ struct PanelView: View {
                 Text(header.headline).font(.title3.weight(.semibold))
                 Spacer(minLength: 8)
                 // Owner 2026-10-28: the version, top right.
-                Text(AboutInfo.make(info: Bundle.main.infoDictionary, language: language).short)
+                Text(AboutInfo.make(info: AboutInfo.bundleInfo(), language: language).short)
                     .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
             }
             // R21: physical memory with its total and share, the compressor's part of it, swap with its total.

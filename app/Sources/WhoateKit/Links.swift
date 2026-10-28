@@ -79,6 +79,15 @@ public struct AboutInfo: Equatable, Sendable {
                     support: SupportItem.shown(support, language: language))
     }
 
+    /// The running app's Info.plist. A bare debug executable has none; screenshots taken with
+    /// it (README, product page) pass WHOATE_UI_VERSION so they read "v0.1.0", not "开发版".
+    public static func bundleInfo(environment: [String: String] = ProcessInfo.processInfo.environment,
+                                  bundle: [String: Any]? = Bundle.main.infoDictionary) -> [String: Any]? {
+        if bundle?["CFBundleShortVersionString"] != nil { return bundle }
+        guard let version = environment["WHOATE_UI_VERSION"], !version.isEmpty else { return bundle }
+        return (bundle ?? [:]).merging(["CFBundleShortVersionString": version, "CFBundleVersion": version]) { $1 }
+    }
+
     /// The panel's and the main window's version: "v0.1.0 · e12f515", or "开发版".
     public var short: String {
         isDevelopment ? version : ["v" + version, commit].compactMap { $0 }.joined(separator: " · ")

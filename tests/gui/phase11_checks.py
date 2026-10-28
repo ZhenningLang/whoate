@@ -42,9 +42,16 @@ def root(prefix):
     return tempfile.mkdtemp(prefix=prefix, dir=os.environ.get("WHOATE_P11_TMP", "/private/tmp"))
 
 
+def design_shots_version():
+    """The version shown in shots of the bare debug executable (see design_shots.VERSION)."""
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return next(l.split('"')[1] for l in open(os.path.join(root, "Cargo.toml")) if l.startswith("version = "))
+
+
 def env_for(base, fixture=None, **extra):
     """private_env plus the Phase 11 isolation: a suite at an absolute path in `base`."""
     return private_env(base, WHOATE_UI_DEFAULTS=f"{base}/suite", WHOATE_UI_FIXTURE=fixture or os.path.realpath(DESIGN),
+                       WHOATE_UI_VERSION=design_shots_version(),
                        WHOATE_UI_CLI_DIRS=f"{base}/bin", WHOATE_UI_CLI_PATH=f"{base}/bin", **extra)
 
 
