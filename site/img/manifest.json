@@ -1,61 +1,61 @@
 {
   "fixture": "tests/gui/design-report.json",
   "fixture_sha256": "83858d4fe29b3583eee91c392632fda15221b42d1ad333637f35774358f2601b",
-  "app_tree": "14e50c8aa8761a74b691783482f8959645b46499",
+  "app_tree": "6ae34a0890556d7edf412e25cffac68ab2390336",
   "images": [
     {
       "file": "panel-en-light.png",
-      "sha256": "95b6c25ab1d9904db6b2f94b1b073c144f3c3b33b5e8bf60cd0b92fd92efe941",
+      "sha256": "d110b5d019df7baccf76504391a04c145713959aa4995a5c4d56694699eb5f9c",
       "shot": "panel-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "95b6c25ab1d9904db6b2f94b1b073c144f3c3b33b5e8bf60cd0b92fd92efe941",
-      "width": 420,
-      "height": 655
+      "source_sha256": "d110b5d019df7baccf76504391a04c145713959aa4995a5c4d56694699eb5f9c",
+      "width": 840,
+      "height": 1310
     },
     {
       "file": "main-agent-en-light.png",
-      "sha256": "f96961827117e663f822af2b7d1925498e7fdd863aa710903a7a0d5db4b18a35",
+      "sha256": "9c073a41536758142aec35405717dff20c9d6429c93cd5ac5dd6c9835dfb689b",
       "shot": "main-agent-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "f96961827117e663f822af2b7d1925498e7fdd863aa710903a7a0d5db4b18a35",
-      "width": 1120,
-      "height": 720
+      "source_sha256": "33c841830f53a548e84e65da99ea027620d7c4ea873f39dbbe795eceb44543df",
+      "width": 1600,
+      "height": 1028
     },
     {
       "file": "main-browser-en-light.png",
-      "sha256": "73f931736755e66dd8e6f03e3a19edbc208ac8515ef905862897972688bc64d2",
+      "sha256": "735aee73dfe7ec7694d72a91468858aced7495b82023568daed31076429ddbf3",
       "shot": "main-browser-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "73f931736755e66dd8e6f03e3a19edbc208ac8515ef905862897972688bc64d2",
-      "width": 1120,
-      "height": 720
+      "source_sha256": "8da48c1feedfc5ccf94da5763a96971b650ee0bf2c1ba55d1aeff0032fc18cb4",
+      "width": 1600,
+      "height": 1028
     },
     {
       "file": "main-orphan-en-light.png",
-      "sha256": "435e3f9b95793750e356e421a7e33245fcc755ff3a4b0a360e5604e6f6e96771",
+      "sha256": "813e884d77a3166487ecddb4c5bd7fe9ce9e1f588612f0ffbcbdbac468e1887e",
       "shot": "main-orphan-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "435e3f9b95793750e356e421a7e33245fcc755ff3a4b0a360e5604e6f6e96771",
-      "width": 1120,
-      "height": 720
+      "source_sha256": "945a0cefc5f6ddc6f470444ec0275d4e225dee7e53c29d91512a47420292966a",
+      "width": 1600,
+      "height": 1028
     },
     {
       "file": "main-agent-en-dark.png",
-      "sha256": "0fc69241a3828646f94e3b193ccc45b31efa1696e97d9ff5278489e827f3951b",
+      "sha256": "0296e25284da33e2075ee0673243255ea4b57c6981423fc88f1207208d348a06",
       "shot": "main-agent-en-dark",
       "generator": "design_shots.capture",
-      "source_sha256": "0fc69241a3828646f94e3b193ccc45b31efa1696e97d9ff5278489e827f3951b",
-      "width": 1120,
-      "height": 720
+      "source_sha256": "902110eca44a98628da7aab4fd71163fdafdc6e600204a41fac5b1c7bc0d4e87",
+      "width": 1600,
+      "height": 1028
     },
     {
       "file": "settings-cli-en-light.png",
-      "sha256": "ba2cf8bd0ab7385f8c5622b92cf5845c85abc578ee2a8fa35ffdccd8192c9c8e",
+      "sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
       "shot": "settings-cli-en-light",
       "generator": "phase11_checks.py shots",
-      "source_sha256": "ba2cf8bd0ab7385f8c5622b92cf5845c85abc578ee2a8fa35ffdccd8192c9c8e",
-      "width": 540,
-      "height": 262
+      "source_sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
+      "width": 1080,
+      "height": 524
     }
   ],
   "social": {
@@ -74,8 +74,8 @@
   },
   "demo": {
     "file": "demo.gif",
-    "sha256": "4a4ac4b53e3fc3bfbda1b5e832ee2a435ac6933f41f55607b8a58806613a1587",
-    "bytes": 1267380,
+    "sha256": "d292f4784196d41a4a5404cb569c1b36bf70596ed5534aed4076414079572565",
+    "bytes": 1245624,
     "duration_s": 12.2,
     "width": 960,
     "height": 616,
@@ -87,39 +87,39 @@
       {
         "shot": "main-agent-en-light",
         "file": "main-agent-en-light.png",
-        "sha256": "f96961827117e663f822af2b7d1925498e7fdd863aa710903a7a0d5db4b18a35",
+        "sha256": "9c073a41536758142aec35405717dff20c9d6429c93cd5ac5dd6c9835dfb689b",
         "duration_s": 2.5
       },
       {
         "shot": "panel-en-light",
         "file": "panel-en-light.png",
-        "sha256": "95b6c25ab1d9904db6b2f94b1b073c144f3c3b33b5e8bf60cd0b92fd92efe941",
+        "sha256": "d110b5d019df7baccf76504391a04c145713959aa4995a5c4d56694699eb5f9c",
         "duration_s": 2.3
       },
       {
         "shot": "main-browser-en-light",
         "file": "main-browser-en-light.png",
-        "sha256": "73f931736755e66dd8e6f03e3a19edbc208ac8515ef905862897972688bc64d2",
+        "sha256": "735aee73dfe7ec7694d72a91468858aced7495b82023568daed31076429ddbf3",
         "duration_s": 2.3
       },
       {
         "shot": "main-orphan-en-light",
         "file": "main-orphan-en-light.png",
-        "sha256": "435e3f9b95793750e356e421a7e33245fcc755ff3a4b0a360e5604e6f6e96771",
+        "sha256": "813e884d77a3166487ecddb4c5bd7fe9ce9e1f588612f0ffbcbdbac468e1887e",
         "duration_s": 2.3
       },
       {
         "shot": "settings-cli-en-light",
         "file": "settings-cli-en-light.png",
-        "sha256": "ba2cf8bd0ab7385f8c5622b92cf5845c85abc578ee2a8fa35ffdccd8192c9c8e",
+        "sha256": "03c5627fd116e2bd2e9fabb3cc14472ac21441e7e68443ce6b64a0394581e8fb",
         "duration_s": 2.8
       }
     ],
     "still": {
       "file": "demo-still.png",
-      "sha256": "e5f4f33bdf0b56202612e34e45dcf45c077c068f3a40e514ba4f904f17ff4638",
+      "sha256": "10b99397dd04b94cfe52006a4bf3f1d4dda8596edb4a2b3c240ac8752c5b701c",
       "source": "main-agent-en-light.png",
-      "source_sha256": "f96961827117e663f822af2b7d1925498e7fdd863aa710903a7a0d5db4b18a35",
+      "source_sha256": "9c073a41536758142aec35405717dff20c9d6429c93cd5ac5dd6c9835dfb689b",
       "width": 960,
       "height": 616
     }
