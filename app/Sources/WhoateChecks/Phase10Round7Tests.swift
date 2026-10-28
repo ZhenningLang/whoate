@@ -285,6 +285,14 @@ enum Phase10Round7Tests {
         expect(cpuApps.text == "115%" && cpuApps.help == L10n.text(.cpuKindHelp, .zh), "\(cpuApps)")
         expect(MainWindowModel.total(Phase10Tests.rows(cpuReport), .apps, .zh).text == "2.0G", "memory order unchanged")
         expect(L10n.text(.cpuSectionOwners, .zh) == "归属 · CPU")
+        // Owner 2026-10-29: a titled session's tool comes first, so a narrow list (which cuts the
+        // middle) still says it is claude; a title that already starts with the tool is not repeated.
+        let designRows = Phase10Tests.rows(try Phase10Tests.designReport())
+        let titled = try require(designRows.first { $0.id == "agent:claude:9f2c41d7-5b0e-4c1a-9d3e-2a7f60c1b8e4" })
+        expect(titled.subtitle.hasPrefix("claude · Ghostty · tmux main:1.0"), titled.subtitle)
+        for row in designRows where row.kind == .agentSession && row.title.lowercased().hasPrefix("kilo") {
+            expect(!row.subtitle.lowercased().hasPrefix("kilo"), "not repeated: \(row.title) | \(row.subtitle)")
+        }
         // RSS counts shared pages: the estimate is capped at the footprint (min(RSS, footprint)).
         let shared = try decodeValue(Owner.self, ownerJSON("app:b", mem: 1 << 30, overrides: ["reclaimable_physical": rss(3 << 30)]))
         expect(MemoryWording.split(shared) == .init(physical: 1 << 30, outside: 0, total: 1 << 30), "capped at the footprint")

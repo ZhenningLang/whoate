@@ -152,11 +152,14 @@ public enum Panel {
         return o.label
     }
 
-    /// Sessions: where it was started (R25) · tool · tmux window (pane title) · directory ·
-    /// idle time, missing parts omitted.
+    /// Sessions: tool · where it was started (R25) · tmux window (pane title) · directory ·
+    /// idle time, missing parts omitted. The tool comes first (owner 2026-10-29): a narrow
+    /// list cuts the middle of the line, and "claude" there was lost. Not repeated when the
+    /// title already starts with it ("kilo · atlas").
     public static func agentSubtitle(_ o: Owner, _ agent: Agent, _ language: Language) -> String {
         let launch = RowNames.launch(o, language)
-        var parts = (launch.map { [$0] } ?? []) + [agent.tool]
+        let named = title(o).lowercased().hasPrefix(agent.tool.lowercased())
+        var parts = (named ? [] : [agent.tool]) + (launch.map { [$0] } ?? [])
         // The launch label already says "split closed" and the pane address; only what it lacks is added.
         let closed = o.origin?.paneAlive == false
         if closed, launch == nil {
