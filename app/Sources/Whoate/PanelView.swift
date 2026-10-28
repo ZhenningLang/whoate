@@ -38,7 +38,13 @@ struct PanelView: View {
     private var header: some View {
         let header = Panel.header(model.report?.host, sort: model.sort, language)
         return VStack(alignment: .leading, spacing: 8) {
-            Text(header.headline).font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline) {
+                Text(header.headline).font(.title3.weight(.semibold))
+                Spacer(minLength: 8)
+                // Owner 2026-10-28: the version, top right.
+                Text(AboutInfo.make(info: Bundle.main.infoDictionary, language: language).short)
+                    .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
+            }
             // R21: physical memory with its total and share, the compressor's part of it, swap with its total.
             if let host = model.report?.host {
                 VStack(alignment: .leading, spacing: 2) {

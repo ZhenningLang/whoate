@@ -70,6 +70,10 @@ struct DetailHeaderView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(L10n.text(.memFootprint, language)).font(.callout).foregroundStyle(.secondary)
                     ValueText(row: row, sort: .memory, language: language)
+                    // Owner 2026-10-28: "占用 5.0G（物理内存约 656M + 压缩/swap 约 4.4G）".
+                    if let inline = MemoryWording.inline(row, language) {
+                        Text(inline).font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                    }
                 }
                 HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
                     .font(.callout).foregroundStyle(.secondary)

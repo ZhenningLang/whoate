@@ -8,6 +8,7 @@ import WhoateKit
 struct MainWindowView: View {
     @Bindable var model: AppModel
     let mainWindows: MainWindows
+    var openSettings: () -> Void = {}
 
     private var language: Language { model.language }
     private var closing: Bool { model.close != .idle && model.closeOrigin == .main }
@@ -24,7 +25,7 @@ struct MainWindowView: View {
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(model: model)
+            SidebarView(model: model, openSettings: openSettings)
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
         } content: {
             OwnerListView(model: model)
@@ -145,6 +146,7 @@ struct HostToolbar: View {
 
 struct SidebarView: View {
     @Bindable var model: AppModel
+    var openSettings: () -> Void = {}
     var body: some View {
         let language = model.language
         let rows = model.rows(limit: .max)
@@ -159,13 +161,25 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // Owner 2026-10-28: the version at the bottom left, settings at the bottom right.
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                Text(AboutInfo.make(info: Bundle.main.infoDictionary, language: language).short)
+                    .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    .textSelection(.enabled)
+                Spacer(minLength: 8)
+                Button { openSettings() } label: { Image(systemName: "gearshape") }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+                    .help(L10n.text(.settingsTitle, language)).accessibilityLabel(L10n.text(.settingsTitle, language))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
     }
 
     private func item(_ category: MainCategory, _ rows: [PanelRow]) -> some View {
         let total = model.report == nil ? nil : MainWindowModel.total(rows, category, model.language)
         return Label(category.title(model.language), systemImage: category.symbol)
-            // "All" has no number (owner 2026-10-28): no empty badge either.
-            .badge((total?.text).flatMap { $0.isEmpty ? nil : Text($0).monospacedDigit() })
+            .badge(Text(total?.text ?? "").monospacedDigit())
             .help(total?.help ?? "")
             .tag(category)
     }
@@ -234,6 +248,10 @@ struct MainRowView: View {
                 Text(row.title).font(.headline).lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 8)
                 ValueText(row: row, sort: sort, language: language)
+                // Owner 2026-10-28: "total (physical + compressed/swap)", as the list header defines.
+                if sort == .memory, let parts = MemoryWording.parts(row) {
+                    Text(parts).font(.caption).monospacedDigit().foregroundStyle(.secondary).fixedSize()
+                }
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(row.subtitle).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(row.source == .swarm ? .tail : .middle)

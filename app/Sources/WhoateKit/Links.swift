@@ -52,6 +52,10 @@ public struct SupportItem: Equatable, Sendable {
 public struct AboutInfo: Equatable, Sendable {
     public var version: String
     public var build: String
+    /// Info.plist WhoateCommit / WhoateBuiltAt (scripts/bundle-app.sh): which code and when,
+    /// so two builds of one version can be told apart (owner 2026-10-28).
+    public var commit: String? = nil
+    public var builtAt: String? = nil
     /// No Info.plist keys (`swift run`, test wrappers): one "development build", not two.
     public var isDevelopment: Bool
     public var license: String
@@ -65,10 +69,18 @@ public struct AboutInfo: Equatable, Sendable {
         let dev = L10n.text(.aboutDevBuild, language)
         let version = (info?["CFBundleShortVersionString"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? dev
         let build = (info?["CFBundleVersion"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? dev
-        return Self(version: version, build: build, isDevelopment: version == dev && build == dev,
+        let commit = (info?["WhoateCommit"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let builtAt = (info?["WhoateBuiltAt"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        return Self(version: version, build: [commit ?? build, builtAt].compactMap { $0 }.joined(separator: " · "),
+                    commit: commit, builtAt: builtAt, isDevelopment: version == dev && build == dev,
                     license: L10n.text(.aboutLicense, language),
                     repository: Links.repository, issues: Links.issues,
                     updateLines: [L10n.text(.aboutUpdateFormula, language), L10n.text(.aboutUpdateCask, language)],
                     support: SupportItem.shown(support, language: language))
+    }
+
+    /// The panel's and the main window's version: "v0.1.0 · e12f515", or "开发版".
+    public var short: String {
+        isDevelopment ? version : ["v" + version, commit].compactMap { $0 }.joined(separator: " · ")
     }
 }

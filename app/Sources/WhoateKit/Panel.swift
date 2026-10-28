@@ -31,6 +31,9 @@ public struct PanelRow: Identifiable, Equatable, Sendable {
     public var rule: String?
     /// Process groups only: the owners the group's processes belong to (R14 falls back to one).
     public var members: [String] = []
+    /// Owners only: the estimate of the part in physical memory (MemoryWording.split), nil
+    /// when it cannot be split; owner 2026-10-28 shows it beside the footprint.
+    public var physicalBytes: UInt64? = nil
 }
 
 extension PanelRow {
@@ -72,7 +75,7 @@ public enum Panel {
                 history: histories.map { $0[o.id] ?? [] } ?? o.history,
                 closable: o.verdict.level == .act && !isProtected(o), insights: o.insights,
                 unknownMemCount: o.unknownMemCount, cpuReadable: o.cpuPctReadable, unknownCPUCount: o.unknownCPUCount,
-                kind: o.kind, rule: o.verdict.rule)
+                kind: o.kind, rule: o.verdict.rule, physicalBytes: MemoryWording.split(o).physical)
         }
         let swarms = report.swarms.map { s in
             // R19: a spread group is normal in the GUI (not in "needs action", grey pill); the core's level stays.

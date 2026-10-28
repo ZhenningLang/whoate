@@ -52,6 +52,9 @@ if grep -q '_whoate_engine_new_from_fixture' <<<"$symbols"; then
 fi
 
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$root/Cargo.toml" | head -1)
+# Which code and when (About, panel, main window): two builds of one version differ here.
+commit=$(git -C "$root" describe --always --dirty --abbrev=7 2>/dev/null || true)
+built_at=$(date "+%Y-%m-%d %H:%M")
 app="$root/dist/whoate.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Helpers"
@@ -78,6 +81,8 @@ cat >"$app/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>${version}</string>
     <key>CFBundleVersion</key><string>${version}</string>
+    <key>WhoateCommit</key><string>${commit}</string>
+    <key>WhoateBuiltAt</key><string>${built_at}</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>

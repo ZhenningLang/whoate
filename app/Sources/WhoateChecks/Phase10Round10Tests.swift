@@ -42,8 +42,7 @@ enum Phase10Round10Tests {
         let report = try Phase10Tests.designReport()
         for language in [Language.zh, .en] {
             let rows = Phase10Tests.rows(report, language)
-            // "All" has no number since owner 2026-10-28 (Phase10Round7Tests checks it).
-            for category in [MainCategory.tmux, .agents, .apps, .orphans, .system] {
+            for category in [MainCategory.all, .tmux, .agents, .apps, .orphans, .system] {
                 // The list's own filter (OwnerListView), owners only: a process group overlays them.
                 let listed = rows.filter { MainWindowModel.matches($0, category) && $0.source == .owner }
                 let total = MainWindowModel.total(rows, category, language)
@@ -66,11 +65,11 @@ enum Phase10Round10Tests {
         ]))
         let tmux = MainWindowModel.total(Phase10Tests.rows(partial), .tmux, .zh)
         expect(tmux.text == "≥ 1.5G" && tmux.help == L10n.format(.unknownMem, .zh, "1"), "\(tmux)")
-        // "All" would exceed physical memory: no number, and its hover says why (zh and en; owner 2026-10-28).
+        // "All" may exceed physical memory, and its hover says why (zh and en).
         let big = try decodeValue(Report.self, reportJSON(owners: (0..<4).map { i in ownerJSON("app:big\(i)", mem: 20 << 30, pids: [Int32(i + 1)]) }))
         for language in [Language.zh, .en] {
             let all = MainWindowModel.total(Phase10Tests.rows(big, language), .all, language)
-            expect(all.text.isEmpty && all.help == L10n.text(.memAllHelp, language), "\(all)")
+            expect(all.text == "80.0G" && all.help == L10n.text(.memAllHelp, language), "\(all)")
         }
         expect(80 << 30 > (big.host?.memTotalBytes ?? .max), "the case is past the host's 48G")
         expect(L10n.text(.memSectionOwners, .zh) == "归属 · 占用" && L10n.text(.memSectionOwners, .en) == "Owners · footprint")

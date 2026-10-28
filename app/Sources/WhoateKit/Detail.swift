@@ -111,7 +111,8 @@ public enum Detail {
         return DetailHeader(kindLine: kindLine(owner, language), title: row.title, subtitle: row.subtitle, pill: row.pill,
                             pillLevel: row.pillLevel,
                             verdict: owner.verdict.level == .ok ? advice : MemoryWording.verdict(owner.verdict.text, language),
-                            memorySplit: MemoryWording.splitLine(owner, language))
+                            memorySplit: MemoryWording.split(owner).physical == nil || owner.unknownMemCount > 0
+                                ? MemoryWording.splitLine(owner, language) : nil)
     }
 
     /// R19: no raw signature on top; a spread group's plain-words summary is its own card.

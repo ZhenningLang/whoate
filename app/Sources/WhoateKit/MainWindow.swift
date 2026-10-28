@@ -82,17 +82,20 @@ public enum MainWindowModel {
     /// Sidebar number: for a kind, the footprint of the rows its list shows, added up
     /// like a row's number (R23, owner 2026-10-26: the sidebar and the list use one
     /// measure, so a kind is never smaller than one of its rows); "≥" with the hover
-    /// when some processes could not be read. "All" has no number (owner 2026-10-28: the
-    /// footprints add up to more than physical memory plus swap, e.g. 46.8G on a 24G
-    /// Mac); its hover says why and where the real use is. Row count for filters.
-    /// Process groups are an overlay on owners and never counted twice.
+    /// when some processes could not be read. "All" can exceed physical memory, and its
+    /// hover says why. Row count for filters. Process groups are an overlay on owners
+    /// and never counted twice.
     public static func total(_ rows: [PanelRow], _ category: MainCategory, _ language: Language) -> Format.Memory {
         let shown = rows.filter { matches($0, category) }
         guard !category.isFilter else { return Format.Memory(text: "\(shown.count)", help: nil) }
-        if category == .all { return Format.Memory(text: "", help: L10n.text(.memAllHelp, language)) }
         let owners = shown.filter { $0.source == .owner }
-        return Format.memory(owners.reduce(0) { $0 + $1.memBytes }, unknown: owners.reduce(0) { $0 + $1.unknownMemCount },
-                             language)
+        var total = Format.memory(owners.reduce(0) { $0 + $1.memBytes }, unknown: owners.reduce(0) { $0 + $1.unknownMemCount },
+                                  language)
+        // Owner 2026-10-28: the hover splits it like a row when every owner's split is known.
+        let lines = (category == .all ? [L10n.text(.memAllHelp, language)] : [])
+            + (MemoryWording.hover(owners, language).map { [$0] } ?? []) + (total.help.map { [$0] } ?? [])
+        total.help = lines.isEmpty ? nil : lines.joined(separator: "\n")
+        return total
     }
 
     /// WHOATE_UI_SELECT: an owner id, kind:orphan|agent|browser, or overview.

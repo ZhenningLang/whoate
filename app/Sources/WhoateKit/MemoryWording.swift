@@ -71,9 +71,31 @@ public enum MemoryWording {
         return Split(physical: physical, outside: o.memBytes - physical, total: o.memBytes)
     }
 
-    /// The detail line under the header, with the header's precision ("≥" and its hover):
-    /// "其中约 7.5G 在物理内存里，约 2.2G 已压缩或换到 swap" (the header above already
-    /// gives the footprint; owner 2026-10-28: the physical part first, the total not again);
+    /// "656M + 4.4G": a split footprint's two parts, for a list row (owner 2026-10-28:
+    /// every memory number in the main window reads "total (physical + compressed/swap)").
+    public static func parts(_ row: PanelRow) -> String? {
+        guard row.unknownMemCount == 0, let physical = row.physicalBytes, physical <= row.memBytes else { return nil }
+        return "(\(Format.bytes(physical)) + \(Format.bytes(row.memBytes - physical)))"
+    }
+
+    /// "（物理内存约 656M + 压缩/swap 约 4.4G）" after the detail header's footprint; nil when not split.
+    public static func inline(_ row: PanelRow, _ language: Language) -> String? {
+        guard row.unknownMemCount == 0, let physical = row.physicalBytes, physical <= row.memBytes else { return nil }
+        return L10n.format(.memSplit, language, Format.bytes(physical), Format.bytes(row.memBytes - physical))
+    }
+
+    /// A kind's hover: its owners' parts added up, only when every owner's split is known.
+    public static func hover(_ owners: [PanelRow], _ language: Language) -> String? {
+        guard !owners.isEmpty, owners.allSatisfy({ $0.unknownMemCount == 0 && $0.physicalBytes != nil }) else { return nil }
+        let physical = owners.reduce(0) { $0 + min($1.physicalBytes ?? 0, $1.memBytes) }
+        let total = owners.reduce(0) { $0 + $1.memBytes }
+        return L10n.format(.memSplitHover, language, Format.bytes(physical), Format.bytes(total - physical))
+    }
+
+    /// The detail line under the header, only when the footprint cannot be split (owner
+    /// 2026-10-28: a split one is shown inline after the header's footprint), with the
+    /// header's precision ("≥" and its hover):
+    /// (split: "（物理内存约 7.5G + 压缩/swap 约 2.2G）", the same text as `inline`);
     /// "合计（占用）≥ 4.2G · 有进程读不到，拆不出物理内存和压缩/swap";
     /// "合计（占用）读不到"; "合计（占用）9.7G · 物理内存部分读不到".
     public static func splitLine(_ o: Owner, _ language: Language) -> Format.Memory {

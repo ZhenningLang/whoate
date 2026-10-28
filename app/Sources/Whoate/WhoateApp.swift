@@ -72,7 +72,8 @@ struct WhoateApp: App {
         }
 
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {
-            MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows)
+            MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows,
+                           openSettings: { delegate.showSettings(fromPanel: false) })
         }
         .defaultSize(width: 1120, height: 720)
         .commands {
