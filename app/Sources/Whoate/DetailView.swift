@@ -68,12 +68,12 @@ struct DetailHeaderView: View {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 12) {
                     Pill(row: row)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) { footprint; inline }
+                    HStack(alignment: .firstTextBaseline, spacing: 4) { footprint; inline(fixed: true) }
                     cpu
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 12) { Pill(row: row); footprint; cpu }
-                    inline
+                    inline(fixed: false)
                 }
             }
             if let split = header.memorySplit {
@@ -97,10 +97,12 @@ extension DetailHeaderView {
             ValueText(row: row, sort: .memory, language: language)
         }
     }
-    // Owner 2026-10-28: "占用 5.0G（物理内存约 656M + 压缩/swap 约 4.4G）".
-    @ViewBuilder private var inline: some View {
+    // Owner 2026-10-28: "占用 5.0G（物理内存约 656M + 压缩/swap 约 4.4G）". Under the numbers it may
+    // still wrap, but only in a column too narrow for the whole bracket (review 10-29 PM S1).
+    @ViewBuilder private func inline(fixed: Bool) -> some View {
         if let inline = MemoryWording.inline(row, language) {
-            Text(inline).font(.callout).monospacedDigit().foregroundStyle(.secondary).fixedSize()
+            Text(inline).font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                .fixedSize(horizontal: fixed, vertical: !fixed)
         }
     }
     private var cpu: some View {

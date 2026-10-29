@@ -30,6 +30,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 FIXTURE = os.path.join(ROOT, "tests/gui/design-report.json")
 # Owner 2026-10-29: English shots show English demo text, as an English user's whoate would.
 ENGLISH_TEXT = os.path.join(ROOT, "tests/gui/design-report.en.json")
+# Chinese in a demo string: CJK punctuation, ideographs (with extension A and the supplementary
+# planes), compatibility ideographs, full-width forms.
+CJK = re.compile("[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef\U00020000-\U0003134f]")
 ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
 WEBKIT = 'swarm:["com.apple.WebKit"]'
@@ -94,15 +97,16 @@ def english_fixture(path):
             return {k: swap(v) for k, v in value.items()}
         if isinstance(value, list):
             return [swap(v) for v in value]
-        if isinstance(value, str) and re.search(r"[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]", value):
+        if isinstance(value, str) and CJK.search(value):
             if value not in table:
                 missing.add(value)
             return table.get(value, value)
         return value
 
     report = swap(json.load(open(path)))
+    missing |= {v for v in table.values() if CJK.search(v)}
     if missing:
-        sys.exit(f"design-report.en.json has no English for: {sorted(missing)}")
+        sys.exit(f"design-report.en.json has no English (or Chinese left in it) for: {sorted(missing)}")
     out = path[:-len(".json")] + ".en.json"
     json.dump(report, open(out, "w"), ensure_ascii=False)
     return out
