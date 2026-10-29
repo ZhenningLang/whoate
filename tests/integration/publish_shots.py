@@ -9,7 +9,8 @@ tests/gui/design-report.json through launch.py (`open -n`, isolated); nothing
 of the real machine is shown. Raw captures go to <raw out dir>; the published
 ones are copied to site/img/<name>.png (scaled down with sips to at most
 MAX_WIDTH pixels) and recorded in site/img/manifest.json: generator, shot name,
-sha256 of the published and the source PNG, the app/ tree and the demo report.
+sha256 of the published and the source PNG, the app/ tree, the demo report and its
+English text.
 check_release.py `shots` (QA15) compares that against the tree being checked,
 so a changed interface turns it red until reshot. Keeps the manifest's `demo`
 section only when its frames are unchanged (make_demo.py rewrites it).
@@ -23,6 +24,8 @@ import design_shots  # noqa: E402
 
 IMG = os.path.join(ROOT, "site/img")
 FIXTURE = "tests/gui/design-report.json"
+# The English shots swap the report's Chinese text for this file's (design_shots.english_fixture).
+ENGLISH_TEXT = "tests/gui/design-report.en.json"
 MAX_WIDTH = 1600
 CAPTURE = "design_shots.capture"
 SETTINGS = "phase11_checks.py shots"
@@ -99,8 +102,9 @@ def publish(raw, taken):
                        "source_sha256": sha256(source), "width": width, "height": height})
     app_tree = subprocess.run(["git", "rev-parse", "HEAD:app"], cwd=ROOT, capture_output=True, text=True,
                               check=True).stdout.strip()
-    manifest = {"fixture": FIXTURE, "fixture_sha256": sha256(os.path.join(ROOT, FIXTURE)), "app_tree": app_tree,
-                "images": images}
+    manifest = {"fixture": FIXTURE, "fixture_sha256": sha256(os.path.join(ROOT, FIXTURE)),
+                "english_text": ENGLISH_TEXT, "english_text_sha256": sha256(os.path.join(ROOT, ENGLISH_TEXT)),
+                "app_tree": app_tree, "images": images}
     shas = {i["file"]: i["sha256"] for i in images}
     if old.get("demo") and all(shas.get(f["file"]) == f["sha256"] for f in old["demo"]["frames"]):
         manifest["demo"] = old["demo"]

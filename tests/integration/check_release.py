@@ -524,6 +524,8 @@ def shots(ref=None):
         check(not dirty, "app/ has no uncommitted changes")
     check(manifest["app_tree"] == tree, f"screenshots taken on app tree {manifest['app_tree'][:12]}, checked tree {tree[:12]}")
     check(manifest["fixture_sha256"] == sha256("tests/gui/design-report.json"), "screenshots replay the current demo report")
+    check(manifest.get("english_text_sha256") == sha256("tests/gui/design-report.en.json"),
+          "English screenshots use the current English demo text")
     listed = registered(manifest)
     for path in ("README.md", "site/index.html"):
         for img in re.findall(r"img/([\w.-]+\.(?:png|gif))", open(path).read()):
