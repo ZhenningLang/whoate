@@ -3,14 +3,14 @@
   "fixture_sha256": "83858d4fe29b3583eee91c392632fda15221b42d1ad333637f35774358f2601b",
   "english_text": "tests/gui/design-report.en.json",
   "english_text_sha256": "00e9982bedd674a526b439df8b9468964c1958d22bd49f6184284102a65684f6",
-  "app_tree": "929383fd4d5ad3201e8b80a5b91cf326e360f3dd",
+  "app_tree": "b6d10f674ff916c402bbeca4eda6c072a934dc18",
   "images": [
     {
       "file": "panel-en-light.png",
-      "sha256": "db82f5c379ad2b7451e5ca1d22ce671623bda3436d1de59f258a325cd7275189",
+      "sha256": "fb217909f08944db75e34c22c1e1dcd43f08b8933f4c67b7ea366761e6bcfd21",
       "shot": "panel-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "db82f5c379ad2b7451e5ca1d22ce671623bda3436d1de59f258a325cd7275189",
+      "source_sha256": "fb217909f08944db75e34c22c1e1dcd43f08b8933f4c67b7ea366761e6bcfd21",
       "width": 840,
       "height": 1330
     },
@@ -25,10 +25,10 @@
     },
     {
       "file": "main-browser-en-light.png",
-      "sha256": "964b34f34ca151d57167c210b0ea409d2b659462a67592c8098df85d88bd59b4",
+      "sha256": "dbcb46c6944dc22210554df536ab36454201cf0443299a98f81c0ecbbeb6f7d6",
       "shot": "main-browser-en-light",
       "generator": "design_shots.capture",
-      "source_sha256": "de984038f6d99f0e7caae8fcd2de4360f6b0c449475a2b3378b3b397abd75267",
+      "source_sha256": "79d46f21602bf67112c5e192b7cd9f09f92d1748e5e144db9f900fdf1af2569a",
       "width": 1600,
       "height": 1028
     },
@@ -76,8 +76,8 @@
   },
   "demo": {
     "file": "demo.gif",
-    "sha256": "a144a503aaa661ef06f8784a02ffa9cce75083d7f23c0d397b4774fc898f4b89",
-    "bytes": 1262592,
+    "sha256": "6b244a505fa39ec19c3d8c6a84e508ba68af8b65316afb6f9098f01dddf84cab",
+    "bytes": 1262625,
     "duration_s": 12.2,
     "width": 960,
     "height": 616,
@@ -95,13 +95,13 @@
       {
         "shot": "panel-en-light",
         "file": "panel-en-light.png",
-        "sha256": "db82f5c379ad2b7451e5ca1d22ce671623bda3436d1de59f258a325cd7275189",
+        "sha256": "fb217909f08944db75e34c22c1e1dcd43f08b8933f4c67b7ea366761e6bcfd21",
         "duration_s": 2.3
       },
       {
         "shot": "main-browser-en-light",
         "file": "main-browser-en-light.png",
-        "sha256": "964b34f34ca151d57167c210b0ea409d2b659462a67592c8098df85d88bd59b4",
+        "sha256": "dbcb46c6944dc22210554df536ab36454201cf0443299a98f81c0ecbbeb6f7d6",
         "duration_s": 2.3
       },
       {
