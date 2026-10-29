@@ -261,7 +261,12 @@ struct MainRowView: View {
                         HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
                     } else {
                         // R21: labelled like the CPU number in memory order.
-                        HStack(spacing: 4) { Text(L10n.text(.memFootprint, language)); MemoryText(memory: row.memory(language)) }
+                        HStack(spacing: 4) {
+                            Text(L10n.text(.memFootprint, language)); MemoryText(memory: row.memory(language))
+                            // Review 10-29: the split follows the memory number, in either order.
+                            if let parts = MemoryWording.parts(row) { Text(parts).font(.caption).monospacedDigit() }
+                        }
+                        .fixedSize()
                     }
                 }
                 .font(.callout).foregroundStyle(.secondary)

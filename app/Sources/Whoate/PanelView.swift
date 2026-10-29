@@ -126,7 +126,9 @@ struct PanelView: View {
             Button(L10n.text(.quit, language)) { quit() }.keyboardShortcut("q")
                 .buttonStyle(.borderless).foregroundStyle(.secondary).fixedSize()
                 .rowFrame("footer", "quit")
-            Text(footerText).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            // 2026-10-29: the English line is longer than the gap; two lines, never cut in the middle.
+            Text(footerText).font(.callout).foregroundStyle(.secondary).lineLimit(2).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .center)
             // Phase 11: settings next to the main-window button, away from quit (research F4).
             Button { openSettings() } label: { Image(systemName: "gearshape") }

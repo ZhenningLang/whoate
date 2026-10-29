@@ -64,19 +64,17 @@ struct DetailHeaderView: View {
             Text(header.kindLine).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             Text(header.title).font(.title2.weight(.semibold)).lineLimit(2)
             Text(header.subtitle).font(.callout).foregroundStyle(.secondary).lineLimit(2)
-            HStack(spacing: 12) {
-                Pill(row: row)
-                // R21: the number says what it is.
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(L10n.text(.memFootprint, language)).font(.callout).foregroundStyle(.secondary)
-                    ValueText(row: row, sort: .memory, language: language)
-                    // Owner 2026-10-28: "占用 5.0G（物理内存约 656M + 压缩/swap 约 4.4G）".
-                    if let inline = MemoryWording.inline(row, language) {
-                        Text(inline).font(.callout).monospacedDigit().foregroundStyle(.secondary)
-                    }
+            // Review 10-29: the split stays on one line; where the column is too narrow it moves under the numbers.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    Pill(row: row)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) { footprint; inline }
+                    cpu
                 }
-                HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
-                    .font(.callout).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 12) { Pill(row: row); footprint; cpu }
+                    inline
+                }
             }
             if let split = header.memorySplit {
                 VStack(alignment: .leading, spacing: 2) {
@@ -88,6 +86,26 @@ struct DetailHeaderView: View {
                 Text(verdict).font(.callout).fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+extension DetailHeaderView {
+    // R21: the number says what it is.
+    private var footprint: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(L10n.text(.memFootprint, language)).font(.callout).foregroundStyle(.secondary)
+            ValueText(row: row, sort: .memory, language: language)
+        }
+    }
+    // Owner 2026-10-28: "占用 5.0G（物理内存约 656M + 压缩/swap 约 4.4G）".
+    @ViewBuilder private var inline: some View {
+        if let inline = MemoryWording.inline(row, language) {
+            Text(inline).font(.callout).monospacedDigit().foregroundStyle(.secondary).fixedSize()
+        }
+    }
+    private var cpu: some View {
+        HStack(spacing: 4) { Text("CPU"); MemoryText(memory: row.cpu(language)) }
+            .font(.callout).foregroundStyle(.secondary)
     }
 }
 

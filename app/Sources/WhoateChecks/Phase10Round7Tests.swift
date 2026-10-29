@@ -289,6 +289,22 @@ enum Phase10Round7Tests {
         let cpuApps = MainWindowModel.total(Phase10Tests.rows(cpuReport), .apps, .zh, sort: .cpu)
         expect(cpuApps.text == "115%" && cpuApps.help == L10n.text(.cpuKindHelp, .zh), "\(cpuApps)")
         expect(MainWindowModel.total(Phase10Tests.rows(cpuReport), .apps, .zh).text == "2.0G", "memory order unchanged")
+        // Review 10-29 (GUI-1029-CPU-ALL-UNKNOWN): none readable is "—", not "≥ 0.0%"; a read zero stays a bound.
+        func cpuKind(_ owners: [[String: Any]], _ language: Language = .zh) throws -> Format.Memory {
+            MainWindowModel.total(Phase10Tests.rows(try decodeValue(Report.self, reportJSON(owners: owners))), .apps, language, sort: .cpu)
+        }
+        let allUnknown = try cpuKind([ownerJSON("app:u", mem: 1 << 30, cpu: nil, overrides: ["unknown_cpu_count": 3])])
+        expect(allUnknown.text == "—" && allUnknown.help?.contains(L10n.format(.unknownCPU, .zh, "3")) == true, "\(allUnknown)")
+        let allUnknownEn = try cpuKind([ownerJSON("app:u", mem: 1 << 30, cpu: nil, overrides: ["unknown_cpu_count": 3])], .en)
+        expect(allUnknownEn.text == "—" && allUnknownEn.help?.contains(L10n.format(.unknownCPU, .en, "3")) == true, "\(allUnknownEn)")
+        let zeroPlusUnknown = try cpuKind([ownerJSON("app:z", mem: 1 << 30, cpu: 0),
+                                           ownerJSON("app:u", mem: 1 << 30, cpu: nil, overrides: ["unknown_cpu_count": 2])])
+        expect(zeroPlusUnknown.text == "≥ 0.0%", "\(zeroPlusUnknown)")
+        let partialCPU = try cpuKind([ownerJSON("app:a", mem: 1 << 30, cpu: 12),
+                                      ownerJSON("app:p", mem: 1 << 30, cpu: nil, overrides: ["cpu_pct_readable": 3.0, "unknown_cpu_count": 1])])
+        expect(partialCPU.text == "≥ 15%", "\(partialCPU)")
+        let emptyKind = try cpuKind([ownerJSON("system:1", mem: 1 << 30, kind: "system")])
+        expect(emptyKind.text == "0.0%", "an empty kind adds nothing: \(emptyKind)")
         expect(L10n.text(.cpuSectionOwners, .zh) == "归属 · CPU")
         // Owner 2026-10-29: a titled session's tool comes first, so a narrow list (which cuts the
         // middle) still says it is claude; a title that already starts with the tool is not repeated.
