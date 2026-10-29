@@ -8,7 +8,6 @@ import WhoateKit
 struct MainWindowView: View {
     @Bindable var model: AppModel
     let mainWindows: MainWindows
-    var openSettings: () -> Void = {}
 
     private var language: Language { model.language }
     private var closing: Bool { model.close != .idle && model.closeOrigin == .main }
@@ -25,7 +24,7 @@ struct MainWindowView: View {
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(model: model, openSettings: openSettings)
+            SidebarView(model: model, mainWindows: mainWindows)
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
         } content: {
             OwnerListView(model: model)
@@ -146,7 +145,7 @@ struct HostToolbar: View {
 
 struct SidebarView: View {
     @Bindable var model: AppModel
-    var openSettings: () -> Void = {}
+    let mainWindows: MainWindows
     var body: some View {
         let language = model.language
         let rows = model.rows(limit: .max)
@@ -168,7 +167,7 @@ struct SidebarView: View {
                     .font(.caption).monospacedDigit().foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     .textSelection(.enabled)
                 Spacer(minLength: 8)
-                Button { openSettings() } label: { Image(systemName: "gearshape") }
+                Button { mainWindows.openSettings() } label: { Image(systemName: "gearshape") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
                     .help(L10n.text(.settingsTitle, language)).accessibilityLabel(L10n.text(.settingsTitle, language))
             }

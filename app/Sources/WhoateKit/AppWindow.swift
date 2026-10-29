@@ -69,6 +69,10 @@ public final class MainWindows {
     /// reporter view moving to a window again (P08-REOPEN-POLICY, measured in Phase 10).
     @ObservationIgnored private weak var closedWindow: NSWindow?
     @ObservationIgnored private let apply: @MainActor (NSApplication.ActivationPolicy) -> Void
+    /// The sidebar's settings button. Kept here, not passed to the main window's view:
+    /// a closure argument differs on every scene update, so the closed main window was
+    /// redrawn on every host tick (QA26, 2026-10-29).
+    @ObservationIgnored public var openSettings: @MainActor () -> Void = {}
 
     public init(apply: @escaping @MainActor (NSApplication.ActivationPolicy) -> Void = MainWindows.applyToApp) {
         self.apply = apply

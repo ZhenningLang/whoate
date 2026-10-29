@@ -72,8 +72,7 @@ struct WhoateApp: App {
         }
 
         Window(L10n.text(.mainWindowTitle, delegate.model.language), id: "main") {
-            MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows,
-                           openSettings: { delegate.showSettings(fromPanel: false) })
+            MainWindowView(model: delegate.model, mainWindows: delegate.mainWindows)
         }
         .defaultSize(width: 1120, height: 720)
         .commands {
@@ -154,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsModel = Self.makeSettingsModel(settings, automation: automation)
         firstLaunch = FirstLaunch.shouldRun(store: store, automation: automation.isActive, environment: environment)
         super.init()
+        mainWindows.openSettings = { [weak self] in self?.showSettings(fromPanel: false) }
         wireSettings()
     }
 

@@ -198,4 +198,20 @@ enum Phase10Round10Tests {
         let copied = CopyInfo.text(owner: try require(report.owners.first), procs: [], report: report, language: .zh)
         expect(copied.contains("kilo"), copied)
     }
+
+    /// QA26 (2026-10-29): the closed main window stays in memory. A closure argument
+    /// cannot be compared, so SwiftUI redrew the whole window on every host tick
+    /// (5 s) and the hidden CPU rose from 0.52–0.76% to 1.05%. Its view takes only
+    /// comparable values: the settings action lives on MainWindows.
+    static func closedMainWindowIsNotRedrawnEachTick() throws {
+        let app = try R3.source("WhoateApp.swift")
+        let scene = try R3.slice(app, from: "Window(L10n.text(.mainWindowTitle", to: ".defaultSize")
+        let args = try R3.slice(scene, from: "MainWindowView(", to: ")")
+        expect(!args.contains("{") && !args.contains("openSettings"), args)
+        let views = try R3.source("MainWindowView.swift")
+        for name in ["struct MainWindowView: View {", "struct SidebarView: View {"] {
+            let fields = try R3.slice(views, from: name, to: "var body")
+            expect(!fields.contains("() ->"), "\(name) \(fields)")
+        }
+    }
 }

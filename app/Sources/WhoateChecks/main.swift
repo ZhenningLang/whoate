@@ -120,6 +120,7 @@ var checks: [(String, () throws -> Void)] = [
     ("Phase10Round10Tests.sidebarKindsAddTheFootprintsTheirListShows", Phase10Round10Tests.sidebarKindsAddTheFootprintsTheirListShows),
     ("Phase10Round10Tests.aiAppsAndSessionsShareAIAndAgent", Phase10Round10Tests.aiAppsAndSessionsShareAIAndAgent),
     ("Phase10Round10Tests.rowsSayWhereTheyWereStarted", Phase10Round10Tests.rowsSayWhereTheyWereStarted),
+    ("Phase10Round10Tests.closedMainWindowIsNotRedrawnEachTick", Phase10Round10Tests.closedMainWindowIsNotRedrawnEachTick),
     ("Phase11Tests.qa13_aboutShowsVersionLinksAndNoUpdateCheck", Phase11Tests.qa13_aboutShowsVersionLinksAndNoUpdateCheck),
     ("Phase11Tests.qa15_newTextIsInBothLanguagesWithoutCJKInEnglish", Phase11Tests.qa15_newTextIsInBothLanguagesWithoutCJKInEnglish),
 ]
