@@ -22,12 +22,14 @@ PNG size equal to the window size times its scale, and each main window shot
 showing an owner of the kind it asked for. Exit 77: screen recording denied
 (report `blocked screen-recording-permission`).
 """
-import datetime, json, os, subprocess, sys, tempfile, time
+import datetime, json, os, re, subprocess, sys, tempfile, time
 import launch
 from screenshots import stats
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIXTURE = os.path.join(ROOT, "tests/gui/design-report.json")
+# Owner 2026-10-29: English shots show English demo text, as an English user's whoate would.
+ENGLISH_TEXT = os.path.join(ROOT, "tests/gui/design-report.en.json")
 ICON = os.path.join(ROOT, "assets/logo/menubar-template.pdf")
 ZH, EN = "zh_CN.UTF-8", "en_US.UTF-8"
 WEBKIT = 'swarm:["com.apple.WebKit"]'
@@ -81,8 +83,35 @@ def fresh_fixture(path):
     json.dump(report, open(path, "w"), ensure_ascii=False)
 
 
+def english_fixture(path):
+    """The fixture at `path` with every Chinese string swapped for its design-report.en.json
+    text, written beside it as *.en.json. A Chinese string with no English text is an error."""
+    table = json.load(open(ENGLISH_TEXT))["strings"]
+    missing = set()
+
+    def swap(value):
+        if isinstance(value, dict):
+            return {k: swap(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [swap(v) for v in value]
+        if isinstance(value, str) and re.search(r"[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]", value):
+            if value not in table:
+                missing.add(value)
+            return table.get(value, value)
+        return value
+
+    report = swap(json.load(open(path)))
+    if missing:
+        sys.exit(f"design-report.en.json has no English for: {sorted(missing)}")
+    out = path[:-len(".json")] + ".en.json"
+    json.dump(report, open(out, "w"), ensure_ascii=False)
+    return out
+
+
 def capture(binary, out_dir, fixture, shot, appearance, language):
     name, kind, mode, extra, settle = shot
+    if language == EN:
+        fixture = english_fixture(fixture)
     window_file = tempfile.mktemp(prefix="whoate-design-window-")
     state_file = window_file + ".state"
     env = dict(WHOATE_UI_AUTOMATION=mode, WHOATE_UI_APPEARANCE=appearance, WHOATE_UI_WINDOW_FILE=window_file,

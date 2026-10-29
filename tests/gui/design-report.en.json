@@ -1,0 +1,29 @@
+{
+ "about": "English text for the English screenshots (design_shots.english_fixture): every Chinese string of design-report.json, whole values only. A Chinese string missing here stops the English shots.",
+ "strings": {
+  "swap 已用 6.0G。内存偏紧时，先关闲置会话和孤儿进程收益最大。": "6.0G of swap in use. With memory tight, closing idle sessions and orphans frees the most.",
+  "启动它的 tmux pane %266 已关闭，端口 8799 当前 0 个连接；启动后 10 分钟内涨到 9.7G，之后不再变化。": "Its launching tmux pane %266 is closed and port 8799 has 0 connections; it grew to 9.7G in its first 10 minutes and has not changed since.",
+  "近 30 分钟 +600M，渲染进程 14 个。": "+600M over 30 minutes, across 14 renderer processes.",
+  "正常": "Normal",
+  "给归属规则补回归测试": "Add regression tests for attribution rules",
+  "孤儿判定把应用的子进程也算进去了，帮我查一下原因": "The orphan check also counts an app's child processes. Can you find out why?",
+  "先读 attribute 模块的分支顺序。runtime_home 排在 .app 检查前面，所以挂在应用下面的 node 也被当成了孤儿……": "Reading the branch order in the attribute module first. runtime_home is checked before .app, so a node under an app is taken for an orphan too…",
+  "近 10 分钟 +400M，还在涨。": "+400M over 10 minutes and still growing.",
+  "整理发布说明": "Draft the release notes",
+  "把这周的改动整理成发布说明": "Turn this week's changes into release notes",
+  "好的，先列出合并过的提交……": "Sure, listing the merged commits first…",
+  "空闲 3 小时，可以关掉。": "Idle for 3 hours; consider closing it.",
+  "macOS 图形合成进程": "macOS window compositor",
+  "Spotlight 索引服务": "Spotlight indexing service",
+  "重构导出模块": "Refactor the export module",
+  "补 README 示例": "Add README examples",
+  "给 README 补两个用法示例": "Add two usage examples to the README",
+  "好，先看现有的命令列表……": "OK, looking at the current command list first…",
+  "检查文档死链": "Check the docs for dead links",
+  "检查 docs 目录的死链": "Check the docs directory for dead links",
+  "共找到 3 个失效链接……": "Found 3 broken links…",
+  "可执行文件相同：python3.13": "Same executable: python3.13",
+  "分散在多个归属里，各自 1–6 份。": "Spread over several owners, 1–6 copies each.",
+  "各归属分别启动 com.apple.WebKit，共 12 份 1130.8 MiB；关掉闲置归属能一起释放": "Owners independently started com.apple.WebKit: 12 copies, 1130.8 MiB; close idle owners to release them together"
+ }
+}
