@@ -521,9 +521,10 @@ enum Phase11Tests {
         expect(info.repository == "https://github.com/ZhenningLang/whoate" && info.issues == info.repository + "/issues")
         expect(info.updateLines.contains { $0.contains("brew upgrade whoate") }
             && info.updateLines.contains { $0.contains("brew upgrade --cask whoate") })
-        // Owner 2026-10-27 11:49: WeChat Pay and a star in Chinese, only the star in English.
-        expect(info.support.map(\.name) == ["微信支付", "在 GitHub 上点个 Star"], "\(info.support.map(\.name))")
-        expect(AboutInfo.make(info: nil, language: .en).support.map(\.name) == ["Star whoate on GitHub"])
+        // Owner 2026-10-30 10:47: a star, then the WeChat Pay code, in both languages.
+        expect(info.support.map(\.name) == ["在 GitHub 上点个 Star", "也可以给我买一杯热腾腾的咖啡，软件行业的冬天太冷了"], "\(info.support.map(\.name))")
+        expect(AboutInfo.make(info: nil, language: .en).support.map(\.name) == ["Star whoate on GitHub", "Or buy me a hot cup of coffee: it's a cold winter in the software industry"])
+        expect(Links.support.filter { $0.target == .qrCode(resource: "wechat-pay.png") }.count == 2, "the same code in both languages")
         expect(Links.support.filter { $0.target == .link(Links.repository) }.count == 2, "the star opens the repository")
         // The four combinations with stand-in data (never shipped).
         let paypal = SupportItem(name: "Link EN", target: .link("https://example.invalid/en"), audience: .en)
