@@ -218,7 +218,7 @@ enum Phase10Round3Tests {
         expect(card.prompt == nil && card.reply == nil)
 
         let app = try decodeValue(Owner.self, ownerJSON("app:com.openai.codex", mem: 1, overrides: ["label": "ChatGPT"]))
-        let procs = (0..<10).map { i in
+        let procs: [ProcBrief] = (0..<10).map { (i: Int) -> ProcBrief in
             proc(Int32(100 + i), 1, "node", member: true, mem: UInt64(10 - i) << 20, cwd: "/Users/demo/p\(i)")
         } + [proc(120, 1, "node", member: true, mem: 9 << 20, cwd: "/Users/demo/p0"), proc(1, 0, "launchd", member: false)]
         let groups = Detail.folders(app, procs: procs, language: .zh, home: "/Users/demo")

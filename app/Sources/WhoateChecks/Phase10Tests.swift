@@ -276,7 +276,7 @@ enum Phase10Tests {
 
     /// CONFORM:B6: rows scrolled into view get histories, beyond the first 20.
     @MainActor static func scrolledIntoViewRowsGetHistories() async throws {
-        let owners = (1...30).map { i in ownerJSON("o\(i)", mem: UInt64(100 - i), cpu: Double(100 - i), pids: [Int32(i)]) }
+        let owners = (1...30).map { (i: Int) -> [String: Any] in ownerJSON("o\(i)", mem: UInt64(100 - i), cpu: Double(100 - i), pids: [Int32(i)]) }
         let report = try decodeValue(Report.self, reportJSON(owners: owners))
         let spy = Phase08Tests.HistorySpy(report, raw: [])
         let model = AppModel(language: .en, makeEngine: { spy }, sampleHost: { .failure(FFIError(code: 1, message: "x")) },
@@ -293,7 +293,7 @@ enum Phase10Tests {
 
     /// With the main window open, its first rows get full histories too (design round 1, finding 2).
     @MainActor static func mainWindowRowsGetHistories() async throws {
-        let owners = (1...8).map { i in ownerJSON("o\(i)", mem: UInt64(100 - i), cpu: Double(100 - i), pids: [Int32(i)]) }
+        let owners = (1...8).map { (i: Int) -> [String: Any] in ownerJSON("o\(i)", mem: UInt64(100 - i), cpu: Double(100 - i), pids: [Int32(i)]) }
         let report = try decodeValue(Report.self, reportJSON(owners: owners))
         for main in [false, true] {
             let spy = Phase08Tests.HistorySpy(report, raw: [])
