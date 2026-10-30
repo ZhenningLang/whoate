@@ -122,6 +122,7 @@ kbd { font-family: var(--sans); font-size: 14px; background: var(--surface); bor
 .zh h2 { font-size: clamp(24px, 3vw, 32px); }
 .zh p { max-width: 42em; }
 .zh p, .zh li { color: var(--fg); }
+.support-qr { width: 160px; border-radius: 8px; margin-top: 16px; }
 
 footer { padding: 48px 0 64px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; border-top: 1px solid var(--border); }
 footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -276,12 +277,20 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
       </div>
     </section>
 
+    <section id="support">
+      <p class="kicker">Support</p>
+      <p>If whoate helped, star it on GitHub: it helps other people find it. Or buy me a hot cup of coffee: it's a cold winter in the software industry (WeChat Pay).</p>
+      <img class="support-qr" src="support/wechat-pay.png" alt="WeChat Pay QR code" width="160" height="160">
+    </section>
+
     <section id="zh" lang="zh-CN">
       <div class="zh">
         <h2>中文说明：谁吃了我的内存？</h2>
         <p>看清是哪个编程助手会话、哪个 tmux 分屏、哪个应用在吃 Mac 的内存，也让你的编程助手自己来查。和活动监视器的不同：按会话、分屏、应用归属，而不是一串进程名；能看出终端关掉后留下的孤儿进程；给 agent 用的命令行输出 JSON 和退出码，零 token。应用左栏有「AI &amp; Agent」一类，数字是占用（物理内存 + 压缩/swap）。</p>
         <p><strong>按软件定制的洞察</strong>：按各个软件自己的结构解释进程，建议来自内置知识库，每条都附出处与核对日期。<strong>给 agent 用，零 token</strong>：一条命令输出结构化 JSON 和有含义的退出码，诊断在本机按规则完成，不调用模型、不联网。</p>
         <p>安装：<code>brew install zhenninglang/tap/whoate</code>（菜单栏应用加 <code>--cask</code>）。应用未做 Apple 公证，首次打开被拦下时，打开「系统设置 → 隐私与安全性」，点「仍要打开」，或执行 <code>xattr -d com.apple.quarantine /Applications/whoate.app</code>。</p>
+        <p>觉得有用，请在 GitHub 上点个 Star，让更多人看到它。也可以给我买一杯热腾腾的咖啡，软件行业的冬天太冷了：</p>
+        <img class="support-qr" src="support/wechat-pay.png" alt="微信支付二维码" width="160" height="160">
       </div>
     </section>
   </main>
@@ -294,7 +303,7 @@ footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
       <a href="https://github.com/ZhenningLang/whoate/blob/main/docs/install.md">Install guide</a>
       <a href="https://github.com/ZhenningLang/whoate/blob/main/CHANGELOG.md">Changelog</a>
       <a href="https://github.com/ZhenningLang/whoate/blob/main/LICENSE">License</a>
-      <a href="support/wechat-pay.png" title="Support whoate with WeChat Pay (users in China)">WeChat Pay</a>
+      <a href="support/wechat-pay.png" title="Buy me a hot cup of coffee with WeChat Pay">WeChat Pay</a>
     </nav>
   </footer>
 </div>

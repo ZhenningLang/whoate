@@ -164,6 +164,9 @@ settings; advice is for you to act on.
 ## Support whoate
 
 If whoate helped, [star it on GitHub](https://github.com/ZhenningLang/whoate): it helps other people find it.
+Or buy me a hot cup of coffee: it's a cold winter in the software industry (WeChat Pay):
+
+<img src="app/Resources/Support/wechat-pay.png" alt="WeChat Pay QR code" width="180">
 
 ## 中文说明
 
@@ -202,7 +205,7 @@ brew install --cask zhenninglang/tap/whoate     # 菜单栏应用
 
 ### 支持 whoate
 
-觉得有用，请在 GitHub 上点个 Star，让更多人看到它。也可以微信扫码支持：
+觉得有用，请在 GitHub 上点个 Star，让更多人看到它。也可以给我买一杯热腾腾的咖啡，软件行业的冬天太冷了：
 
 <img src="app/Resources/Support/wechat-pay.png" alt="微信支付二维码" width="180">
 
